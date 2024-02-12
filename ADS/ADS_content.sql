@@ -1,0 +1,127 @@
+CREATE TABLE `ads_housing_project` (
+    `House_ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `House_Code` varchar(10) NULL,
+    `House_Latitude` double NULL,
+    `House_Longitude` double NULL,
+    `House_ENName` varchar(150) NULL,
+    `RealSubDistrict_Code` varchar(30) NULL,
+    `Price_Start_Unit` INT NULL,
+    `House_Build_Start` date NULL,
+    `House_Build_Finish` date NULL,
+    `House_Spotlight_1` varchar(250) NULL,
+    `House_Spotlight_2` varchar(250) NULL,
+    `House_Status` enum('0','1','2') NOT NULL DEFAULT '0',
+    `Create_Date` timestamp NOT NULL default CURRENT_TIMESTAMP,
+    `Create_User` smallint unsigned NOT NULL default 0,
+    `Last_Update_Date` timestamp NOT NULL default CURRENT_TIMESTAMP,
+    `Last_Update_User` smallint unsigned NOT NULL default 0,
+    PRIMARY KEY (`House_ID`),
+    INDEX housing_admin1 (Create_User),
+    INDEX housing_admin2 (Last_Update_User),
+    CONSTRAINT housing_admin1 FOREIGN KEY (Create_User) REFERENCES user_admin(User_ID),
+    CONSTRAINT housing_admin2 FOREIGN KEY (Last_Update_User) REFERENCES user_admin(User_ID)
+) ENGINE = InnoDB;
+
+
+CREATE TABLE `ads_non_residential` (
+    `NR_ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `NR_Code` varchar(10) NULL,
+    `NR_Latitude` double NULL,
+    `NR_Longitude` double NULL,
+    `NR_ENName` varchar(150) NULL,
+    `RealSubDistrict_Code` varchar(30) NULL,
+    `Price_Start_Unit` INT NULL,
+    `NR_Build_Start` date NULL,
+    `NR_Build_Finish` date NULL,
+    `NR_Spotlight_1` varchar(250) NULL,
+    `NR_Spotlight_2` varchar(250) NULL,
+    `NR_Status` enum('0','1','2') NOT NULL DEFAULT '0',
+    `Create_Date` timestamp NOT NULL default CURRENT_TIMESTAMP,
+    `Create_User` smallint unsigned NOT NULL default 0,
+    `Last_Update_Date` timestamp NOT NULL default CURRENT_TIMESTAMP,
+    `Last_Update_User` smallint unsigned NOT NULL default 0,
+    PRIMARY KEY (`NR_ID`),
+    INDEX nr_admin1 (Create_User),
+    INDEX nr_admin2 (Last_Update_User),
+    CONSTRAINT nr_admin1 FOREIGN KEY (Create_User) REFERENCES user_admin(User_ID),
+    CONSTRAINT nr_admin2 FOREIGN KEY (Last_Update_User) REFERENCES user_admin(User_ID)
+) ENGINE = InnoDB;
+
+
+CREATE TABLE `ads_event` (
+    `EV_ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `EV_Code` varchar(10) NULL,
+    `EV_Name` varchar(150) NULL,
+    `EV_Spotlight_1` varchar(250) NULL,
+    `EV_Spotlight_2` varchar(250) NULL,
+    `EV_Status` enum('0','1','2') NOT NULL DEFAULT '0',
+    `Create_Date` timestamp NOT NULL default CURRENT_TIMESTAMP,
+    `Create_User` smallint unsigned NOT NULL default 0,
+    `Last_Update_Date` timestamp NOT NULL default CURRENT_TIMESTAMP,
+    `Last_Update_User` smallint unsigned NOT NULL default 0,
+    PRIMARY KEY (`EV_ID`),
+    INDEX ev_admin1 (Create_User),
+    INDEX ev_admin2 (Last_Update_User),
+    CONSTRAINT ev_admin1 FOREIGN KEY (Create_User) REFERENCES user_admin(User_ID),
+    CONSTRAINT ev_admin2 FOREIGN KEY (Last_Update_User) REFERENCES user_admin(User_ID)
+) ENGINE = InnoDB;
+
+CREATE TABLE `property_type` (
+    `Property_Type_ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `Ad_Code` varchar(10) NOT NULL,
+    `Code1` varchar(10) NOT NULL,
+    `Name1` varchar(150) NOT NULL,
+    `Code2` varchar(10) NOT NULL,
+    `Name2` varchar(150) NOT NULL,
+    `Code3` varchar(10) NULL,
+    `Name3` varchar(150) NULL,
+    PRIMARY KEY (`Property_Type_ID`)
+) ENGINE = InnoDB;
+
+insert into property_type (Ad_Code,Code1,Name1,Code2,Name2,Code3,Name3)
+values ('CD','CD','Condominium','CD','Condominium','CU','Condo Unit'),
+('HP','HP','Housing Project','HO','Home Office',NULL,NULL),
+('HP','HP','Housing Project','SH','Shophouse',NULL,NULL),
+('HP','HP','Housing Project','TH','Townhome',NULL,NULL),
+('HP','HP','Housing Project','DD','Double Detached House',NULL,NULL),
+('HP','HP','Housing Project','SD','Single Detached House',NULL,NULL),
+('HP','HP','Housing Project','VL','Vacant Land',NULL,NULL),
+('NR','CO','Commercial','OF','Office','OU','Office Unit'),
+('NR','CO','Commercial','SM','Shopping Mall','SU','Shop Unit'),
+('NR','CO','Commercial','CM','Community Mall','SU','Shop Unit'),
+('NR','CO','Commercial','MK','Market','SU','Shop Unit'),
+('NR','MT','Mass Transit','ST','Station',NULL,NULL),
+('NR','IF','Infrastructure','HI','Highspeed Train',NULL,NULL),
+('NR','IF','Infrastructure','TR','Train',NULL,NULL),
+('NR','IF','Infrastructure','FB','Ferry/Boat',NULL,NULL),
+('NR','IF','Infrastructure','RB','Road/Bridge',NULL,NULL),
+('NR','IF','Infrastructure','PT','Port',NULL,NULL),
+('NR','IF','Infrastructure','AR','Airport',NULL,NULL),
+('NR','IF','Infrastructure','DM','Dam',NULL,NULL),
+('NR','HY','Hospitality','RS','Resort',NULL,NULL),
+('NR','HY','Hospitality','HT','Hotel',NULL,NULL),
+('NR','HY','Hospitality','HS','Hostel',NULL,NULL),
+('NR','HY','Hospitality','SA','Serviced Apartment',NULL,NULL),
+('NR','HY','Hospitality','AP','Apartment',NULL,NULL),
+('NR','PP','Private Property','PH','Private House',NULL,NULL),
+('NR','PP','Private Property','PL','Private Land',NULL,NULL),
+('NR','PP','Private Property','PS','Private Shophouse',NULL,NULL),
+('NR','PP','Private Property','PB','Private Building',NULL,NULL),
+('NR','HC','Health Care','HL','Hospital',NULL,NULL),
+('NR','HC','Health Care','CL','Clinic',NULL,NULL),
+('NR','IP','Industrial Park','FU','Factory Unit',NULL,NULL),
+('NR','IP','Industrial Park','WU','Warehouse Unit',NULL,NULL),
+('NR','SC','School','KG','Kindergarten',NULL,NULL),
+('NR','SC','School','SO','School',NULL,NULL),
+('NR','SC','School','UN','University',NULL,NULL),
+('NR','SC','School','IS','International School',NULL,NULL),
+('NR','SC','School','TS','Tutorial School',NULL,NULL);
+
+CREATE TABLE `property_type_relationship` (
+    `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `Prop_Code` varchar(10) NOT NULL,
+    `Property_Type_ID` INT UNSIGNED NOT NULL,
+    PRIMARY KEY (`ID`),
+    INDEX re_prop (Property_Type_ID),
+    CONSTRAINT re_prop FOREIGN KEY (Property_Type_ID) REFERENCES property_type(Property_Type_ID)
+) ENGINE = InnoDB;
