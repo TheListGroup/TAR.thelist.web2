@@ -1,0 +1,31 @@
+CREATE TABLE IF NOT EXISTS `classified_match` (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Agent VARCHAR(100) NULL,
+    Project_ID VARCHAR(100) NOT NULL,
+    Condo_Code VARCHAR(50) NOT NULL,
+    PRIMARY KEY (`ID`))
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS `classified_not_match` (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Agent VARCHAR(100) NULL,
+    Project_ID VARCHAR(100) NOT NULL,
+    msg TEXT NULL,
+    Old_Condo BOOLEAN NOT NULL DEFAULT 0,
+    PRIMARY KEY (`ID`))
+ENGINE = InnoDB;
+
+-- เติม Column บริษัท --- 
+
+CREATE TABLE IF NOT EXISTS `classified_project_staging` (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Ref_ID VARCHAR(100) NOT NULL,
+    Project_ID VARCHAR(100) NOT NULL,
+    Name_TH VARCHAR(250) NULL,
+    Name_ENG VARCHAR(250) NULL,
+    Latitude DOUBLE NULL,
+    Longitude DOUBLE NULL,
+    Created_Date TEXT NULL,
+    Last_Updated_Date TEXT NULL,
+    PRIMARY KEY (`ID`))
+ENGINE = InnoDB;

@@ -1,0 +1,11 @@
+sudo apt install python3-pip
+
+pip install mysql-connector-python
+
+pip install Pillow
+
+pip install pandas
+
+pip install python-Levenshtein
+
+pip install xmltodict
