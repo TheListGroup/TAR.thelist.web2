@@ -602,8 +602,8 @@ select a.Housing_ID as Housing_ID
     , if(a.Housing_Built_Start is null
         , if(a.Housing_Built_Finished is null
             , NULL
-            , year(a.Housing_Built_Finished))
-        , year(a.Housing_Built_Start)) AS Housing_Build_Date
+            , a.Housing_Built_Finished)
+        , a.Housing_Built_Start) AS Housing_Build_Date
     , replace(replace(replace(replace(replace(a.Housing_Name, '\n', ''), '-', ''),'(',''),')',''),' ','') AS Housing_Name_Search
     , replace(replace(replace(replace(replace(a.Housing_ENName, '\n', ''), '-', ''),'(',''),')',''),' ','') AS Housing_ENName_Search
     , a.Housing_ScopeArea
@@ -692,7 +692,7 @@ CREATE TABLE IF NOT EXISTS housing_fetch_for_map (
     Price VARCHAR(30) NOT NULL,
     Housing_Area VARCHAR(30) NOT NULL,
     Usable_Area VARCHAR(30) NOT NULL,
-    Housing_Build_Date YEAR NULL,
+    Housing_Build_Date DATE NULL,
     Housing_Name_Search VARCHAR(250) NULL,
     Housing_ENName_Search VARCHAR(250) NULL,
     Housing_ScopeArea TEXT NULL,
