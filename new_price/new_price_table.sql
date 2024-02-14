@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS `real_condo_price_new` (
     Price_Date DATE NULL,
     Condo_Build_Date ENUM('0','1') NULL,
     Start_or_AVG ENUM('เริ่มต้น','เฉลี่ย') NOT NULL,
+    Resale ENUM('0','1') NOT NULL,
     Price_Source SMALLINT UNSIGNED NOT NULL,
     Price_Type ENUM('บ/ตรม','บ/ยูนิต') NOT NULL,
     Special ENUM('0','1') NOT NULL,
@@ -58,9 +59,12 @@ CREATE TABLE IF NOT EXISTS `all_price_view` (
     Price_Date DATE NULL,
     Condo_Build_Date ENUM('0','1') NULL,
     Start_or_AVG ENUM('เริ่มต้น','เฉลี่ย') NOT NULL,
+    Resale ENUM('0','1') NOT NULL,
     Price_Source SMALLINT UNSIGNED NOT NULL,
     Price_Type ENUM('บ/ตรม','บ/ยูนิต') NOT NULL,
     Special ENUM('0','1') NOT NULL,
     Remark TEXT NULL,
-    PRIMARY KEY (`ID`))
+    PRIMARY KEY (`ID`),
+    INDEX apsource (Price_Source),
+    CONSTRAINT all_price_source FOREIGN KEY (Price_Source) REFERENCES price_source(ID))
 ENGINE = InnoDB;
