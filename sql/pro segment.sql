@@ -36,17 +36,17 @@ BEGIN
 		END IF;
 
         UPDATE  real_condo_price
-        SET	    Condo_Segment = ( SELECT (CASE WHEN Condo_Price_Per_Square > 0 AND Condo_Price_Per_Square <= 50000 THEN 'SEG01'
-                                 		WHEN Condo_Price_Per_Square > 50000 AND Condo_Price_Per_Square <= 80000 THEN 'SEG02'
-                                 		WHEN Condo_Price_Per_Square > 80000 AND Condo_Price_Per_Square <= 150000 THEN 'SEG03'
-                                 		WHEN Condo_Price_Per_Square > 150000 AND Condo_Price_Per_Square <= 250000 THEN 'SEG04'
-                                 		WHEN Condo_Price_Per_Square > 250000 AND Condo_Price_Per_Square <= 300000 THEN 'SEG05'
-                                 		WHEN Condo_Price_Per_Square > 300000 AND Condo_Price_Per_Square <= 350000 THEN 'SEG06'
-                                 		WHEN Condo_Price_Per_Square > 350000 THEN 'SEG07'
-                                 		ELSE NULL
-                                 		END)
-                                FROM   condo_price_calculate_view
-                                WHERE  Condo_Code = eachCondo)
+        SET	    Condo_Segment = ( SELECT (CASE WHEN ROUND(Condo_Price_Per_Square,-3) > 0 AND ROUND(Condo_Price_Per_Square,-3) <= 50000 THEN 'SEG01'
+                            			WHEN ROUND(Condo_Price_Per_Square,-3) > 50000 AND ROUND(Condo_Price_Per_Square,-3) <= 80000 THEN 'SEG02'
+                            			WHEN ROUND(Condo_Price_Per_Square,-3) > 80000 AND ROUND(Condo_Price_Per_Square,-3) <= 150000 THEN 'SEG03'
+                            			WHEN ROUND(Condo_Price_Per_Square,-3) > 150000 AND ROUND(Condo_Price_Per_Square,-3) <= 250000 THEN 'SEG04'
+                						WHEN ROUND(Condo_Price_Per_Square,-3) > 250000 AND ROUND(Condo_Price_Per_Square,-3) <= 300000 THEN 'SEG05'
+                            			WHEN ROUND(Condo_Price_Per_Square,-3) > 300000 AND ROUND(Condo_Price_Per_Square,-3) <= 350000 THEN 'SEG06'
+                            			WHEN ROUND(Condo_Price_Per_Square,-3) > 350000 THEN 'SEG07'
+                            			ELSE NULL
+                            			END)
+                                	FROM   condo_price_calculate_view
+                                	WHERE  Condo_Code = eachCondo)
         WHERE Condo_Code = eachCondo;
 
 		GET DIAGNOSTICS nrows = ROW_COUNT;
