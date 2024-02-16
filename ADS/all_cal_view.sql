@@ -200,7 +200,7 @@ left join ( select Condo_Code
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 2) order56_1_sqm
+					where ap.Price_Source = 2) order_hip
 					where Myorder = 1) cal_hip
 on a.Condo_Code = cal_hip.Condo_Code
 left join ( select Condo_Code
@@ -217,7 +217,7 @@ left join ( select Condo_Code
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 4) order56_1_sqm
+					where ap.Price_Source = 4) order_bgsq
 					where Myorder = 1) cal_bgsq
 on a.Condo_Code = cal_bgsq.Condo_Code
 left join ( select Condo_Code
@@ -234,7 +234,7 @@ left join ( select Condo_Code
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 5) order56_1_sqm
+					where ap.Price_Source = 5) order_d1sq
 					where Myorder = 1) cal_d1sq
 on a.Condo_Code = cal_d1sq.Condo_Code
 left join ( select Condo_Code
@@ -251,7 +251,7 @@ left join ( select Condo_Code
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 6) order56_1_sqm
+					where ap.Price_Source = 6) order_bg_u
 					where Myorder = 1) cal_bg_u
 on a.Condo_Code = cal_bg_u.Condo_Code
 left join ( select Condo_Code
@@ -268,7 +268,7 @@ left join ( select Condo_Code
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 7) order56_1_sqm
+					where ap.Price_Source = 7) order_d1_u
 					where Myorder = 1) cal_d1_u
 on a.Condo_Code = cal_d1_u.Condo_Code
 left join ( select Condo_Code
@@ -286,7 +286,7 @@ left join ( select Condo_Code
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
 					where ap.Price_Source = 1
-					and ap.Price_Type = 'บ/ยูนิต') order56_1_sqm
+					and ap.Price_Type = 'บ/ยูนิต') order56_1_u
 					where Myorder = 1) cal56_1_u
 on a.Condo_Code = cal56_1_u.Condo_Code
 left join ( select Condo_Code, Data_Date, Data_Attribute, Data_Value, Data_Note, Price_Source
