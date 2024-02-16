@@ -253,6 +253,35 @@ BEGIN
 END //
 DELIMITER ;
 
+-- table housing_spotlight
+CREATE TABLE housing_spotlight (
+    Spotlight_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Spotlight_Order int NOT NULL,
+    Spotlight_Type varchar(20) NOT NULL,
+    Spotlight_Code varchar(20) NOT NULL,
+    Spotlight_Name varchar(150) NOT NULL,
+    Spotlight_Label varchar(200) NOT NULL,
+    Spotlight_Icon varchar(200) NOT NULL,
+    Spotlight_Inactive int NOT NULL,
+    Condo_Count int NOT NULL,
+    Menu_List int NOT NULL,
+    Menu_Price_Order int NOT NULL,
+    Spotlight_Cover int NOT NULL,
+    Spotlight_Title varchar(250) NOT NULL,
+    Spotlight_Description text NOT NULL,
+    Keyword_TH text null,
+    Keyword_ENG text null)
+ENGINE = InnoDB;
+
+SELECT Housing_Code,Bedroom_Max 
+FROM `housing`
+where Bedroom_Max >= 4;
+
+SELECT Housing_Code,Housing_Price_Min,Housing_Price_Max 
+FROM `housing`
+where (Housing_Price_Max < 3000000 and Housing_Price_Min >= 1000000)
+or (Housing_Price_Max is null and Housing_Price_Min >= 1000000 and Housing_Price_Min < 3000000);
+
 -- -----------------------------------------------------
 -- Table housing
 ---- รอเพิ่ม column คะแนน
@@ -309,6 +338,7 @@ CREATE TABLE IF NOT EXISTS housing (
     IS_SH BOOLEAN NOT NULL DEFAULT 0,
     Housing_Spotlight_1 VARCHAR(250) NULL,
     Housing_Spotlight_2 VARCHAR(250) NULL,
+    Realist_Score DECIMAL(44,12) NULL,
     Housing_URL_Tag VARCHAR(200) NULL DEFAULT NULL,
     Housing_Cover BOOLEAN NOT NULL DEFAULT 0,
     Housing_Redirect VARCHAR(10) NULL DEFAULT NULL,
@@ -721,6 +751,7 @@ CREATE TABLE IF NOT EXISTS housing_fetch_for_map (
     Housing_Area_Carousel VARCHAR(30) NULL,
     Usable_Area_Carousel VARCHAR(30) NULL,
     Housing_Around_Line TEXT NULL,
+    Spotlight_List TEXT NULL,
     PRIMARY KEY (ID))
 ENGINE = InnoDB;
 
