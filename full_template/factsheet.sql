@@ -53,403 +53,6 @@ BEGIN
 END //
 
 
-CREATE OR REPLACE VIEW `all_condo_price_calculate_view` AS
-select
-    `a`.`Condo_Code` AS `Condo_Code`,
-    if(
-        (`b`.`Condo_Built_Finished` is not null),
-        if(
-            (
-                (
-                    year(curdate()) - (year(`b`.`Condo_Built_Finished`) + 1)
-                ) > 0
-            ),
-            'OLD-finishDate',
-            'NEW-finishDate'
-        ),
-        if(
-            (`b`.`Condo_Built_Start` is not null),
-            if(
-                (
-                    (`a`.`Condo_HighRise` = 1)
-                    or (
-                        (`a`.`Condo_HighRise` = 0)
-                        and (`a`.`Condo_LowRise` = 0)
-                    )
-                ),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)
-                        ) > 0
-                    ),
-                    'OLD-launchDate-HighRise(4)',
-                    'NEW-launchDate-HighRise(4)'
-                ),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)
-                        ) > 0
-                    ),
-                    'OLD-launchDate-LowRise(3)',
-                    'NEW-launchDate-LowRise(3)'
-                )
-            ),
-            'OLD-donno'
-        )
-    ) AS `Old_or_New`,
-    if(
-        isnull(`b`.`Price_Average_56_1_Square`),
-        if(
-            isnull(`b`.`Price_Average_Resale_Square`),
-            if(
-                isnull(`b`.`Price_Start_Blogger_Square`),
-                if(
-                    isnull(`b`.`Price_Start_Day1_Square`),
-                    '',
-                    'ราคาเริ่มต้น'
-                ),
-                'ราคาเริ่มต้น'
-            ),
-            'ราคาเฉลี่ย'
-        ),
-        'ราคาเฉลี่ย'
-    ) AS `Condo_Age_Status_Square_Text`,
-    if(
-        (
-            if(
-                (`b`.`Condo_Built_Finished` is not null),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Finished`) + 1)
-                        ) > 0
-                    ),
-                    'OLD',
-                    'NEW'
-                ),
-                if(
-                    (`b`.`Condo_Built_Start` is not null),
-                    if(
-                        (
-                            (`a`.`Condo_HighRise` = 1)
-                            or (
-                                (`a`.`Condo_HighRise` = 0)
-                                and (`a`.`Condo_LowRise` = 0)
-                            )
-                        ),
-                        if(
-                            (
-                                (
-                                    year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)
-                                ) > 0
-                            ),
-                            'OLD',
-                            'NEW'
-                        ),
-                        if(
-                            (
-                                (
-                                    year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)
-                                ) > 0
-                            ),
-                            'OLD',
-                            'NEW'
-                        )
-                    ),
-                    'OLD'
-                )
-            ) = 'NEW'
-        ),
-        ifnull(
-            `b`.`Price_Average_56_1_Square`,
-            ifnull(
-                `b`.`Price_Average_Resale_Square`,
-                ifnull(
-                    `b`.`Price_Start_Blogger_Square`,
-                    `b`.`Price_Start_Day1_Square`
-                )
-            )
-        ),
-        ifnull(
-            `b`.`Price_Average_Resale_Square`,
-            ifnull(
-                `b`.`Price_Average_56_1_Square`,
-                ifnull(
-                    `b`.`Price_Start_Blogger_Square`,
-                    `b`.`Price_Start_Day1_Square`
-                )
-            )
-        )
-    ) AS `Condo_Price_Per_Square`,
-    if(
-        (
-            if(
-                (`b`.`Condo_Built_Finished` is not null),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Finished`) + 1)
-                        ) > 0
-                    ),
-                    'OLD',
-                    'NEW'
-                ),
-                if(
-                    (`b`.`Condo_Built_Start` is not null),
-                    if(
-                        (
-                            (`a`.`Condo_HighRise` = 1)
-                            or (
-                                (`a`.`Condo_HighRise` = 0)
-                                and (`a`.`Condo_LowRise` = 0)
-                            )
-                        ),
-                        if(
-                            (
-                                (
-                                    year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)
-                                ) > 0
-                            ),
-                            'OLD',
-                            'NEW'
-                        ),
-                        if(
-                            (
-                                (
-                                    year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)
-                                ) > 0
-                            ),
-                            'OLD',
-                            'NEW'
-                        )
-                    ),
-                    'OLD'
-                )
-            ) = 'NEW'
-        ),
-        if(
-            isnull(`b`.`Price_Average_56_1_Square`),
-            if(
-                isnull(`b`.`Price_Average_Resale_Square`),
-                if(
-                    isnull(`b`.`Price_Start_Blogger_Square`),
-                    if(
-                        isnull(`b`.`Price_Start_Day1_Square`),
-                        NULL,
-                        `b`.`Price_Start_Day1_Square_Date`
-                    ),
-                    `b`.`Price_Start_Blogger_Square_Date`
-                ),
-                `b`.`Price_Average_Resale_Square_Date`
-            ),
-            `b`.`Price_Average_56_1_Square_Date`
-        ),
-        if(
-            isnull(`b`.`Price_Average_Resale_Square`),
-            if(
-                isnull(`b`.`Price_Average_56_1_Square`),
-                if(
-                    isnull(`b`.`Price_Start_Blogger_Square`),
-                    if(
-                        isnull(`b`.`Price_Start_Day1_Square`),
-                        NULL,
-                        `b`.`Price_Start_Day1_Square_Date`
-                    ),
-                    `b`.`Price_Start_Blogger_Square_Date`
-                ),
-                `b`.`Price_Average_56_1_Square_Date`
-            ),
-            `b`.`Price_Average_Resale_Square_Date`
-        )
-    ) AS `Condo_Price_Per_Square_Date`,
-    if(
-        isnull(`b`.`Price_Start_Blogger_Unit`),
-        if(
-            isnull(`b`.`Price_Start_Day1_Unit`),
-            if(
-                isnull(`b`.`Price_Start_56_1_Unit`),
-                '',
-                'ราคาเฉลี่ย'
-            ),
-            'ราคาเริ่มต้น'
-        ),
-        'ราคาเริ่มต้น'
-    ) AS `Condo_Price_Per_Unit_Text`,
-    ifnull(
-        `b`.`Price_Start_Blogger_Unit`,
-        ifnull(
-            `b`.`Price_Start_Day1_Unit`,
-(`b`.`Price_Start_56_1_Unit` * 1000000)
-        )
-    ) AS `Condo_Price_Per_Unit`,
-    if(
-        isnull(`b`.`Price_Start_Blogger_Unit`),
-        if(
-            isnull(`b`.`Price_Start_Day1_Unit`),
-            `b`.`Price_Start_56_1_Unit_Date`,
-            `b`.`Price_Start_Day1_Unit_Date`
-        ),
-        `b`.`Price_Start_Blogger_Unit_Date`
-    ) AS `Condo_Price_Per_Unit_Date`,
-    if(
-        isnull(`b`.`Condo_Sold_Status_56_1_Percent`),
-        if(
-            (`b`.`Condo_Built_Finished` is not null),
-            if(
-                (
-                    (`b`.`Condo_Built_Finished` + interval 5 year) < now()
-                ),
-                'RESALE',
-                NULL
-            ),
-            if(
-                (`b`.`Condo_Built_Start` is not null),
-                if(
-                    (`a`.`Condo_HighRise` = 1),
-                    if(
-                        (
-                            (`b`.`Condo_Built_Start` + interval 9 year) < now()
-                        ),
-                        'RESALE',
-                        NULL
-                    ),
-                    if(
-                        (
-                            (`b`.`Condo_Built_Start` + interval 8 year) < now()
-                        ),
-                        'RESALE',
-                        NULL
-                    )
-                ),
-                'RESALE'
-            )
-        ),
-        if(
-            (`b`.`Condo_Sold_Status_56_1_Percent` <= 0),
-            'PRESALE',
-            if(
-                (`b`.`Condo_Sold_Status_56_1_Percent` >= 1),
-                'RESALE',
-                round(`b`.`Condo_Sold_Status_56_1_Percent`, 2)
-            )
-        )
-    ) AS `Condo_Sold_Status_Show_Value`,
-    `b`.`Condo_Sold_Status_56_1_Date` AS `Condo_Sold_Status_Date`,
-    if(
-        isnull(`b`.`Condo_Built_Finished`),
-        if(
-            isnull(`b`.`Condo_Built_Start`),
-            NULL,
-            'ปีที่เปิดตัว'
-        ),
-        if(
-            (`b`.`Condo_Built_Finished` > now()),
-            'คาดว่าจะแล้วเสร็จ',
-            'ปีที่แล้วเสร็จ'
-        )
-    ) AS `Condo_Built_Text`,
-    if(
-        isnull(`b`.`Condo_Built_Finished`),
-        if(
-            isnull(`b`.`Condo_Built_Start`),
-            NULL,
-            year(`b`.`Condo_Built_Start`)
-        ),
-        year(`b`.`Condo_Built_Finished`)
-    ) AS `Condo_Built_Date`,
-    if(
-        (`b`.`Condo_Built_Start` is not null),
-        `b`.`Condo_Built_Start`,
-        convert(
-            if(
-                (
-                    (`a`.`Condo_HighRise` = 1)
-                    or (
-                        (`a`.`Condo_HighRise` = 0)
-                        and (`a`.`Condo_LowRise` = 0)
-                    )
-                ),
-(`b`.`Condo_Built_Finished` - interval 4 year),
-(`b`.`Condo_Built_Finished` - interval 3 year)
-            ) using utf8
-        )
-    ) AS `Condo_Date_Calculate`,
-    if(
-        (
-            if(
-                (`b`.`Condo_Built_Finished` is not null),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Finished`) + 1)
-                        ) > 0
-                    ),
-                    'OLD',
-                    'NEW'
-                ),
-                if(
-                    (`b`.`Condo_Built_Start` is not null),
-                    if(
-                        (
-                            (`a`.`Condo_HighRise` = 1)
-                            or (
-                                (`a`.`Condo_HighRise` = 0)
-                                and (`a`.`Condo_LowRise` = 0)
-                            )
-                        ),
-                        if(
-                            (
-                                (
-                                    year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)
-                                ) > 0
-                            ),
-                            'OLD',
-                            'NEW'
-                        ),
-                        if(
-                            (
-                                (
-                                    year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)
-                                ) > 0
-                            ),
-                            'OLD',
-                            'NEW'
-                        )
-                    ),
-                    'OLD'
-                )
-            ) = 'NEW'
-        ),
-        ifnull(
-            `b`.`Price_Average_56_1_Square`,
-            `b`.`Price_Average_Resale_Square`
-        ),
-        ifnull(
-            `b`.`Price_Average_Resale_Square`,
-            `b`.`Price_Average_56_1_Square`
-        )
-    ) AS `Condo_Price_Per_Square_New`,
-    ifnull(
-        `b`.`Price_Start_Blogger_Unit`,
-        `b`.`Price_Start_Day1_Unit`
-    ) AS `Condo_Price_Per_Unit_New`
-from
-    (
-        `real_condo_price` `b`
-        left join `real_condo` `a` on((`a`.`Condo_Code` = `b`.`Condo_Code`))
-    )
-where
-    (
-        (`a`.`Condo_Latitude` is not null)
-        and (`a`.`Condo_Longitude` is not null)
-        and (`a`.`Condo_Status` = 1)
-    )
-order by
-    `a`.`Condo_Code`;
-
-
 CREATE OR REPLACE VIEW source_full_template_factsheet_view AS 
 SELECT cpc.Condo_Code as Condo_Code,
         nun(Station) as Station,
@@ -459,19 +62,24 @@ SELECT cpc.Condo_Code as Condo_Code,
         if(rc.RealDistrict_Code is not null,
             nun(rd.District_Name),'-') as Real_District, -- ถ้ามี RealDistrict_Code ให้เช็ค District_Name ถ้า null จะเป็น "-"
         nun(tp.name_th) as Province, -- ถ้า null จะเป็น "-"
-		ifnull(bk(year(rcp.Price_Average_56_1_Square_Date)),null) as Price_Average_Square_Date, -- เอาปีมาใส่วงเล็บ
-        nun(bath(format(round(rcp.Price_Average_56_1_Square,-3),0))) as Price_Average_Square, -- เอาราคามาปัดหลักพันแล้วใส่หน่วย ถ้า null จะเป็น "-"
-        ifnull(bk(year(rcp.Price_Average_Resale_Square_Date)),null) as Price_Average_Resale_Square_Date, -- เอาปีมาใส่วงเล็บ
-        nun(bath(format(round(rcp.Price_Average_Resale_Square,-3),0))) as Price_Average_Resale_Square, -- เอาราคามาปัดหลักพันแล้วใส่หน่วย ถ้า null จะเป็น "-"
-        if(rcp.Price_Start_Blogger_Square is not null,
-            ifnull(bk(year(rcp.Price_Start_Blogger_Square_Date)),null), -- ถ้ามีราคา เอาปีมาใส่วงเล็บ
-			if(rcp.Price_Start_Day1_Square is not null,
-                    ifnull(bk(year(rcp.Price_Start_Day1_Square_Date)),null),null)) as Price_Start_Square_Date, -- ถ้ามีราคา เอาปีมาใส่วงเล็บ
-        ifnull(bath(format(round(rcp.Price_Start_Blogger_Square,-3),0)),
-            nun(bath(format(round(rcp.Price_Start_Day1_Square,-3),0)))) as Price_Start_Square, -- เอาราคามาปัดหลักพันแล้วใส่หน่วย ถ้าไม่มีราคา blogger ใช้ราคา day1
+		ifnull(bk(year(cal56_1_sqm.Price_Date)),null) as Price_Average_Square_Date, -- เอาปีมาใส่วงเล็บ
+        nun(bath(format(round(cal56_1_sqm.Price,-3),0))) as Price_Average_Square, -- เอาราคามาปัดหลักพันแล้วใส่หน่วย ถ้า null จะเป็น "-"
+        nun(cal56_1_sqm.Price_Source) as Source_Price_Average_Square,
+        ifnull(bk(year(cal_hip.Price_Date)),null) as Price_Average_Resale_Square_Date, -- เอาปีมาใส่วงเล็บ
+        nun(bath(format(round(cal_hip.Price,-3),0))) as Price_Average_Resale_Square, -- เอาราคามาปัดหลักพันแล้วใส่หน่วย ถ้า null จะเป็น "-"
+        nun(cal_hip.Price_Source) as Source_Price_Average_Resale_Square,
+        if(cal_bgsq.Price is not null,
+            ifnull(bk(year(cal_bgsq.Price_Date)),null), -- ถ้ามีราคา เอาปีมาใส่วงเล็บ
+			if(cal_d1sq.Price is not null,
+                    ifnull(bk(year(cal_d1sq.Price_Date)),null),null)) as Price_Start_Square_Date, -- ถ้ามีราคา เอาปีมาใส่วงเล็บ
+        ifnull(bath(format(round(cal_bgsq.Price,-3),0)),
+            nun(bath(format(round(cal_d1sq.Price,-3),0)))) as Price_Start_Square, -- เอาราคามาปัดหลักพันแล้วใส่หน่วย ถ้าไม่มีราคา blogger ใช้ราคา day1
+        ifnull(cal_bgsq.Price_Source,
+            nun(cal_d1sq.Price_Source)) as Source_Price_Start_Square,
         if(cpc.Condo_Price_Per_Unit_Text='','ราคาเริ่มต้น / ยูนิต',concat(cpc.Condo_Price_Per_Unit_Text,' / ยูนิต')) as Condo_Price_Per_Unit_Text, -- ถ้าไม่มีคำเดิมใช้ "ราคาเริ่มต้น / ยูนิต"
         ifnull(bk(year(cpc.Condo_Price_Per_Unit_Date)),null) as Price_Start_Unit_Date, -- เอาปีมาใส่วงเล็บ
         nun(concat(round((cpc.Condo_Price_Per_Unit/1000000),2),' ลบ.')) as Price_Start_Unit, -- หารล้าน ใส่หน่วย
+        nun(cpc.Source_Condo_Price_Per_Unit) as Source_Price_Start_Unit,
         nun(concat(rcp.Condo_Common_Fee,' บ./ตร.ม./เดือน')) as Common_Fee,
         ifnull(cpc.Condo_Built_Text,'ปีที่แล้วเสร็จ') as Condo_Built_Text,
         nun(cpc.Condo_Built_Date) as Condo_Built_Date, -- ถ้า null จะเป็น "-"
@@ -480,6 +88,7 @@ SELECT cpc.Condo_Code as Condo_Code,
         nun(concat(rc.Condo_TotalUnit,' ยูนิต')) as Condo_Total_Unit, -- ใส่หน่วย ถ้า null จะเป็น "-"
         if(cpc.Condo_Sold_Status_Show_Value = 'RESALE','RESALE',
             nun(concat(format((cpc.Condo_Sold_Status_Show_Value*100),0),'% SOLD'))) as Condo_Sold_Status_Show_Value,
+        nun(cpc.Source_Condo_Sold_Status_Show_Value) as Source_Condo_Sold_Status_Show_Value,
         nun(STU_Size) as STU_Size, -- ถ้า min = max จะโชว์เลขเดียวพร้อมหน่วยและปัด
         nun(1BED_Size) as 1BED_Size,
         nun(2BED_Size) as 2BED_Size,
@@ -614,6 +223,75 @@ left join ( select Condo_Code,Station_THName_Display as Station
                     order by cv.Condo_Code) a
             where a.RowNum = 1) as sub_station
 on cpc.Condo_Code = sub_station.Condo_Code
+left join ( select Condo_Code
+				, Price
+				, Price_Date
+				, Condo_Build_Date
+				, Start_or_AVG
+				, Price_Source
+				, Price_Type
+				, Special
+				, Remark
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+					, ap.Price_Type, ap.Special, ap.Remark
+					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
+					FROM all_price_view ap
+					left join price_source ps on ap.Price_Source = ps.ID
+					where ap.Price_Source = 1
+					and ap.Price_Type = 'บ/ตรม') order56_1_sqm
+					where Myorder = 1) cal56_1_sqm
+on cpc.Condo_Code = cal56_1_sqm.Condo_Code
+left join ( select Condo_Code
+				, Price
+				, Price_Date
+				, Condo_Build_Date
+				, Start_or_AVG
+				, Price_Source
+				, Price_Type
+				, Special
+				, Remark
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+					, ap.Price_Type, ap.Special, ap.Remark
+					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
+					FROM all_price_view ap
+					left join price_source ps on ap.Price_Source = ps.ID
+					where ap.Price_Source = 2) order_hip
+					where Myorder = 1) cal_hip
+on cpc.Condo_Code = cal_hip.Condo_Code
+left join ( select Condo_Code
+				, Price
+				, Price_Date
+				, Condo_Build_Date
+				, Start_or_AVG
+				, Price_Source
+				, Price_Type
+				, Special
+				, Remark
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+					, ap.Price_Type, ap.Special, ap.Remark
+					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
+					FROM all_price_view ap
+					left join price_source ps on ap.Price_Source = ps.ID
+					where ap.Price_Source = 4) order_bgsq
+					where Myorder = 1) cal_bgsq
+on cpc.Condo_Code = cal_bgsq.Condo_Code
+left join ( select Condo_Code
+				, Price
+				, Price_Date
+				, Condo_Build_Date
+				, Start_or_AVG
+				, Price_Source
+				, Price_Type
+				, Special
+				, Remark
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+					, ap.Price_Type, ap.Special, ap.Remark
+					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
+					FROM all_price_view ap
+					left join price_source ps on ap.Price_Source = ps.ID
+					where ap.Price_Source = 5) order_d1sq
+					where Myorder = 1) cal_d1sq
+on cpc.Condo_Code = cal_d1sq.Condo_Code
 order by cpc.Condo_Code;
 
 -- -----------------------------------------------------
@@ -628,13 +306,17 @@ CREATE TABLE IF NOT EXISTS `full_template_factsheet` (
     `Province` VARCHAR(150) NOT NULL,
     `Price_Average_Square_Date` VARCHAR(6) NULL,
     `Price_Average_Square` VARCHAR(50) NOT NULL,
+    `Source_Price_Average_Square` VARCHAR(250) NOT NULL,
     `Price_Average_Resale_Square_Date` VARCHAR(6) NULL,
     `Price_Average_Resale_Square` VARCHAR(50) NOT NULL,
+    `Source_Price_Average_Resale_Square` VARCHAR(250) NOT NULL,
     `Price_Start_Square_Date` VARCHAR(6) NULL,
     `Price_Start_Square` VARCHAR(50) NOT NULL,
+    `Source_Price_Start_Square` VARCHAR(250) NOT NULL,
     `Condo_Price_Per_Unit_Text` VARCHAR(60) NOT NULL,
     `Price_Start_Unit_Date` VARCHAR(6) NULL,
     `Price_Start_Unit` VARCHAR(20) NOT NULL,
+    `Source_Price_Start_Unit` VARCHAR(250) NOT NULL,
     `Common_Fee` VARCHAR(50) NOT NULL,
     `Condo_Built_Text` VARCHAR(60) NOT NULL,
     `Condo_Built_Date` VARCHAR(4) NOT NULL,
@@ -642,6 +324,7 @@ CREATE TABLE IF NOT EXISTS `full_template_factsheet` (
     `Condo_Building` VARCHAR(250) NOT NULL,
     `Condo_Total_Unit` VARCHAR(30) NOT NULL,
     `Condo_Sold_Status_Show_Value` VARCHAR(10) NOT NULL,
+    `Source_Condo_Sold_Status_Show_Value` VARCHAR(250) NOT NULL,
     `STU_Size` VARCHAR(50) NOT NULL,
     `1BED_Size` VARCHAR(50) NOT NULL,
     `2BED_Size` VARCHAR(50) NOT NULL,
@@ -715,6 +398,11 @@ BEGIN
     DECLARE v_name39 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name40 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name41 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name42 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name43 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name44 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name45 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name46 VARCHAR(250) DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_full_template_factsheet';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -727,7 +415,16 @@ BEGIN
     DECLARE done INT DEFAULT FALSE;
 
     -- Declare the cursor for the view
-    DECLARE cur CURSOR FOR SELECT * FROM source_full_template_factsheet_view;
+    DECLARE cur CURSOR FOR SELECT Condo_Code, Station, Road_Name, District_Name, Real_District, Province, Price_Average_Square_Date
+                                , Price_Average_Square, Source_Price_Average_Square, Price_Average_Resale_Square_Date
+                                , Price_Average_Resale_Square, Source_Price_Average_Resale_Square, Price_Start_Square_Date
+                                , Price_Start_Square, Source_Price_Start_Square, Condo_Price_Per_Unit_Text, Price_Start_Unit_Date
+                                , Price_Start_Unit, Source_Price_Start_Unit, Common_Fee, Condo_Built_Text, Condo_Built_Date
+                                , Land, Condo_Building, Condo_Total_Unit, Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value
+                                , STU_Size, 1BED_Size, 2BED_Size, 3BED_Size, 4BED_Size, Parking_Amount, Parking_Text, Parking_Type_Amount
+                                , Parking_Per_Unit, Parking_Per_BedRoom, Condo_Fund_Fee, Lift_Type_Text, Lift_Type_Amount
+                                , Passanger_Lift_Unit_Ratio, Lift_Type, Pool_Text, Pool_Size, Pool_2_Text, Pool_2_Size, FactSheet_Status
+                            FROM source_full_template_factsheet_view;
     -- more columns here as needed
 
     -- Declare a continue handler to handle errors
@@ -752,7 +449,7 @@ BEGIN
     -- Start the loop
     read_loop: LOOP
         -- Fetch the next record from the cursor into the variables
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46;
         -- more variables here as needed
 
         -- Check if there are no more records
@@ -770,13 +467,17 @@ BEGIN
                 `Province`,
                 `Price_Average_Square_Date`,
                 `Price_Average_Square`,
+                `Source_Price_Average_Square`,
                 `Price_Average_Resale_Square_Date`,
                 `Price_Average_Resale_Square`,
+                `Source_Price_Average_Resale_Square`,
                 `Price_Start_Square_Date`,
                 `Price_Start_Square`,
+                `Source_Price_Start_Square`,
                 `Condo_Price_Per_Unit_Text`,
                 `Price_Start_Unit_Date`,
                 `Price_Start_Unit`,
+                `Source_Price_Start_Unit`,
                 `Common_Fee`,
                 `Condo_Built_Text`,
                 `Condo_Built_Date`,
@@ -784,6 +485,7 @@ BEGIN
                 `Condo_Building`,
                 `Condo_Total_Unit`,
                 `Condo_Sold_Status_Show_Value`,
+                `Source_Condo_Sold_Status_Show_Value`,
                 `STU_Size`,
                 `1BED_Size`,
                 `2BED_Size`,
@@ -805,7 +507,7 @@ BEGIN
                 `Pool_2_Size`,
                 `FactSheet_Status`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46);
         -- more columns and variables here as needed
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
