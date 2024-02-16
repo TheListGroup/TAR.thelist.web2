@@ -69,19 +69,22 @@ CREATE TABLE IF NOT EXISTS `all_price_view` (
     CONSTRAINT all_price_source FOREIGN KEY (Price_Source) REFERENCES price_source(ID))
 ENGINE = InnoDB;
 
--- Table `condo_price_calculate_view_new`
-CREATE TABLE IF NOT EXISTS `condo_price_calculate_view_new` (
+-- Table `condo_price_calculate_view`
+CREATE TABLE IF NOT EXISTS `condo_price_calculate_view` (
     ID SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     Condo_Code VARCHAR(10) NOT NULL,
     Old_or_New VARCHAR(30) NULL,
     Condo_Age_Status_Square_Text VARCHAR(20) NULL,
     Condo_Price_Per_Square FLOAT NULL,
     Condo_Price_Per_Square_Date DATE NULL,
+    Source_Condo_Price_Per_Square VARCHAR(250) NULL,
     Condo_Price_Per_Unit_Text VARCHAR(20) NULL,
     Condo_Price_Per_Unit FLOAT NULL,
     Condo_Price_Per_Unit_Date DATE NULL,
+    Source_Condo_Price_Per_Unit VARCHAR(250) NULL,
     Condo_Sold_Status_Show_Value VARCHAR(10) NULL,
     Condo_Sold_Status_Date DATE NULL,
+    Source_Condo_Sold_Status_Show_Value VARCHAR(250) NULL,
     Condo_Built_Text VARCHAR(20) NULL,
     Condo_Built_Date YEAR NULL,
     Condo_Date_Calculate DATE NULL,
