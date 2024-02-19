@@ -88,8 +88,10 @@ CREATE TABLE IF NOT EXISTS `condo_price_calculate_view` (
     Condo_Built_Text VARCHAR(20) NULL,
     Condo_Built_Date YEAR NULL,
     Condo_Date_Calculate DATE NULL,
-    Condo_Price_Per_Square_New FLOAT NULL,
-    Condo_Price_Per_Unit_New FLOAT NULL,
+    Condo_Price_Per_Square_Cal FLOAT NULL,
+    Condo_Price_Per_Unit_Cal FLOAT NULL,
+    Condo_Price_Per_Square_Sort FLOAT NULL,
+    Condo_Price_Per_Unit_Sort FLOAT NULL,
     PRIMARY KEY (`ID`),
     INDEX cpc_condo_code (Condo_Code),
     INDEX cpc_cal_date (Condo_Date_Calculate))
