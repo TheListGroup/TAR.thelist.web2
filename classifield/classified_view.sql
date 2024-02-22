@@ -200,6 +200,13 @@ select c.Classified_ID
     , cu.Email as Mail
     , c.Classified_Status as Classified_Status
     , cu.First_Name as Agent_Name
+    , td.name_th as District_Name
+    , ts.name_th as SubDistrict_Name
+    , tp.name_th as Province_Name
+    , rc.Condo_Latitude as Condo_Latitude
+    , rc.Condo_Longitude as Condo_Longitude
+    , c.Sale as Sale
+    , c.Rent as Rent
 from classified c
 left join ( SELECT rc.Condo_Code, 
                 if(Condo_ENName1 is not null
@@ -246,8 +253,19 @@ on c.Classified_ID = classified_fac.Classified_ID
 left join real_condo_price rcp on c.Condo_Code = rcp.Condo_Code
 left join classified_user cu on c.User_ID = cu.User_ID
 left join real_condo rc on c.Condo_Code = rc.Condo_Code
+left join thailand_district td on rc.District_ID = td.district_code
+left join thailand_subdistrict ts on rc.SubDistrict_ID = ts.subdistrict_code
+left join thailand_province tp on rc.Province_ID = tp.province_code
 where c.Classified_Status = '1'
 or c.Classified_Status = '3';
+
+ALTER TABLE classified_detail_view ADD District_Name VARCHAR(150) NULL AFTER Agent_Name;
+ALTER TABLE classified_detail_view ADD SubDistrict_Name VARCHAR(150) NULL AFTER District_Name;
+ALTER TABLE classified_detail_view ADD Province_Name VARCHAR(150) NULL AFTER SubDistrict_Name;
+ALTER TABLE classified_detail_view ADD Condo_Latitude DOUBLE NULL AFTER Province_Name;
+ALTER TABLE classified_detail_view ADD Condo_Longitude DOUBLE NULL AFTER Condo_Latitude;
+ALTER TABLE classified_detail_view ADD Sale BOOLEAN NULL AFTER Condo_Longitude;
+ALTER TABLE classified_detail_view ADD Rent BOOLEAN NULL AFTER Sale;
 
 -- Table `classified_detail_view`
 CREATE TABLE IF NOT EXISTS `classified_detail_view` (
@@ -287,6 +305,13 @@ CREATE TABLE IF NOT EXISTS `classified_detail_view` (
     `Mail` VARCHAR(100) NULL,
     `Classified_Status` ENUM('1','3') NULL,
     `Agent_Name` VARCHAR(50) NOT NULL,
+    `District_Name` VARCHAR(150) NULL,
+    `SubDistrict_Name` VARCHAR(150) NULL,
+    `Province_Name` VARCHAR(150) NULL,
+    `Condo_Latitude` DOUBLE NULL,
+    `Condo_Longitude` DOUBLE NULL,
+    `Sale` BOOLEAN NULL,
+    `Rent` BOOLEAN NULL,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;
 
@@ -333,6 +358,13 @@ BEGIN
     DECLARE v_name32 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name33 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name34 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name35 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name36 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name37 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name38 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name39 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name40 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name41 VARCHAR(250) DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(70) DEFAULT 'truncateInsert_classified_detail_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -348,7 +380,8 @@ BEGIN
                                     ,Facilities,Description,Sale_Transfer_Fee,Sub_Sale_Transfer_Fee,Sale_Deposit,Sub_Sale_Deposit
                                     ,Sale_Mortgage_Costs,Sub_Sale_Mortgage_Costs,Condo_Common_Fee,Sub_Condo_Common_Fee,Min_Rental_Contract
                                     ,Sub_Min_Rental_Contract,Rent_Deposit,Sub_Rent_Deposit,Advance_Payment,Sub_Advance_Payment,Mail
-                                    ,Classified_Status,Agent_Name
+                                    ,Classified_Status,Agent_Name,District_Name,SubDistrict_Name,Province_Name,Condo_Latitude
+                                    ,Condo_Longitude,Sale,Rent
                             FROM source_classified_detail_view;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -367,7 +400,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41;
 
         IF done THEN
             LEAVE read_loop;
@@ -409,9 +442,16 @@ BEGIN
                 `Sub_Advance_Payment`,
                 `Mail`,
                 `Classified_Status`,
-                `Agent_Name`
+                `Agent_Name`,
+                `District_Name`,
+                `SubDistrict_Name`,
+                `Province_Name`,
+                `Condo_Latitude`,
+                `Condo_Longitude`,
+                `Sale`,
+                `Rent`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
