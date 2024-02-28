@@ -320,6 +320,16 @@ BEGIN
 	DECLARE v_name34 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name35 TEXT DEFAULT NULL;
     DECLARE v_name36 TEXT DEFAULT NULL;
+	DECLARE v_name37 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name38 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name39 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name40 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name41 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name42 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name43 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name44 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name45 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name46 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_housing_fetch_for_map';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -335,7 +345,9 @@ BEGIN
                                 , Housing_Longitude, Brand_Code, Developer_Code, RealSubDistrict_Code, RealDistrict_Code, SubDistrict_ID
                                 , District_ID, Province_ID, Housing_URL_Tag, Housing_Cover, Express_Way, Station, Total_Point, Housing_Age
                                 , Housing_Area_Min, Housing_Area_Max, Usable_Area_Min, Usable_Area_Max, Price_Min, Price_Max, Price_Carousel
-                                , Housing_Area_Carousel, Usable_Area_Carousel, Housing_Around_Line, Spotlight_List
+                                , Housing_Area_Carousel, Usable_Area_Carousel, Housing_Around_Line, Spotlight_List, TotalUnit
+								, TotalRai, Common_Fee_Min, Common_Fee_Max, Bedroom_Min, Bedroom_Max, Bathroom_Min, Bathroom_Max
+								, Parking_Min, Parking_Max
                             FROM source_housing_fetch_for_map;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -354,7 +366,7 @@ BEGIN
     OPEN cur;
     
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46;
         
         IF done THEN
             LEAVE read_loop;
@@ -399,8 +411,18 @@ BEGIN
                 , Usable_Area_Carousel
                 , Housing_Around_Line
                 , Spotlight_List
+				, TotalUnit
+				, TotalRai
+				, Common_Fee_Min
+				, Common_Fee_Max
+				, Bedroom_Min
+				, Bedroom_Max
+				, Bathroom_Min
+				, Bathroom_Max
+				, Parking_Min
+				, Parking_Max
 				)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46);
         
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;

@@ -361,6 +361,16 @@ select a.Housing_ID as Housing_ID
                 , format(ifnull(a.Housing_Usable_Area_Max,a.Housing_Usable_Area_Min),0)) as Usable_Area_Carousel
     , housing_line.Housing_Around_Line as Housing_Around_Line
     , housing_spotlight.Spotlight_List as Spotlight_List
+    , a.Housing_TotalUnit as TotalUnit
+    , a.Housing_TotalRai as TotalRai
+    , a.Housing_Common_Fee_Min as Common_Fee_Min
+    , a.Housing_Common_Fee_Max as Common_Fee_Max
+    , a.Bedroom_Min as Bedroom_Min
+    , a.Bedroom_Max as Bedroom_Max
+    , a.Bathroom_Min as Bathroom_Min
+    , a.Bathroom_Max as Bathroom_Max
+    , a.Housing_Parking_Min as Parking_Min
+    , a.Housing_Parking_Max as Parking_Max
 from housing a 
 left join housing_factsheet_view b on a.Housing_Code = b.Housing_Code
 left join (select housing_around_station.Housing_Code AS Housing_Code,

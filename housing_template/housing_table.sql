@@ -442,6 +442,16 @@ CREATE TABLE IF NOT EXISTS housing_fetch_for_map (
     Usable_Area_Carousel VARCHAR(30) NULL,
     Housing_Around_Line TEXT NULL,
     Spotlight_List TEXT NULL,
+    TotalUnit INT NULL,
+    TotalRai FLOAT(10,5) NULL,
+    Common_Fee_Min INT NULL,
+    Common_Fee_Max INT NULL,
+    Bedroom_Min INT NULL,
+    Bedroom_Max INT NULL,
+    Bathroom_Min INT NULL,
+    Bathroom_Max INT NULL,
+    Parking_Min INT NULL,
+    Parking_Max INT NULL,
     PRIMARY KEY (ID))
 ENGINE = InnoDB;
 
