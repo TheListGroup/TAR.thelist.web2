@@ -1,6 +1,5 @@
 -- Table housing
     -- function check null
-    -- cal totalRai
     -- table housing_around_station
     -- table housing_around_express_way
     -- table housing_popular_carousel
@@ -366,10 +365,6 @@ CREATE TABLE IF NOT EXISTS housing (
     CONSTRAINT home_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
     CONSTRAINT home_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID))
 ENGINE = InnoDB;
-
--- cal totalRai
-update real_housing
-set Housing_TotalRai = (Housing_LandNgan*100) + Housing_LandWa / 400 + Housing_LandRai;
 
 -- table housing_factsheet_view
 CREATE TABLE IF NOT EXISTS housing_factsheet_view (
