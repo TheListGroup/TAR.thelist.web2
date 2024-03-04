@@ -72,8 +72,10 @@ CREATE TABLE housing_spotlight (
     Menu_List int NOT NULL,
     Menu_Price_Order int NOT NULL,
     Spotlight_Cover int NOT NULL,
-    Spotlight_Title varchar(250) NOT NULL,
-    Spotlight_Description text NOT NULL,
+    Spotlight_Title varchar(250) NULL,
+    Spotlight_Description text NULL,
+    Spotlight_Description_Start text NULL,
+    Spotlight_Description_End text NULL,
     Keyword_TH text null,
     Keyword_ENG text null,
     PRIMARY KEY (Spotlight_ID))
