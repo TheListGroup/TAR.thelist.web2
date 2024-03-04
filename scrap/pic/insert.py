@@ -32,8 +32,8 @@ for root, dirs, files in os.walk(starting_directory):
             insert_list.append((housing_code, x+1, re.sub(file[-9:-5],'',file), file))
             x += 1
             a += 1
-        if a % 10000 == 0:
-            print(f"Prepare {a} Image")
+            if a % 10000 == 0:
+                print(f"Prepare {a} Image")
 
 data = len(insert_list)
 
