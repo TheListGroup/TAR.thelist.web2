@@ -207,6 +207,31 @@ select c.Classified_ID
     , rc.Condo_Longitude as Condo_Longitude
     , c.Sale as Sale
     , c.Rent as Rent
+    , concat_ws(' ' ,if(c.Sale = 1 and c.Rent = 1
+                        , 'ขายและให้เช่าคอนโด'
+                        , if(c.Sale = 1
+                            , 'ขายคอนโด'
+                            , if(c.Rent = 1 
+                                , 'ให้เช่าคอนโด'
+                                , null)))
+                , namee.condo_name, concat(c.BedRoom,'นอน')
+                , concat(c.BathRoom,'น้ำ'), concat('[REAL DATA ',c.Classified_ID,']')) as Classified_Title
+    , concat_ws(' ', if(c.Price_Sale is not null and c.Price_Rent is not null
+                        , concat_ws(' ', concat('ขาย ',round(c.Price_Sale/1000000,1), ' ลบ.'), concat('เช่า ', format(c.Price_Rent,0), ' บ./เดือน'))
+                        , if(c.Price_Sale is not null
+                            , concat('ขาย ',round(c.Price_Sale/1000000,1), ' ลบ.')
+                            , if(c.Price_Rent is not null
+                                , concat('เช่า ', format(c.Price_Rent,0), ' บ./เดือน')
+                                , null)))
+                    , concat(round(c.Size), ' ตร.ม.'), concat(c.BedRoom,'นอน'), concat(c.BathRoom,'น้ำ')
+                    , if(ym.District_Name is not null and sub_station.Station is not null
+                        , concat('คอนโดย่าน', ym.District_Name, ' ใกล้รฟฟ.สถานี', sub_station.Station)
+                        , if(ym.District_Name is not null
+                            , concat('คอนโดย่าน', ym.District_Name)
+                            , if(sub_station.Station is not null
+                                , concat('คอนโดใกล้รฟฟ.สถานี', sub_station.Station)
+                                , concat('คอนโด ', namee.condo_name))))
+                    , '| REAL DATA รวมข้อมูลคอนโด ประกาศขายเช่า') as Classified_Description
 from classified c
 left join ( SELECT rc.Condo_Code, 
                 if(Condo_ENName1 is not null
@@ -256,8 +281,19 @@ left join real_condo rc on c.Condo_Code = rc.Condo_Code
 left join thailand_district td on rc.District_ID = td.district_code
 left join thailand_subdistrict ts on rc.SubDistrict_ID = ts.subdistrict_code
 left join thailand_province tp on rc.Province_ID = tp.province_code
+left join real_yarn_main ym on rc.RealDistrict_Code = ym.District_Code
+left join ( select Condo_Code,Station_THName_Display as Station
+            from (  select cv.Condo_Code
+                            , ms.Station_THName_Display
+                            , ROW_NUMBER() OVER (PARTITION BY cv.Condo_Code ORDER BY cv.Total_Point) AS RowNum
+                    from condo_around_station_view as cv 
+                    inner join mass_transit_station as ms on cv.Station_Code = ms.Station_Code
+                    order by cv.Condo_Code) a
+            where a.RowNum = 1) as sub_station
+on rc.Condo_Code = sub_station.Condo_Code
 where c.Classified_Status = '1'
-or c.Classified_Status = '3';
+or c.Classified_Status = '3'
+order by c.Classified_ID;
 
 ALTER TABLE classified_detail_view ADD District_Name VARCHAR(150) NULL AFTER Agent_Name;
 ALTER TABLE classified_detail_view ADD SubDistrict_Name VARCHAR(150) NULL AFTER District_Name;
@@ -266,6 +302,8 @@ ALTER TABLE classified_detail_view ADD Condo_Latitude DOUBLE NULL AFTER Province
 ALTER TABLE classified_detail_view ADD Condo_Longitude DOUBLE NULL AFTER Condo_Latitude;
 ALTER TABLE classified_detail_view ADD Sale BOOLEAN NULL AFTER Condo_Longitude;
 ALTER TABLE classified_detail_view ADD Rent BOOLEAN NULL AFTER Sale;
+ALTER TABLE classified_detail_view ADD Classified_Title TEXT NULL AFTER Rent;
+ALTER TABLE classified_detail_view ADD Classified_Description TEXT NULL AFTER Classified_Title;
 
 -- Table `classified_detail_view`
 CREATE TABLE IF NOT EXISTS `classified_detail_view` (
@@ -312,6 +350,8 @@ CREATE TABLE IF NOT EXISTS `classified_detail_view` (
     `Condo_Longitude` DOUBLE NULL,
     `Sale` BOOLEAN NULL,
     `Rent` BOOLEAN NULL,
+    `Classified_Title` TEXT NULL,
+    `Classified_Description` TEXT NULL,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;
 
@@ -365,6 +405,8 @@ BEGIN
     DECLARE v_name39 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name40 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name41 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name42 TEXT DEFAULT NULL;
+    DECLARE v_name43 TEXT DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(70) DEFAULT 'truncateInsert_classified_detail_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -381,7 +423,7 @@ BEGIN
                                     ,Sale_Mortgage_Costs,Sub_Sale_Mortgage_Costs,Condo_Common_Fee,Sub_Condo_Common_Fee,Min_Rental_Contract
                                     ,Sub_Min_Rental_Contract,Rent_Deposit,Sub_Rent_Deposit,Advance_Payment,Sub_Advance_Payment,Mail
                                     ,Classified_Status,Agent_Name,District_Name,SubDistrict_Name,Province_Name,Condo_Latitude
-                                    ,Condo_Longitude,Sale,Rent
+                                    ,Condo_Longitude,Sale,Rent,Classified_Title,Classified_Description
                             FROM source_classified_detail_view;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -400,7 +442,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43;
 
         IF done THEN
             LEAVE read_loop;
@@ -449,9 +491,11 @@ BEGIN
                 `Condo_Latitude`,
                 `Condo_Longitude`,
                 `Sale`,
-                `Rent`
+                `Rent`,
+                `Classified_Title`,
+                `Classified_Description`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
