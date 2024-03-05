@@ -194,7 +194,8 @@ select a.Housing_ID as Housing_ID
     , a.Housing_Cover AS Housing_Cover
     , express_way.Housing_around_express_way as Express_Way
     , station.Housing_around_station as Station
-    , ROUND(1 + RAND() * 49, 1) as Total_Point
+    , ifnull(a.Price_Min_Point, 0) + ifnull(a.No_of_Unit_Point, 0) + ifnull(a.Age_Point, 0) + ifnull(a.ListCompany_Point, 0)
+        + ifnull(a.DistanceFromStation_Point, 0) + ifnull(a.DistanceFromExpressway_Point , 0) as Total_Point
     , if(a.Housing_Built_Start is null
         , if(a.Housing_Built_Finished is null
             , NULL
