@@ -83,7 +83,6 @@ ENGINE = InnoDB;
 
 -- -----------------------------------------------------
 -- Table housing
----- รอเพิ่ม column คะแนน
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS housing (
     Housing_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -137,6 +136,12 @@ CREATE TABLE IF NOT EXISTS housing (
     IS_SH BOOLEAN NOT NULL DEFAULT 0,
     Housing_Spotlight_1 VARCHAR(250) NULL,
     Housing_Spotlight_2 VARCHAR(250) NULL,
+    Price_Min_Point FLOAT null,
+    No_of_Unit_Point FLOAT null,
+    Age_Point FLOAT null,
+    ListCompany_Point FLOAT null,
+    DistanceFromStation_Point FLOAT null,
+    DistanceFromExpressway_Point FLOAT null,
     Realist_Score DECIMAL(44,12) NULL,
     Housing_URL_Tag VARCHAR(200) NULL DEFAULT NULL,
     Housing_Cover BOOLEAN NOT NULL DEFAULT 0,
