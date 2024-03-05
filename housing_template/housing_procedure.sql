@@ -553,3 +553,16 @@ BEGIN
 
 END$$
 DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS HousingUpdate;
+DELIMITER $$
+
+CREATE PROCEDURE HousingUpdate ()
+BEGIN
+
+	CALL updateHousing5Point();
+	CALL truncateInsertHousingViewToTable();
+
+END$$
+DELIMITER ;
