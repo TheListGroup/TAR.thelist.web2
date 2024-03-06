@@ -3,6 +3,9 @@
 -- procedure truncateInsert_housing_factsheet_view
 -- procedure truncateInsert_housing_fetch_for_map
 -- procedure truncateInsert_housing_article_fetch_for_map
+-- procedure updateHousingCountProvince
+-- procedure updateHousingCountYarnMain
+-- procedure updateHousingCountYarnSub
 -- procedure truncateInsertHousingViewToTable
 
 -- procedure truncateInsert_housing_around_station
@@ -536,6 +539,180 @@ END //
 DELIMITER ;
 
 
+-- procedure updateHousingCountProvince
+DROP PROCEDURE IF EXISTS updateHousingCountProvince;
+DELIMITER //
+
+CREATE PROCEDURE updateHousingCountProvince ()
+BEGIN
+	DECLARE finished    INTEGER     DEFAULT 0;
+	DECLARE eachProvince VARCHAR(20) DEFAULT NULL;
+
+	DECLARE proc_name       VARCHAR(50) DEFAULT 'updateHousingCountProvince';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE rowCount        INTEGER     DEFAULT 0;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+	DECLARE errorcheck      BOOLEAN		DEFAULT 1;
+
+		DEClARE curProvince CURSOR FOR SELECT province_code FROM thailand_province;
+
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
+
+		DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+        BEGIN
+            GET DIAGNOSTICS CONDITION 1
+                code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT; 
+            INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+			set errorcheck = 0;
+        END;
+
+    OPEN curProvince;
+
+	updateCondoCount: LOOP
+		FETCH curProvince INTO eachProvince;
+		IF finished = 1 THEN 
+			LEAVE updateCondoCount;
+		END IF;
+
+        UPDATE  thailand_province
+        SET	    Housing_Count = ( SELECT  COUNT(HFRM.Housing_Code) 
+                                FROM    housing_fetch_for_map HFRM
+								WHERE   HFRM.Province_ID = eachProvince)
+        WHERE   province_code = eachProvince;
+
+		GET DIAGNOSTICS nrows = ROW_COUNT;
+        SET rowCount = rowCount + nrows;
+
+	END LOOP updateCondoCount;
+
+	if errorcheck then
+		SET code    = '00000';
+		SET msg     = CONCAT(rowCount,' rows changed.');
+		INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+	end if;
+
+    CLOSE curProvince;
+END//
+DELIMITER ;
+
+
+-- procedure updateHousingCountYarnMain
+DROP PROCEDURE IF EXISTS updateHousingCountYarnMain;
+DELIMITER //
+
+CREATE PROCEDURE updateHousingCountYarnMain ()
+BEGIN
+	DECLARE finished    INTEGER     DEFAULT 0;
+	DECLARE eachYarnMain VARCHAR(20) DEFAULT NULL;
+
+	DECLARE proc_name       VARCHAR(50) DEFAULT 'updateHousingCountYarnMain';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE rowCount        INTEGER     DEFAULT 0;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+	DECLARE errorcheck      BOOLEAN		DEFAULT 1;
+
+		DEClARE curYarnMain CURSOR FOR SELECT District_Code FROM real_yarn_main;
+
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
+
+		DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+        BEGIN
+            GET DIAGNOSTICS CONDITION 1
+                code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT; 
+            INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+			set errorcheck = 0;
+        END;
+	
+    OPEN curYarnMain;
+
+	updateCondoCount: LOOP
+		FETCH curYarnMain INTO eachYarnMain;
+		IF finished = 1 THEN 
+			LEAVE updateCondoCount;
+		END IF;
+
+        UPDATE  real_yarn_main
+        SET	    Condo_Count = ( SELECT  COUNT(HFRM.Housing_Code) 
+                                FROM    housing_fetch_for_map HFRM
+								WHERE   HFRM.RealDistrict_Code = eachYarnMain)
+        WHERE   District_Code = eachYarnMain;
+
+		GET DIAGNOSTICS nrows = ROW_COUNT;
+        SET rowCount = rowCount + nrows;
+
+	END LOOP updateCondoCount;
+
+	if errorcheck then
+		SET code    = '00000';
+		SET msg     = CONCAT(rowCount,' rows changed.');
+		INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+	end if;
+	
+    CLOSE curYarnMain;
+END//
+DELIMITER ;
+
+
+-- procedure updateHousingCountYarnSub
+DROP PROCEDURE IF EXISTS updateHousingCountYarnSub;
+DELIMITER //
+
+CREATE PROCEDURE updateHousingCountYarnSub ()
+BEGIN
+	DECLARE finished    INTEGER     DEFAULT 0;
+	DECLARE eachYarnSub VARCHAR(20) DEFAULT NULL;
+
+	DECLARE proc_name       VARCHAR(50) DEFAULT 'updateHousingCountYarnSub';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE rowCount        INTEGER     DEFAULT 0;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+	DECLARE errorcheck      BOOLEAN		DEFAULT 1;
+
+		DEClARE curYarnSub CURSOR FOR SELECT SubDistrict_Code FROM real_yarn_sub;
+
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
+
+		DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+        BEGIN
+            GET DIAGNOSTICS CONDITION 1
+                code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT; 
+            INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+			set errorcheck = 0;
+        END;
+	
+    OPEN curYarnSub;
+
+	updateCondoCount: LOOP
+		FETCH curYarnSub INTO eachYarnSub;
+		IF finished = 1 THEN 
+			LEAVE updateCondoCount;
+		END IF;
+
+        UPDATE  real_yarn_sub
+        SET	    Condo_Count = ( SELECT  COUNT(HFRM.Condo_Code) 
+                                FROM    housing_fetch_for_map HFRM
+								WHERE   HFRM.RealSubDistrict_Code = eachYarnSub)
+        WHERE   SubDistrict_Code = eachYarnSub;
+
+		GET DIAGNOSTICS nrows = ROW_COUNT;
+        SET rowCount = rowCount + nrows;
+
+	END LOOP updateCondoCount;
+
+	if errorcheck then
+		SET code    = '00000';
+		SET msg     = CONCAT(rowCount,' rows changed.');
+		INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+	end if;
+	
+    CLOSE curYarnSub;
+END//
+DELIMITER ;
+
+
 -- truncateInsertHousingViewToTable
 DROP PROCEDURE IF EXISTS truncateInsertHousingViewToTable;
 DELIMITER $$
@@ -546,7 +723,6 @@ BEGIN
 	CALL truncateInsert_housing_around_station();
     CALL truncateInsert_housing_around_express_way();
     CALL truncateInsert_housing_spotlight();
-    CALL updatehousingCountSpotlight();
     CALL truncateInsert_housing_factsheet_view();
     CALL truncateInsert_housing_fetch_for_map();
     CALL truncateInsert_housing_article_fetch_for_map();
@@ -554,7 +730,22 @@ BEGIN
 END$$
 DELIMITER ;
 
+--
+DROP PROCEDURE IF EXISTS UpdateHousingCount;
+DELIMITER $$
 
+CREATE PROCEDURE UpdateHousingCount ()
+BEGIN
+
+	CALL updatehousingCountSpotlight();
+	CALL updateHousingCountProvince();
+	CALL updateHousingCountYarnMain();
+	CALL updateHousingCountYarnSub();
+
+END$$
+DELIMITER ;
+
+--
 DROP PROCEDURE IF EXISTS HousingUpdate;
 DELIMITER $$
 
@@ -562,6 +753,7 @@ CREATE PROCEDURE HousingUpdate ()
 BEGIN
 
 	CALL updateHousing5Point();
+	CALL UpdateHousingCount();
 	CALL truncateInsertHousingViewToTable();
 
 END$$
