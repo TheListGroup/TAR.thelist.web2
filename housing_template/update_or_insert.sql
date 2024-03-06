@@ -1,7 +1,9 @@
 -- insert housing_spotlight
 -- update Spotlight_Description
--- update mass_transit_line
 -- insert housing_popular_carousel
+-- real_yarn_main
+-- real_yarn_sub
+-- thailand_province
 
 -- insert housing_spotlight
 INSERT INTO housing_spotlight (Spotlight_Order, Spotlight_Type, Spotlight_Code, Spotlight_Name, Spotlight_Label, Spotlight_Icon
@@ -120,12 +122,6 @@ update housing_spotlight set Spotlight_Description_End = 'ทุกแบรน�
 update housing_spotlight set Spotlight_Description_End = 'ที่มีจอดรถเยอะ เอาใจคนรักรถ ทั้งโครงการใหม่และโครงการพร้อมอยู่ มาพร้อมข้อมูล ราคา แผนที่ และสิ่งอำนวยความสะดวกที่อยู่ใกล้เคียง' where Spotlight_Code = 'PS021';
 update housing_spotlight set Spotlight_Description_End = 'หลายห้องนอน (4 ห้องนอนขึ้นไป) ทุกแบรนด์ มาพร้อมข้อมูลระดับราคาของแต่ละโซน แผนที่ และสิ่งอำนวยความสะดวกที่อยู่ใกล้เคียง' where Spotlight_Code = 'PS022';
 update housing_spotlight set Spotlight_Description_End = 'ทำเลดี ใกล้โรงพยาบาล ทุกแบรนด์ มาพร้อมข้อมูลระดับราคาของแต่ละโซน แผนที่ และสิ่งอำนวยความสะดวกที่อยู่ใกล้เคียง' where Spotlight_Code = 'PS023';
-
--- update mass_transit_line
-ALTER TABLE mass_transit_line ADD MTrand_ID INT NULL AFTER Line_Name;
-update mass_transit_line set MTrand_ID = 1 where Line_Code in ('LINE01','LINE02','LINE11');
-update mass_transit_line set MTrand_ID = 2 where Line_Code in ('LINE04','LINE05','LINE06','LINE07','LINE10','LINE12','LINE13');
-update mass_transit_line set MTrand_ID = 3 where Line_Code in ('LINE09');
 
 
 -- insert housing_popular_carousel
@@ -256,3 +252,12 @@ values ('Home','Custom','CUS007',1)
     , ('SH','Custom','CUS039',19)
     , ('SH','Custom','CUS040',20)
     , ('SH','Spotlight','PS019',21);
+
+-- real_yarn_main
+ALTER TABLE real_yarn_main ADD Housing_Count INT NOT NULL AFTER Condo_Count;
+
+-- real_yarn_sub
+ALTER TABLE real_yarn_sub ADD Housing_Count INT NOT NULL AFTER Condo_Count;
+
+-- thailand_province
+ALTER TABLE thailand_province ADD Housing_Count INT NOT NULL AFTER Condo_Count;
