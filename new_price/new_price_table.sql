@@ -2,7 +2,7 @@
 -- price_source
 -- real_condo_price_new
 -- all_price_view
---
+--condo_price_calculate_view
 
 -- Table `real_condo_dd`
 CREATE TABLE IF NOT EXISTS `real_condo_dd` (
