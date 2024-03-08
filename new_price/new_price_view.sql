@@ -7,12 +7,12 @@ select * from (select Condo_Code, Price, Price_Date, Condo_Build_Date, Start_or_
 				from real_condo_price_new
 				where Price_Status = '1') np
 union all select * from (select Condo_Code
-						, if(Data_Attribute='price_per_sqm',Data_Value,Data_Value*1000000) as Price
+						, if(Data_Attribute='price_per_sqm',round(Data_Value),round(Data_Value*1000000,-4)) as Price
 						, Data_Date as Price_Date
 						, '0' as Condo_Build_Date
 						, 'เฉลี่ย' as Start_or_Average
 						, '0' as Resale
-						, 1 as Price_Source
+						, 9 as Price_Source
 						, if(Data_Attribute='price_per_sqm','บ/ตรม','บ/ยูนิต') as Price_Type
 						, '0' as Special
 						, null as Remark
@@ -25,7 +25,7 @@ union all select * from (select Condo_Code
 						, '0' as Condo_Build_Date
 						, 'เฉลี่ย' as Start_or_Average
 						, '1' as Resale
-						, 2 as Price_Source
+						, 13 as Price_Source
 						, 'บ/ตรม' as Price_Type
 						, '0' as Special
 						, null as Remark
@@ -50,9 +50,9 @@ select a.Condo_Code
 					, 'OLD-launchDate-HighRise(3)'
 					, 'NEW-launchDate-HighRise(3)'))
 			, 'OLD-donno')) as Old_or_New
-	, if(cal56_1_sqm.Price is not null or cal_hip.Price is not null
+	, if(avg_compre_sqm.Price is not null or avg_dev_survey_sqm.Price is not null or resale.Price is not null
 		, 'ราคาเฉลี่ย'
-		, if(cal_bgsq.Price is not null or cal_d1sq.Price is not null
+		, if(start_compre_sqm.Price is not null or start_dev_survey_sqm.Price is not null
 			, 'ราคาเริ่มต้น'
 			, '')) as Condo_Age_Status_Square_Text
 	, if(if(b.Condo_Built_Finished is not null
@@ -68,14 +68,16 @@ select a.Condo_Code
 						, 'OLD'
 						, 'NEW'))
 				, 'OLD')) = 'NEW'
-		, ifnull(cal56_1_sqm.Price
-			, ifnull(cal_hip.Price
-				, ifnull(cal_bgsq.Price
-					, cal_d1sq.Price)))
-		, ifnull(cal_hip.Price
-			, ifnull(cal56_1_sqm.Price
-				, ifnull(cal_bgsq.Price
-					, cal_d1sq.Price)))) as Condo_Price_Per_Square
+		, ifnull(avg_compre_sqm.Price
+			, ifnull(avg_dev_survey_sqm.Price
+				, ifnull(resale.Price
+					, ifnull(start_compre_sqm.Price
+						, start_dev_survey_sqm.Price))))
+		, ifnull(resale.Price
+			, ifnull(avg_dev_survey_sqm.Price
+				, ifnull(avg_compre_sqm.Price
+					, ifnull(start_compre_sqm.Price
+						, start_dev_survey_sqm.Price))))) as Condo_Price_Per_Square
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
 				, 'OLD'
@@ -89,24 +91,28 @@ select a.Condo_Code
 						, 'OLD'
 						, 'NEW'))
 				, 'OLD')) = 'NEW'
-		, if(cal56_1_sqm.Price is not null
-			, cal56_1_sqm.Price_Date
-			, if(cal_hip.Price is not null
-				, cal_hip.Price_Date
-				, if(cal_bgsq.Price is not null
-					, cal_bgsq.Price_Date
-					, if(cal_d1sq.Price is not null
-						, cal_d1sq.Price_Date
-						, null))))
-		, if(cal_hip.Price is not null
-			, cal_hip.Price_Date
-			, if(cal56_1_sqm.Price is not null
-				, cal56_1_sqm.Price_Date
-				, if(cal_bgsq.Price is not null
-					, cal_bgsq.Price_Date
-					, if(cal_d1sq.Price is not null
-						, cal_d1sq.Price_Date
-						, null))))) as Condo_Price_Per_Square_Date
+		, if(avg_compre_sqm.Price is not null
+			, avg_compre_sqm.Price_Date
+			, if(avg_dev_survey_sqm.Price is not null
+				, avg_dev_survey_sqm.Price_Date
+				, if(resale.Price is not null
+					, resale.Price_Date
+					, if(start_compre_sqm.Price is not null
+						, start_compre_sqm.Price_Date
+						, if(start_dev_survey_sqm.Price is not null
+							, start_dev_survey_sqm.Price_Date
+							, null)))))
+		, if(resale.Price is not null
+			, resale.Price_Date
+			, if(avg_dev_survey_sqm.Price is not null
+				, avg_dev_survey_sqm.Price_Date
+				, if(avg_compre_sqm.Price is not null
+					, avg_compre_sqm.Price_Date
+					, if(start_compre_sqm.Price is not null
+						, start_compre_sqm.Price_Date
+						, if(start_dev_survey_sqm.Price is not null
+							, start_dev_survey_sqm.Price_Date
+							, null)))))) as Condo_Price_Per_Square_Date
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
 				, 'OLD'
@@ -120,30 +126,30 @@ select a.Condo_Code
 						, 'OLD'
 						, 'NEW'))
 				, 'OLD')) = 'NEW'
-		, ifnull(cal56_1_sqm.Price_Source
-			, ifnull(cal_hip.Price_Source
-				, ifnull(cal_bgsq.Price_Source
-					, cal_d1sq.Price_Source)))
-		, ifnull(cal_hip.Price_Source
-			, ifnull(cal56_1_sqm.Price_Source
-				, ifnull(cal_bgsq.Price_Source
-					, cal_d1sq.Price_Source)))) as Source_Condo_Price_Per_Square
-	, if(cal_bg_u.Price is not null or cal_d1_u.Price is not null
+		, ifnull(avg_compre_sqm.Price_Source
+			, ifnull(avg_dev_survey_sqm.Price_Source
+				, ifnull(resale.Price_Source
+					, ifnull(start_compre_sqm.Price_Source
+						, start_dev_survey_sqm.Price_Source))))
+		, ifnull(resale.Price_Source
+			, ifnull(avg_dev_survey_sqm.Price_Source
+				, ifnull(avg_compre_sqm.Price_Source
+					, ifnull(start_compre_sqm.Price_Source
+						, start_dev_survey_sqm.Price_Source))))) as Source_Condo_Price_Per_Square
+	, if(start_unit.Price is not null
 		, 'ราคาเริ่มต้น'
-		, if(cal56_1_u.Price is not null
+		, if(avg_unit.Price is not null
 			, 'ราคาเฉลี่ย'
 			, '')) as Condo_Price_Per_Unit_Text
-	, ifnull(cal_bg_u.Price
-		, ifnull(cal_d1_u.Price, cal56_1_u.Price)) as Condo_Price_Per_Unit
-	, if(cal_bg_u.Price is not null
-		, cal_bg_u.Price_Date
-		, if(cal_d1_u.Price is not null
-			, cal_d1_u.Price_Date
-			, if(cal56_1_u.Price is not null
-				, cal56_1_u.Price_Date
-				, null))) as Condo_Price_Per_Unit_Date
-	, ifnull(cal_bg_u.Price_Source
-		, ifnull(cal_d1_u.Price_Source, cal56_1_u.Price_Source)) as Source_Condo_Price_Per_Unit
+	, ifnull(start_unit.Price
+		, avg_unit.Price) as Condo_Price_Per_Unit
+	, if(start_unit.Price is not null
+		, start_unit.Price_Date
+		, if(avg_unit.Price is not null
+			, avg_unit.Price_Date
+			, null)) as Condo_Price_Per_Unit_Date
+	, ifnull(start_unit.Price_Source
+		, avg_unit.Price_Source) as Source_Condo_Price_Per_Unit
 	, if(cal_561_mb.Data_Value is not null
 		, if((cal_561_mb.Data_Value/100) <= 0
 			, 'PRESALE'
@@ -197,12 +203,13 @@ select a.Condo_Code
 						, 'OLD'
 						, 'NEW'))
 				, 'OLD')) = 'NEW'
-		, ifnull(cal56_1_sqm_cal_col.Price
-			, cal_hip_cal_col.Price)
-		, ifnull(cal_hip_cal_col.Price
-			, cal56_1_sqm_cal_col.Price)) as Condo_Price_Per_Square_Cal
-	, ifnull(cal_bg_u_cal_col.Price
-		, cal_d1_u_cal_col.Price) as Condo_Price_Per_Unit_Cal
+		, ifnull(avg_compre_sqm_cal.Price
+			, ifnull(avg_dev_survey_sqm_cal.Price
+				, resale_cal.Price))
+		, ifnull(resale_cal.Price
+			, ifnull(avg_dev_survey_sqm_cal.Price
+				, avg_compre_sqm_cal.Price))) as Condo_Price_Per_Square_Cal
+	, start_unit_cal.Price as Condo_Price_Per_Unit_Cal
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
 				, 'OLD'
@@ -216,16 +223,18 @@ select a.Condo_Code
 						, 'OLD'
 						, 'NEW'))
 				, 'OLD')) = 'NEW'
-		, ifnull(cal56_1_sqm_sort.Price
-			, ifnull(cal_hip_sort.Price
-				, ifnull(cal_bgsq_sort.Price
-					, cal_d1sq_sort.Price)))
-		, ifnull(cal_hip_sort.Price
-			, ifnull(cal56_1_sqm_sort.Price
-				, ifnull(cal_bgsq_sort.Price
-					, cal_d1sq_sort.Price)))) as Condo_Price_Per_Square_Sort
-	, ifnull(cal_bg_u_sort.Price
-		, ifnull(cal_d1_u_sort.Price, cal56_1_u_sort.Price)) as Condo_Price_Per_Unit_Sort
+		, ifnull(avg_compre_sqm_cal.Price
+			, ifnull(avg_dev_survey_sqm_cal.Price
+				, ifnull(resale_cal.Price
+					, ifnull(start_compre_sqm_cal.Price
+						, start_dev_survey_sqm_cal.Price))))
+		, ifnull(resale_cal.Price
+			, ifnull(avg_dev_survey_sqm_cal.Price
+				, ifnull(avg_compre_sqm_cal.Price
+					, ifnull(start_compre_sqm_cal.Price
+						, start_dev_survey_sqm_cal.Price))))) as Condo_Price_Per_Square_Sort
+	, ifnull(start_unit_cal.Price
+		, avg_unit_cal.Price) as Condo_Price_Per_Unit_Sort
 from real_condo a
 left join real_condo_price b on a.Condo_Code = b.Condo_Code
 left join ( select Condo_Code
@@ -237,15 +246,17 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 1
-					and ap.Price_Type = 'บ/ตรม') order56_1_sqm
-					where Myorder = 1) cal56_1_sqm
-on a.Condo_Code = cal56_1_sqm.Condo_Code
+					where ps.Head = 'Company Presentation'
+					and ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เฉลี่ย'
+					and ap.Resale = '0') order_compre_sqm
+			where Myorder = 1) avg_compre_sqm
+on a.Condo_Code = avg_compre_sqm.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -255,14 +266,17 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 2) order_hip
-					where Myorder = 1) cal_hip
-on a.Condo_Code = cal_hip.Condo_Code
+					where ps.Head in ('Online Survey','Developer')
+					and ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เฉลี่ย'
+					and ap.Resale = '0') order_dev_survey_sqm
+			where Myorder = 1) avg_dev_survey_sqm
+on a.Condo_Code = avg_dev_survey_sqm.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -272,14 +286,16 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 4) order_bgsq
-					where Myorder = 1) cal_bgsq
-on a.Condo_Code = cal_bgsq.Condo_Code
+					where ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เฉลี่ย'
+					and ap.Resale = '1') order_resale
+			where Myorder = 1) resale
+on a.Condo_Code = resale.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -289,14 +305,17 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 5) order_d1sq
-					where Myorder = 1) cal_d1sq
-on a.Condo_Code = cal_d1sq.Condo_Code
+					where ps.Head = 'Company Presentation'
+					and ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เริ่มต้น'
+					and ap.Resale = '0') order_compre_sqm
+			where Myorder = 1) start_compre_sqm
+on a.Condo_Code = start_compre_sqm.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -306,14 +325,17 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 6) order_bg_u
-					where Myorder = 1) cal_bg_u
-on a.Condo_Code = cal_bg_u.Condo_Code
+					where ps.Head in ('Online Survey','Developer')
+					and ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เริ่มต้น'
+					and ap.Resale = '0') order_compre_sqm
+			where Myorder = 1) start_dev_survey_sqm
+on a.Condo_Code = start_dev_survey_sqm.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -323,14 +345,16 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 7) order_d1_u
-					where Myorder = 1) cal_d1_u
-on a.Condo_Code = cal_d1_u.Condo_Code
+					where ap.Price_Type = 'บ/ยูนิต'
+					and ap.Start_or_AVG = 'เริ่มต้น'
+					and ap.Resale = '0') order_start_unit
+			where Myorder = 1) start_unit
+on a.Condo_Code = start_unit.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -340,15 +364,15 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 1
-					and ap.Price_Type = 'บ/ยูนิต') order56_1_u
-					where Myorder = 1) cal56_1_u
-on a.Condo_Code = cal56_1_u.Condo_Code
+					where ap.Price_Type = 'บ/ยูนิต'
+					and ap.Start_or_AVG = 'เฉลี่ย') order_avg_unit
+			where Myorder = 1) avg_unit
+on a.Condo_Code = avg_unit.Condo_Code
 left join ( select Condo_Code, Data_Date, Data_Attribute, Data_Value, Data_Note, Price_Source
 			from (	select rc561.Condo_Code
 						, rc561.Data_Date
@@ -358,7 +382,7 @@ left join ( select Condo_Code, Data_Date, Data_Attribute, Data_Value, Data_Note,
 						, ps.Head as Price_Source
 						, ROW_NUMBER() OVER (PARTITION BY Condo_Code ORDER BY Data_Date desc) AS Myorder
 					from real_condo_561 rc561
-					cross join (select ID, Head, Sub from price_source where ID = 1) ps
+					cross join (select ID, Head, Sub from price_source where Sub = 'Company Presentation - 56-1') ps
 					where rc561.Data_Status = 1
 					and rc561.Data_Attribute = 'sold_percent') order_561_mb
 			where Myorder = 1) cal_561_mb
@@ -372,16 +396,18 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 1
+					where ps.Head = 'Company Presentation'
 					and ap.Price_Type = 'บ/ตรม'
-					and ap.Special = '0') order56_1_sqm
-					where Myorder = 1) cal56_1_sqm_cal_col
-on a.Condo_Code = cal56_1_sqm_cal_col.Condo_Code
+					and ap.Start_or_AVG = 'เฉลี่ย'
+					and ap.Resale = '0'
+					and ap.Special = '0') order_compre_sqm
+			where Myorder = 1) avg_compre_sqm_cal
+on a.Condo_Code = avg_compre_sqm_cal.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -391,70 +417,18 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 2
-					and ap.Special = '0') order_hip
-					where Myorder = 1) cal_hip_cal_col
-on a.Condo_Code = cal_hip_cal_col.Condo_Code
-left join ( select Condo_Code
-				, Price
-				, Price_Date
-				, Condo_Build_Date
-				, Start_or_AVG
-				, Price_Source
-				, Price_Type
-				, Special
-				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
-					, ap.Price_Type, ap.Special, ap.Remark
-					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
-					FROM all_price_view ap
-					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 6
-					and ap.Special = '0') order_bg_u
-					where Myorder = 1) cal_bg_u_cal_col
-on a.Condo_Code = cal_bg_u_cal_col.Condo_Code
-left join ( select Condo_Code
-				, Price
-				, Price_Date
-				, Condo_Build_Date
-				, Start_or_AVG
-				, Price_Source
-				, Price_Type
-				, Special
-				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
-					, ap.Price_Type, ap.Special, ap.Remark
-					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
-					FROM all_price_view ap
-					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 7
-					and ap.Special = '0') order_d1_u
-					where Myorder = 1) cal_d1_u_cal_col
-on a.Condo_Code = cal_d1_u_cal_col.Condo_Code
-left join ( select Condo_Code
-				, Price
-				, Price_Date
-				, Condo_Build_Date
-				, Start_or_AVG
-				, Price_Source
-				, Price_Type
-				, Special
-				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
-					, ap.Price_Type, ap.Special, ap.Remark
-					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
-					FROM all_price_view ap
-					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 1
+					where ps.Head in ('Online Survey','Developer')
 					and ap.Price_Type = 'บ/ตรม'
-					and ap.Special = '0') order56_1_sqm
-					where Myorder = 1) cal56_1_sqm_sort
-on a.Condo_Code = cal56_1_sqm_sort.Condo_Code
+					and ap.Start_or_AVG = 'เฉลี่ย'
+					and ap.Resale = '0'
+					and ap.Special = '0') order_dev_survey_sqm
+			where Myorder = 1) avg_dev_survey_sqm_cal
+on a.Condo_Code = avg_dev_survey_sqm_cal.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -464,15 +438,17 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 2
-					and ap.Special = '0') order_hip
-					where Myorder = 1) cal_hip_sort
-on a.Condo_Code = cal_hip_sort.Condo_Code
+					where ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เฉลี่ย'
+					and ap.Resale = '1'
+					and ap.Special = '0') order_resale
+			where Myorder = 1) resale_cal
+on a.Condo_Code = resale_cal.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -482,15 +458,18 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 4
-					and ap.Special = '0') order_bgsq
-					where Myorder = 1) cal_bgsq_sort
-on a.Condo_Code = cal_bgsq_sort.Condo_Code
+					where ps.Head = 'Company Presentation'
+					and ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เริ่มต้น'
+					and ap.Resale = '0'
+					and ap.Special = '0') order_compre_sqm
+			where Myorder = 1) start_compre_sqm_cal
+on a.Condo_Code = start_compre_sqm_cal.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -500,15 +479,18 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 5
-					and ap.Special = '0') order_d1sq
-					where Myorder = 1) cal_d1sq_sort
-on a.Condo_Code = cal_d1sq_sort.Condo_Code
+					where ps.Head in ('Online Survey','Developer')
+					and ap.Price_Type = 'บ/ตรม'
+					and ap.Start_or_AVG = 'เริ่มต้น'
+					and ap.Resale = '0'
+					and ap.Special = '0') order_compre_sqm
+			where Myorder = 1) start_dev_survey_sqm_cal
+on a.Condo_Code = start_dev_survey_sqm_cal.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -518,15 +500,17 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 6
-					and ap.Special = '0') order_bg_u
-					where Myorder = 1) cal_bg_u_sort
-on a.Condo_Code = cal_bg_u_sort.Condo_Code
+					where ap.Price_Type = 'บ/ยูนิต'
+					and ap.Start_or_AVG = 'เริ่มต้น'
+					and ap.Resale = '0'
+					and ap.Special = '0') order_start_unit
+			where Myorder = 1) start_unit_cal
+on a.Condo_Code = start_unit_cal.Condo_Code
 left join ( select Condo_Code
 				, Price
 				, Price_Date
@@ -536,34 +520,16 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
 					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 7
-					and ap.Special = '0') order_d1_u
-					where Myorder = 1) cal_d1_u_sort
-on a.Condo_Code = cal_d1_u_sort.Condo_Code
-left join ( select Condo_Code
-				, Price
-				, Price_Date
-				, Condo_Build_Date
-				, Start_or_AVG
-				, Price_Source
-				, Price_Type
-				, Special
-				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
-					, ap.Price_Type, ap.Special, ap.Remark
-					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
-					FROM all_price_view ap
-					left join price_source ps on ap.Price_Source = ps.ID
-					where ap.Price_Source = 1
-					and ap.Price_Type = 'บ/ยูนิต'
-					and ap.Special = '0') order56_1_u
-					where Myorder = 1) cal56_1_u_sort
-on a.Condo_Code = cal56_1_u_sort.Condo_Code
+					where ap.Price_Type = 'บ/ยูนิต'
+					and ap.Start_or_AVG = 'เฉลี่ย'
+					and ap.Special = '0') order_avg_unit
+			where Myorder = 1) avg_unit_cal
+on a.Condo_Code = avg_unit_cal.Condo_Code
 WHERE a.Condo_Latitude is not null
 AND a.Condo_Longitude is not null
 AND a.Province_ID in (10, 11, 12, 13, 73, 74)
