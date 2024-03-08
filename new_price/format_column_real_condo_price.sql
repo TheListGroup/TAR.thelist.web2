@@ -1,0 +1,17 @@
+ALTER TABLE real_condo_price
+DROP Price_Average_56_1_Square,
+DROP Price_Average_56_1_Square_Date,
+DROP Price_Average_Resale_Square,
+DROP Price_Average_Resale_Square_Date,
+DROP Price_Start_Blogger_Square,
+DROP Price_Start_Blogger_Square_Date,
+DROP Price_Start_Day1_Square,
+DROP Price_Start_Day1_Square_Date,
+DROP Price_Start_Blogger_Unit,
+DROP Price_Start_Blogger_Unit_Date,
+DROP Price_Start_Day1_Unit,
+DROP Price_Start_Day1_Unit_Date,
+DROP Price_Start_56_1_Unit,
+DROP Price_Start_56_1_Unit_Date,
+DROP Condo_Sold_Status_56_1_Percent,
+DROP Condo_Sold_Status_56_1_Date;
