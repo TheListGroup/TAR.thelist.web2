@@ -126,7 +126,7 @@ BEGIN
     DECLARE cur CURSOR FOR SELECT Condo_Code, Old_or_New, Condo_Age_Status_Square_Text, Condo_Price_Per_Square
                                 , Condo_Price_Per_Square_Date, Source_Condo_Price_Per_Square, Condo_Price_Per_Unit_Text
                                 , Condo_Price_Per_Unit, Condo_Price_Per_Unit_Date, Source_Condo_Price_Per_Unit
-                                , Condo_Sold_Status_Show_Value, Condo_Sold_Status_Date, Source_Condo_Sold_Status_Show_Value
+                                , Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value, Condo_Sold_Status_Date
                                 , Condo_Built_Text, Condo_Built_Date, Condo_Date_Calculate, Condo_Price_Per_Square_Cal
                                 , Condo_Price_Per_Unit_Cal, Condo_Price_Per_Square_Sort, Condo_Price_Per_Unit_Sort
                                 FROM source_condo_price_calculate_view;
@@ -165,8 +165,8 @@ BEGIN
 				Condo_Price_Per_Unit_Date,
                 Source_Condo_Price_Per_Unit,
 				Condo_Sold_Status_Show_Value,
-				Condo_Sold_Status_Date,
                 Source_Condo_Sold_Status_Show_Value,
+				Condo_Sold_Status_Date,
 				Condo_Built_Text,
 				Condo_Built_Date,
 				Condo_Date_Calculate,
