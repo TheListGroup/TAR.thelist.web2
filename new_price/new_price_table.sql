@@ -19,7 +19,7 @@ ENGINE = InnoDB;
 -- Table `price_source`
 CREATE TABLE IF NOT EXISTS `price_source` (
     ID SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Head VARCHAR(250) NOT NULL,
+    Head ENUM('Company Presentation','Online Survey','Developer') NOT NULL,
     Sub VARCHAR(250) NULL,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;
