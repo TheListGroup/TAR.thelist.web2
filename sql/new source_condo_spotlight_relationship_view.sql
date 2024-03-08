@@ -7,7 +7,7 @@
 ADD `CUS039` VARCHAR(1) NOT NULL AFTER `CUS038`, 
 ADD `CUS040` VARCHAR(1) NOT NULL AFTER `CUS039`;"""
 
-ALTER TABLE `condo_spotlight_relationship_view` 
+"""ALTER TABLE `condo_spotlight_relationship_view` 
 ADD `CUS041` VARCHAR(1) NOT NULL AFTER `CUS040`, 
 ADD `CUS042` VARCHAR(1) NOT NULL AFTER `CUS041`;
 
@@ -34,7 +34,7 @@ UPDATE `real_condo_spotlight` SET `Condo_Count` = 0 WHERE `real_condo_spotlight`
 UPDATE `real_condo_spotlight` SET `Spotlight_Name` = 'คอนโดเปิดตัว 2001 - 2010' 
 WHERE `real_condo_spotlight`.`Spotlight_ID` = 63;
 UPDATE `real_condo_spotlight` SET `Spotlight_Name` = 'คอนโดเปิดตัว 2011 - 2020' 
-WHERE `real_condo_spotlight`.`Spotlight_ID` = 64;
+WHERE `real_condo_spotlight`.`Spotlight_ID` = 64;"""
 
 CREATE or REPLACE VIEW `source_condo_spotlight_relationship_view` AS
 SELECT
@@ -68,8 +68,8 @@ SELECT
     if((`cs7`.`c1` > 0), 'Y', 'N') AS `CUS007`,
     if((`a`.`RealDistrict_Code` = 'M11'), 'Y', 'N') AS `CUS008`,
     if((`d`.`Auto_Parking_Status` = 'Y'), 'Y', 'N') AS `CUS009`,
-    if(((`c`.`Condo_Price_Per_Unit` <= 1000000) and (`c`.`Condo_Price_Per_Unit` > 0)),'Y','N') AS `CUS010`,
-    if(((`c`.`Condo_Price_Per_Unit` <= 2000000) and (`c`.`Condo_Price_Per_Unit` > 1000000)),'Y','N') AS `CUS011`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 1000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 0)),'Y','N') AS `CUS010`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 2000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 1000000)),'Y','N') AS `CUS011`,
     if((`b`.`Condo_Built_Finished` is not null),
         if(((year(curdate()) - year(`b`.`Condo_Built_Finished`)) > 0),
             'Y',
@@ -89,11 +89,11 @@ SELECT
     if((`cs18`.`c1` > 0), 'Y', 'N') AS `CUS018`,
     if((`cs19`.`c1` > 0), 'Y', 'N') AS `CUS019`,
     if((`cs20`.`c1` > 0), 'Y', 'N') AS `CUS020`,
-    if(((`c`.`Condo_Price_Per_Unit` <= 5000000) and (`c`.`Condo_Price_Per_Unit` > 2000000)),'Y','N') AS `CUS021`,
-    if(((`c`.`Condo_Price_Per_Unit` <= 10000000) and (`c`.`Condo_Price_Per_Unit` > 5000000)),'Y','N') AS `CUS022`,
-    if(((`c`.`Condo_Price_Per_Unit` <= 20000000) and (`c`.`Condo_Price_Per_Unit` > 10000000)),'Y','N') AS `CUS023`,
-    if(((`c`.`Condo_Price_Per_Unit` <= 40000000) and (`c`.`Condo_Price_Per_Unit` > 20000000)),'Y','N') AS `CUS024`,
-    if((`c`.`Condo_Price_Per_Unit` > 40000000), 'Y', 'N') AS `CUS025`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 5000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 2000000)),'Y','N') AS `CUS021`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 10000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 5000000)),'Y','N') AS `CUS022`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 20000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 10000000)),'Y','N') AS `CUS023`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 40000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 20000000)),'Y','N') AS `CUS024`,
+    if((`c`.`Condo_Price_Per_Unit_Sort` > 40000000), 'Y', 'N') AS `CUS025`,
     if((`a`.`HoldType_ID` = 1), 'Y', 'N') AS `CUS026`,
     if((`a`.`HoldType_ID` = 2), 'Y', 'N') AS `CUS027`,
     if((`a`.`Condo_LowRise` = 1), 'Y', 'N') AS `CUS028`,
