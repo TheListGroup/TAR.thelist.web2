@@ -510,3 +510,41 @@ BEGIN
     CLOSE cur;
 END //
 DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS Insertclassified_all_logs;
+DELIMITER //
+
+CREATE PROCEDURE Insertclassified_all_logs ()
+BEGIN
+    DECLARE proc_name       VARCHAR(70) DEFAULT 'Insertclassified_all_logs';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE errorcheck      BOOLEAN     DEFAULT 1;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        GET DIAGNOSTICS CONDITION 1
+            code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+        set errorcheck = 0;
+    END;
+
+    INSERT INTO classified_all_logs (Classified_ID, Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale, Sale_with_Tenant
+        , Rent, Price_Sale, Sale_Transfer_Fee, Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract, Rent_Deposit
+        , Advance_Payment, Room_Type, Unit_Floor_Type, Bedroom, Bathroom, Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH
+        , User_ID, Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
+    SELECT Classified_ID, Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale, Sale_with_Tenant, Rent, Price_Sale
+        , Sale_Transfer_Fee, Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract, Rent_Deposit, Advance_Payment
+        , Room_Type, Unit_Floor_Type, Bedroom, Bathroom, Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH, User_ID
+        , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date
+    FROM classified;
+
+    if errorcheck then
+        SET code    = '00000';
+        SET msg     = 'Complete';
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+    end if;
+
+END //
+DELIMITER ;

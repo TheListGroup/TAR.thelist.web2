@@ -158,3 +158,50 @@ CREATE TABLE IF NOT EXISTS `classified_furniture_category_relationships` (
     CONSTRAINT relationship_classified FOREIGN KEY (Classified_ID) REFERENCES classified(Classified_ID),
     CONSTRAINT relationship_furniture FOREIGN KEY (Furniture_ID) REFERENCES classified_furniture(Furniture_ID))
 ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
+-- Table `classified_all_logs`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `classified_all_logs` (
+    `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `Insert_Day` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `Classified_ID` INT UNSIGNED NOT NULL,
+    `Ref_ID` VARCHAR(100) NOT NULL,
+    `Project_ID` VARCHAR(100) NOT NULL,
+    `Title_TH` TEXT NULL,
+    `Title_ENG` TEXT NULL,
+    `Condo_Code` VARCHAR(50) NOT NULL,
+    `Sale` BOOLEAN NOT NULL DEFAULT 0,
+    `Sale_with_Tenant` BOOLEAN NOT NULL DEFAULT 0,
+    `Rent` BOOLEAN NOT NULL DEFAULT 0,
+    `Price_Sale` INT UNSIGNED NULL,
+    `Sale_Transfer_Fee` INT UNSIGNED NULL,
+    `Sale_Deposit` INT UNSIGNED NULL,
+    `Sale_Mortgage_Costs` INT UNSIGNED NULL,
+    `Price_Rent` INT UNSIGNED NULL,
+    `Min_Rental_Contract` SMALLINT UNSIGNED NULL,
+    `Rent_Deposit` SMALLINT UNSIGNED NULL,
+    `Advance_Payment` SMALLINT UNSIGNED NULL,
+    `Room_Type` ENUM('Studio','1 Bedroom','2 Bedroom','3 Bedroom','4 Bedroom') NULL,
+    `Unit_Floor_Type` ENUM('Loft','Duplex') NULL,
+    `Bedroom` SMALLINT UNSIGNED NULL,
+    `Bathroom` SMALLINT UNSIGNED NULL,
+    `Size` FLOAT(8,3) UNSIGNED NULL,
+    `Furnish` ENUM('Unfurnished','Fully Fitted','Fully Furnished') NULL,
+    `Parking` BOOLEAN NULL,
+    `Descriptions_Eng` TEXT NULL,
+    `Descriptions_TH` TEXT NULL,
+    `User_ID` INT UNSIGNED NULL,
+    `Classified_Status` ENUM('0','1','2','3') NULL,
+    `Created_By` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `Created_Date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `Last_Updated_By` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+    `Last_Updated_Date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`ID`),
+    INDEX cl_user (User_ID),
+    INDEX cl_condo (Condo_Code),
+    CONSTRAINT cl_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
+    CONSTRAINT cl_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID),
+    CONSTRAINT classifiedl_user FOREIGN KEY (User_ID) REFERENCES classified_user(User_ID))
+ENGINE = InnoDB;
