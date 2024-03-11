@@ -1,5 +1,6 @@
-SELECT wp.ID, wp.post_title, wp.post_name, if(h.object_id is not null, 'TRUE', 'FALSE') as 'House'
-,if(sd.object_id is not null, 'TRUE', 'FALSE') as 'Single Detached House'
+SELECT wp.ID, wp.post_date, wp.post_title, concat('https://thelist.group/realist/blog/', wp.post_name) as Link
+, if(h.object_id is not null, 'TRUE', 'FALSE') as 'House'
+, if(sd.object_id is not null, 'TRUE', 'FALSE') as 'Single Detached House'
 , if(th.object_id is not null, 'TRUE', 'FALSE') as 'Town Home'
 , if(ho.object_id is not null, 'TRUE', 'FALSE') as 'Home Office'
 , if(sh.object_id is not null, 'TRUE', 'FALSE') as 'Shop House'
