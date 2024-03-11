@@ -22,5 +22,6 @@ left join (select object_id, term_taxonomy_id from wp_term_relationships where t
 on wp.ID = h.object_id
 where wp.post_status = 'publish'
 and wpr.term_taxonomy_id IN (6,7,156,760,867,869,972)
+and wp.post_password = ''
 group by wp.ID
 order by wp.ID;
