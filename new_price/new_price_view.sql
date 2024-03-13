@@ -73,11 +73,13 @@ select a.Condo_Code
 				, ifnull(resale.Price
 					, ifnull(start_compre_sqm.Price
 						, start_dev_survey_sqm.Price))))
-		, ifnull(resale.Price
-			, ifnull(avg_dev_survey_sqm.Price
-				, ifnull(avg_compre_sqm.Price
-					, ifnull(start_compre_sqm.Price
-						, start_dev_survey_sqm.Price))))) as Condo_Price_Per_Square
+		, ifnull(CASE
+				WHEN COALESCE(resale.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm.Price_Date, '1900-01-01'))
+					THEN resale.Price
+				WHEN COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm.Price
+					ELSE avg_compre_sqm.Price
+				END,ifnull(start_compre_sqm.Price, start_dev_survey_sqm.Price))) as Condo_Price_Per_Square
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
 				, 'OLD'
@@ -102,17 +104,13 @@ select a.Condo_Code
 						, if(start_dev_survey_sqm.Price is not null
 							, start_dev_survey_sqm.Price_Date
 							, null)))))
-		, if(resale.Price is not null
-			, resale.Price_Date
-			, if(avg_dev_survey_sqm.Price is not null
-				, avg_dev_survey_sqm.Price_Date
-				, if(avg_compre_sqm.Price is not null
-					, avg_compre_sqm.Price_Date
-					, if(start_compre_sqm.Price is not null
-						, start_compre_sqm.Price_Date
-						, if(start_dev_survey_sqm.Price is not null
-							, start_dev_survey_sqm.Price_Date
-							, null)))))) as Condo_Price_Per_Square_Date
+		, ifnull(CASE
+				WHEN COALESCE(resale.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm.Price_Date, '1900-01-01'))
+					THEN resale.Price_Date
+				WHEN COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm.Price_Date
+					ELSE avg_compre_sqm.Price_Date
+				END,ifnull(start_compre_sqm.Price_Date, start_dev_survey_sqm.Price_Date))) as Condo_Price_Per_Square_Date
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
 				, 'OLD'
@@ -131,11 +129,13 @@ select a.Condo_Code
 				, ifnull(resale.Price_Source
 					, ifnull(start_compre_sqm.Price_Source
 						, start_dev_survey_sqm.Price_Source))))
-		, ifnull(resale.Price_Source
-			, ifnull(avg_dev_survey_sqm.Price_Source
-				, ifnull(avg_compre_sqm.Price_Source
-					, ifnull(start_compre_sqm.Price_Source
-						, start_dev_survey_sqm.Price_Source))))) as Source_Condo_Price_Per_Square
+		, ifnull(CASE
+				WHEN COALESCE(resale.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm.Price_Date, '1900-01-01'))
+					THEN resale.Price_Source
+				WHEN COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm.Price_Source
+					ELSE avg_compre_sqm.Price_Source
+				END,ifnull(start_compre_sqm.Price_Source, start_dev_survey_sqm.Price_Source))) as Source_Condo_Price_Per_Square
 	, if(start_unit.Price is not null
 		, 'ราคาเริ่มต้น'
 		, if(avg_unit.Price is not null
@@ -206,9 +206,13 @@ select a.Condo_Code
 		, ifnull(avg_compre_sqm_cal.Price
 			, ifnull(avg_dev_survey_sqm_cal.Price
 				, resale_cal.Price))
-		, ifnull(resale_cal.Price
-			, ifnull(avg_dev_survey_sqm_cal.Price
-				, avg_compre_sqm_cal.Price))) as Condo_Price_Per_Square_Cal
+		, CASE
+			WHEN COALESCE(resale_cal.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01'))
+				THEN resale_cal.Price
+			WHEN COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01')
+				THEN avg_dev_survey_sqm_cal.Price
+				ELSE avg_compre_sqm_cal.Price
+			END) as Condo_Price_Per_Square_Cal
 	, start_unit_cal.Price as Condo_Price_Per_Unit_Cal
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
@@ -228,11 +232,13 @@ select a.Condo_Code
 				, ifnull(resale_cal.Price
 					, ifnull(start_compre_sqm_cal.Price
 						, start_dev_survey_sqm_cal.Price))))
-		, ifnull(resale_cal.Price
-			, ifnull(avg_dev_survey_sqm_cal.Price
-				, ifnull(avg_compre_sqm_cal.Price
-					, ifnull(start_compre_sqm_cal.Price
-						, start_dev_survey_sqm_cal.Price))))) as Condo_Price_Per_Square_Sort
+		, ifnull(CASE
+				WHEN COALESCE(resale_cal.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01'))
+					THEN resale_cal.Price
+				WHEN COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm_cal.Price
+					ELSE avg_compre_sqm_cal.Price
+				END,ifnull(start_compre_sqm_cal.Price, start_dev_survey_sqm_cal.Price))) as Condo_Price_Per_Square_Sort
 	, ifnull(start_unit_cal.Price
 		, avg_unit_cal.Price) as Condo_Price_Per_Unit_Sort
 from real_condo a
