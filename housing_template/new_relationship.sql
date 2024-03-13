@@ -10,6 +10,13 @@ CREATE TABLE `housing_spotlight_relationship` (
     `Spotlight_Code` varchar(20) NOT NULL,
     PRIMARY KEY (id)) ENGINE=InnoDB;
 
+CREATE TABLE `housing_spotlight_relationship_manual` (
+    `id` int UNSIGNED NOT NULL,
+    `Housing_Code` varchar(50) NOT NULL,
+    `Housing_Type` enum('SD','DD','TH','HO','SH') NOT NULL,
+    `Spotlight_Code` varchar(20) NOT NULL,
+    PRIMARY KEY (id)) ENGINE=InnoDB;
+
 
 -- procedure truncateInsert_housing_spotlight
 DROP PROCEDURE IF EXISTS truncateInsert_housing_spotlight;
@@ -298,6 +305,20 @@ BEGIN
         UPDATE housing_spotlight SET Housing_Count_TH = (SELECT COUNT(1) FROM  housing_spotlight_relationship where Spotlight_Code = each_listing and Housing_Type = 'TH') WHERE Spotlight_Code = each_listing;
         UPDATE housing_spotlight SET Housing_Count_HO = (SELECT COUNT(1) FROM  housing_spotlight_relationship where Spotlight_Code = each_listing and Housing_Type = 'HO') WHERE Spotlight_Code = each_listing;
         UPDATE housing_spotlight SET Housing_Count_SH = (SELECT COUNT(1) FROM  housing_spotlight_relationship where Spotlight_Code = each_listing and Housing_Type = 'SH') WHERE Spotlight_Code = each_listing;
+        SET x = x + 1;
+    END WHILE;
+
+    SET x = 1;
+    SET listing_group = concat_ws(',','CUS039','CUS040','PS013','PS019');
+
+    WHILE x <= 4 DO
+        SET each_listing = SUBSTRING_INDEX(SUBSTRING_INDEX(listing_group, ',', x), ',', -1);
+        UPDATE housing_spotlight SET Housing_Count = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing) WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_SD = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'SD') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_DD = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'DD') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_TH = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'TH') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_HO = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'HO') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_SH = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'SH') WHERE Spotlight_Code = each_listing;
         SET x = x + 1;
     END WHILE;
 
