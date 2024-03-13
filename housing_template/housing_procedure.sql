@@ -634,7 +634,7 @@ BEGIN
 		END IF;
 
         UPDATE  real_yarn_main
-        SET	    Condo_Count = ( SELECT  COUNT(HFRM.Housing_Code) 
+        SET	    Housing_Count = ( SELECT  COUNT(HFRM.Housing_Code) 
                                 FROM    housing_fetch_for_map HFRM
 								WHERE   HFRM.RealDistrict_Code = eachYarnMain)
         WHERE   District_Code = eachYarnMain;
@@ -692,7 +692,7 @@ BEGIN
 		END IF;
 
         UPDATE  real_yarn_sub
-        SET	    Condo_Count = ( SELECT  COUNT(HFRM.Condo_Code) 
+        SET	    Housing_Count = ( SELECT  COUNT(HFRM.Housing_Code) 
                                 FROM    housing_fetch_for_map HFRM
 								WHERE   HFRM.RealSubDistrict_Code = eachYarnSub)
         WHERE   SubDistrict_Code = eachYarnSub;
