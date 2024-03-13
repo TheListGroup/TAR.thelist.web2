@@ -327,7 +327,7 @@ select cpc.Condo_Code as Prop_Code
     , rc.Condo_Longitude as Longitude
     , rc.Condo_ENName as Project_Name
     , if(cpc.Condo_Price_Per_Unit_Text='ราคาเริ่มต้น'
-        ,concat('เริ่มต้น ',format((cpc.Condo_Price_Per_Unit_New/1000000),2),' ลบ.')
+        ,concat('เริ่มต้น ',format((cpc.Condo_Price_Per_Unit/1000000),2),' ลบ.')
         ,null) as Price
     , if(rcp.Condo_Built_Finished is not null,
         if(year(curdate()) - year(rcp.Condo_Built_Finished) > 0
@@ -343,9 +343,9 @@ select cpc.Condo_Code as Prop_Code
                     ,'คอนโด ใหม่'))
             ,null)) as Project_Status
     , if(cpc.Condo_Age_Status_Square_Text='ราคาเฉลี่ย'
-        ,if(cpc.Condo_Price_Per_Square_New <= 200000
+        ,if(cpc.Condo_Price_Per_Square <= 200000
             ,(select word from ads_words where `word_set` = '1' order by rand() limit 1)
-            ,if(cpc.Condo_Price_Per_Square_New > 200000
+            ,if(cpc.Condo_Price_Per_Square > 200000
                 ,(select word from ads_words where `word_set` = '2' order by rand() limit 1)
                 ,null))
         ,NULL) as Word
