@@ -1,3 +1,26 @@
+DELIMITER //
+CREATE FUNCTION ThaiMonth(monthNumber INT) 
+RETURNS VARCHAR(20)
+NO SQL
+BEGIN
+    CASE monthNumber
+        WHEN 1 THEN RETURN 'ม.ค.'; -- January
+        WHEN 2 THEN RETURN 'ก.พ.'; -- February
+        WHEN 3 THEN RETURN 'มี.ค.'; -- March
+        WHEN 4 THEN RETURN 'เม.ย.'; -- April
+        WHEN 5 THEN RETURN 'พ.ค.'; -- May
+        WHEN 6 THEN RETURN 'มิ.ย.'; -- June
+        WHEN 7 THEN RETURN 'ก.ค.'; -- July
+        WHEN 8 THEN RETURN 'ส.ค.'; -- August
+        WHEN 9 THEN RETURN 'ก.ย.'; -- September
+        WHEN 10 THEN RETURN 'ต.ค.'; -- October
+        WHEN 11 THEN RETURN 'พ.ย.'; -- November
+        WHEN 12 THEN RETURN 'ธ.ค.'; -- December
+        ELSE RETURN 'Invalid Month';
+    END CASE;
+END//
+DELIMITER ;
+
 CREATE OR REPLACE VIEW `source_condo_fetch_for_map` AS
 SELECT a.Condo_ID
 	, a.Condo_Code
@@ -109,12 +132,53 @@ SELECT a.Condo_ID
         , 0) as Condo_HighRise
     , d.Condo_Segment as Condo_Segment
     , condo_line.Condo_Around_Line as Condo_Around_Line
-    , b.Condo_Price_Per_Square_Sort as Condo_Price_Per_Square_Sort
-	, b.Condo_Price_Per_Unit_Sort as Condo_Price_Per_Unit_Sort
+    , b.Condo_Price_Per_Square_Sort as Condo_Price_Per_Square_Sort -- b.Condo_Price_Per_Square_Sort
+	, b.Condo_Price_Per_Unit_Sort as Condo_Price_Per_Unit_Sort -- b.Condo_Price_Per_Unit_Sort
+    , concat_ws(' ', replace(a.Condo_ENName, '\n', ' '), concat('(', replace(a.Condo_Name, '\n', ' '), ')'), '| REAL DATA') as Condo_Title
+    , concat_ws(' ',replace(a.Condo_ENName,'\n',' ')
+        , replace(replace(concat_ws(' ', replace(a.Condo_Building, '"', ''), 'ชั้น'), 'Buildings', ' อาคาร '), ',', ' ชั้น, ')
+        , concat('ย่าน', ym.District_Name), concat('ใกล้รฟฟ.สถานี', if(ff.Station = '-', null, ff.Station))
+        , concat('จำนวน ', format(a.Condo_TotalUnit,0), ' ยูนิต')
+        , concat(if(b.Condo_Price_Per_Square is not null
+                    , b.Condo_Age_Status_Square_Text
+                    , if(b.Condo_Price_Per_Unit is not null
+                        , b.Condo_Price_Per_Unit_Text
+                        , null))
+            , ' ', ifnull(format(round(b.Condo_Price_Per_Square, -3), 0), ifnull(round(b.Condo_Price_Per_Unit/1000000, 1), null))
+            , ' ', if(b.Condo_Price_Per_Square is not null
+                        , 'บ./ตร.ม.'
+                        , if(b.Condo_Price_Per_Unit is not null
+                            , 'ลบ./ยูนิต'
+                            , null)))
+        , concat('(', ThaiMonth(MONTH(if(b.Condo_Price_Per_Square is not null
+                                        , b.Condo_Price_Per_Square_Date
+                                        , if(b.Condo_Price_Per_Unit is not null
+                                            , b.Condo_Price_Per_Unit_Date
+                                            , null))))
+                , ' ', if(b.Condo_Price_Per_Square is not null
+                            , year(b.Condo_Price_Per_Square_Date)
+                            , if(b.Condo_Price_Per_Unit is not null
+                                , year(b.Condo_Price_Per_Unit_Date)
+                                , null)), ')')
+        , concat('เริ่ม ', if(type1.Condo_Code is not null, 1
+                            , if(type2.Condo_Code is not null, 1
+                                , if(type3.Condo_Code is not null, 2
+                                    , if(type4.Condo_Code is not null, 3
+                                        , if(type5.Condo_Code is not null, 4
+                                            , null))))), ' ห้องนอน '
+            , if(type1.Condo_Code is not null, type1.minsize
+                , if(type2.Condo_Code is not null, type2.minsize
+                    , if(type3.Condo_Code is not null, type3.minsize
+                        , if(type4.Condo_Code is not null, type4.minsize
+                            , if(type5.Condo_Code is not null, type5.minsize
+                                , null))))), ' ตร.ม.')
+        , concat('ค่าส่วนกลาง ', d.Condo_Common_Fee, ' บ./ตร.ม./เดือน')) as Condo_Description
 FROM condo_price_calculate_view b
 left join real_condo a on b.Condo_Code = a.Condo_Code
 left join condo_spotlight_relationship_view c on a.Condo_Code = c.Condo_Code
 left join real_condo_price d on a.Condo_Code = d.Condo_Code
+left join real_yarn_main ym on a.RealDistrict_Code = ym.District_Code
+left join full_template_factsheet ff on a.Condo_Code = ff.Condo_Code
 left join ( select Condo_Code
                 , cast(Distance as decimal(25,20)) as Distance
             from ( select Condo_Code
@@ -130,6 +194,7 @@ left join (select Condo_Code AS Condo_Code
             group by Condo_Code) station 
 on a.Condo_Code = station.Condo_Code
 left join (select Condo_Code AS Condo_Code
+                , roundsize(min(Size)) as minsize
                 , '[STU]' AS studio
             from full_template_unit_type
             where Unit_Type_Status <> 2
@@ -137,6 +202,7 @@ left join (select Condo_Code AS Condo_Code
             group by Condo_Code) type1 
 on a.Condo_Code = type1.Condo_Code
 left join (select Condo_Code AS Condo_Code
+                , roundsize(min(Size)) as minsize
                 , '[1BED]' AS onebed
             from full_template_unit_type
             where Unit_Type_Status <> 2
@@ -144,6 +210,7 @@ left join (select Condo_Code AS Condo_Code
             group by Condo_Code) type2
 on a.Condo_Code = type2.Condo_Code
 left join (select Condo_Code AS Condo_Code
+                , roundsize(min(Size)) as minsize
                 , '[2BED]' AS twobed
             from full_template_unit_type
             where Unit_Type_Status <> 2
@@ -151,6 +218,7 @@ left join (select Condo_Code AS Condo_Code
             group by Condo_Code) type3 
 on a.Condo_Code = type3.Condo_Code
 left join (select Condo_Code AS Condo_Code
+                , roundsize(min(Size)) as minsize
                 , '[3BED]' AS threebed
             from full_template_unit_type
             where Unit_Type_Status <> 2
@@ -158,6 +226,7 @@ left join (select Condo_Code AS Condo_Code
             group by Condo_Code) type4
 on a.Condo_Code = type4.Condo_Code
 left join (select Condo_Code AS Condo_Code
+                , roundsize(min(Size)) as minsize
                 , '[4BED]' AS fourbed
             from full_template_unit_type
             where Unit_Type_Status <> 2
@@ -224,6 +293,8 @@ on b.Condo_Code = condo_line.Condo_Code;
 -- ALTER TABLE `condo_fetch_for_map` ADD `Condo_Around_Line` TEXT NULL AFTER `Condo_Segment`;
 ALTER TABLE `condo_fetch_for_map` ADD `Condo_Price_Per_Square_Sort` FLOAT NULL AFTER `Condo_Around_Line`;
 ALTER TABLE `condo_fetch_for_map` ADD `Condo_Price_Per_Unit_Sort` FLOAT NULL AFTER `Condo_Price_Per_Square_Sort`;
+ALTER TABLE `condo_fetch_for_map` ADD `Condo_Title` TEXT NULL AFTER `Condo_Price_Per_Unit_Sort`;
+ALTER TABLE `condo_fetch_for_map` ADD `Condo_Description` TEXT NULL AFTER `Condo_Title`;
 
 DROP PROCEDURE IF EXISTS truncateInsert_condo_fetch_for_map;
 DELIMITER //
@@ -273,6 +344,8 @@ BEGIN
     DECLARE v_name38 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name39 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name40 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name41 TEXT DEFAULT NULL;
+    DECLARE v_name42 TEXT DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_condo_fetch_for_map';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -291,7 +364,8 @@ BEGIN
                                 Developer_Code, RealSubDistrict_Code, RealDistrict_Code, SubDistrict_ID, District_ID, 
                                 Province_ID, Condo_URL_Tag, Condo_Cover, Total_Point, Condo_Around_Station, 
                                 Condo_Bedroom_Type, Condo_Room_Size, Spotlight_List, Condo_Age, Realist_Score, Condo_HighRise,
-                                Condo_Segment, Condo_Around_Line, Condo_Price_Per_Square_Sort, Condo_Price_Per_Unit_Sort
+                                Condo_Segment, Condo_Around_Line, Condo_Price_Per_Square_Sort, Condo_Price_Per_Unit_Sort, 
+                                Condo_Title, Condo_Description
                             FROM source_condo_fetch_for_map;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -310,7 +384,7 @@ BEGIN
     OPEN cur;
     
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42;
         
         IF done THEN
             LEAVE read_loop;
@@ -358,9 +432,11 @@ BEGIN
                 Condo_Segment,
                 Condo_Around_Line,
                 Condo_Price_Per_Square_Sort,
-                Condo_Price_Per_Unit_Sort
+                Condo_Price_Per_Unit_Sort,
+                Condo_Title,
+                Condo_Description
 				)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42);
         
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
