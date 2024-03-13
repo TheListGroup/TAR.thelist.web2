@@ -36,11 +36,13 @@ select a.Condo_Code
 				, ifnull(resale.Price
 					, ifnull(start_compre_sqm.Price
 						, start_dev_survey_sqm.Price))))
-		, ifnull(resale.Price
-			, ifnull(avg_dev_survey_sqm.Price
-				, ifnull(avg_compre_sqm.Price
-					, ifnull(start_compre_sqm.Price
-						, start_dev_survey_sqm.Price))))) as Condo_Price_Per_Square
+		, ifnull(CASE
+				WHEN COALESCE(resale.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm.Price_Date, '1900-01-01'))
+					THEN resale.Price
+				WHEN COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm.Price
+					ELSE avg_compre_sqm.Price
+				END,ifnull(start_compre_sqm.Price, start_dev_survey_sqm.Price))) as Condo_Price_Per_Square
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
 				, 'OLD'
@@ -65,17 +67,13 @@ select a.Condo_Code
 						, if(start_dev_survey_sqm.Price is not null
 							, start_dev_survey_sqm.Price_Date
 							, null)))))
-		, if(resale.Price is not null
-			, resale.Price_Date
-			, if(avg_dev_survey_sqm.Price is not null
-				, avg_dev_survey_sqm.Price_Date
-				, if(avg_compre_sqm.Price is not null
-					, avg_compre_sqm.Price_Date
-					, if(start_compre_sqm.Price is not null
-						, start_compre_sqm.Price_Date
-						, if(start_dev_survey_sqm.Price is not null
-							, start_dev_survey_sqm.Price_Date
-							, null)))))) as Condo_Price_Per_Square_Date
+		, ifnull(CASE
+				WHEN COALESCE(resale.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm.Price_Date, '1900-01-01'))
+					THEN resale.Price_Date
+				WHEN COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm.Price_Date
+					ELSE avg_compre_sqm.Price_Date
+				END,ifnull(start_compre_sqm.Price_Date, start_dev_survey_sqm.Price_Date))) as Condo_Price_Per_Square_Date
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
 				, 'OLD'
@@ -94,11 +92,13 @@ select a.Condo_Code
 				, ifnull(resale.Price_Source
 					, ifnull(start_compre_sqm.Price_Source
 						, start_dev_survey_sqm.Price_Source))))
-		, ifnull(resale.Price_Source
-			, ifnull(avg_dev_survey_sqm.Price_Source
-				, ifnull(avg_compre_sqm.Price_Source
-					, ifnull(start_compre_sqm.Price_Source
-						, start_dev_survey_sqm.Price_Source))))) as Source_Condo_Price_Per_Square
+		, ifnull(CASE
+				WHEN COALESCE(resale.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm.Price_Date, '1900-01-01'))
+					THEN resale.Price_Source
+				WHEN COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm.Price_Source
+					ELSE avg_compre_sqm.Price_Source
+				END,ifnull(start_compre_sqm.Price_Source, start_dev_survey_sqm.Price_Source))) as Source_Condo_Price_Per_Square
 	, if(start_unit.Price is not null
 		, 'ราคาเริ่มต้น'
 		, if(avg_unit.Price is not null
@@ -169,9 +169,13 @@ select a.Condo_Code
 		, ifnull(avg_compre_sqm_cal.Price
 			, ifnull(avg_dev_survey_sqm_cal.Price
 				, resale_cal.Price))
-		, ifnull(resale_cal.Price
-			, ifnull(avg_dev_survey_sqm_cal.Price
-				, avg_compre_sqm_cal.Price))) as Condo_Price_Per_Square_Cal
+		, CASE
+			WHEN COALESCE(resale_cal.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01'))
+				THEN resale_cal.Price
+			WHEN COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01')
+				THEN avg_dev_survey_sqm_cal.Price
+				ELSE avg_compre_sqm_cal.Price
+			END) as Condo_Price_Per_Square_Cal
 	, start_unit_cal.Price as Condo_Price_Per_Unit_Cal
 	, if(if(b.Condo_Built_Finished is not null
 			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
@@ -191,11 +195,13 @@ select a.Condo_Code
 				, ifnull(resale_cal.Price
 					, ifnull(start_compre_sqm_cal.Price
 						, start_dev_survey_sqm_cal.Price))))
-		, ifnull(resale_cal.Price
-			, ifnull(avg_dev_survey_sqm_cal.Price
-				, ifnull(avg_compre_sqm_cal.Price
-					, ifnull(start_compre_sqm_cal.Price
-						, start_dev_survey_sqm_cal.Price))))) as Condo_Price_Per_Square_Sort
+		, ifnull(CASE
+				WHEN COALESCE(resale_cal.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01'))
+					THEN resale_cal.Price
+				WHEN COALESCE(avg_dev_survey_sqm_cal.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm_cal.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm_cal.Price
+					ELSE avg_compre_sqm_cal.Price
+				END,ifnull(start_compre_sqm_cal.Price, start_dev_survey_sqm_cal.Price))) as Condo_Price_Per_Square_Sort
 	, ifnull(start_unit_cal.Price
 		, avg_unit_cal.Price) as Condo_Price_Per_Unit_Sort
 from real_condo a
@@ -1313,6 +1319,112 @@ BEGIN
     END LOOP;
 
     if errorcheck then
+		SET code    = '00000';
+		SET msg     = CONCAT(total_rows,' rows inserted.');
+		INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+	end if;
+
+    CLOSE cur;
+END //
+DELIMITER ;
+
+
+-- truncateInsert_all_condo_price_calculate_view
+DROP PROCEDURE IF EXISTS truncateInsert_all_condo_price_calculate_view;
+DELIMITER //
+
+CREATE PROCEDURE truncateInsert_all_condo_price_calculate_view ()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+	DECLARE total_rows INT DEFAULT 0;
+    DECLARE v_name VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name1 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name2 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name3 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name4 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name5 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name6 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name7 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name8 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name9 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name10 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name11 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name12 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name13 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name14 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name15 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name16 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name17 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name18 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name19 VARCHAR(250) DEFAULT NULL;
+
+	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_all_condo_price_calculate_view';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE rowCount        INTEGER     DEFAULT 0;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+	DECLARE errorcheck      BOOLEAN		DEFAULT 1;
+    DECLARE done INT DEFAULT FALSE;
+
+    DECLARE cur CURSOR FOR SELECT Condo_Code, Old_or_New, Condo_Age_Status_Square_Text, Condo_Price_Per_Square
+                                , Condo_Price_Per_Square_Date, Source_Condo_Price_Per_Square, Condo_Price_Per_Unit_Text
+                                , Condo_Price_Per_Unit, Condo_Price_Per_Unit_Date, Source_Condo_Price_Per_Unit
+                                , Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value, Condo_Sold_Status_Date
+                                , Condo_Built_Text, Condo_Built_Date, Condo_Date_Calculate, Condo_Price_Per_Square_Cal
+                                , Condo_Price_Per_Unit_Cal, Condo_Price_Per_Square_Sort, Condo_Price_Per_Unit_Sort
+                                FROM all_condo_price_calculate_view;
+	
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+		GET DIAGNOSTICS CONDITION 1
+            code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+			SET msg = CONCAT(msg,' AT ',v_name);
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+		set errorcheck = 0;
+    END;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+	TRUNCATE TABLE all_condo_price_calculate;
+	
+    OPEN cur;
+    read_loop: LOOP
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19;
+        
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+		INSERT INTO
+			all_condo_price_calculate (
+				Condo_Code,
+				Old_or_New,
+				Condo_Age_Status_Square_Text,
+				Condo_Price_Per_Square,
+				Condo_Price_Per_Square_Date,
+                Source_Condo_Price_Per_Square,
+				Condo_Price_Per_Unit_Text,
+				Condo_Price_Per_Unit,
+				Condo_Price_Per_Unit_Date,
+                Source_Condo_Price_Per_Unit,
+				Condo_Sold_Status_Show_Value,
+                Source_Condo_Sold_Status_Show_Value,
+				Condo_Sold_Status_Date,
+				Condo_Built_Text,
+				Condo_Built_Date,
+				Condo_Date_Calculate,
+				Condo_Price_Per_Square_Cal,
+				Condo_Price_Per_Unit_Cal,
+                Condo_Price_Per_Square_Sort,
+				Condo_Price_Per_Unit_Sort
+			)
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19);
+		GET DIAGNOSTICS nrows = ROW_COUNT;
+		SET total_rows = total_rows + nrows;
+        SET i = i + 1;
+    END LOOP;
+
+	if errorcheck then
 		SET code    = '00000';
 		SET msg     = CONCAT(total_rows,' rows inserted.');
 		INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
