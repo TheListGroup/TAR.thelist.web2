@@ -359,7 +359,7 @@ select cpc.Condo_Code as Prop_Code
     , concat(cpc.Condo_Code,"/",cpc.Condo_Code,ads_desktop_billboard('CD')) as Desktop_Billboard_Image
     , concat(cpc.Condo_Code,"/",cpc.Condo_Code,ads_mobile_billboard('CD')) as Mobile_Billboard_Image
     , concat(cpc.Condo_Code,"/",cpc.Condo_Code,ads_banner('CD')) as Banner_Image
-from all_condo_price_calculate_view as cpc
+from all_condo_price_calculate as cpc
 inner join real_condo as rc on cpc.Condo_Code = rc.Condo_Code
 left join real_condo_price rcp on cpc.Condo_Code = rcp.Condo_Code
 left join real_yarn_sub rsd on rc.RealSubDistrict_Code = rsd.SubDistrict_Code
