@@ -276,6 +276,7 @@ CREATE TABLE IF NOT EXISTS `full_template_unit_type` (
   INDEX unit_type_admin2 (Last_Updated_By),
   INDEX unit_type_room_type (Room_Type_ID),
   INDEX unit_type_unit_floor_type (Unit_Floor_Type_ID),
+  INDEX unit_type_code (Condo_Code),
   CONSTRAINT unit_type_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
   CONSTRAINT unit_type_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID),
   CONSTRAINT unit_type_room_type FOREIGN KEY (Room_Type_ID) REFERENCES full_template_room_type(Room_Type_ID),
