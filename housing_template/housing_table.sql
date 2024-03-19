@@ -29,7 +29,11 @@ CREATE TABLE IF NOT EXISTS housing_around_station (
     Line_Code VARCHAR(30) NOT NULL,
     Housing_Code VARCHAR(50) NOT NULL,
     Distance FLOAT NOT NULL,
-    PRIMARY KEY (ID))
+    PRIMARY KEY (ID),
+    INDEX hstation (Station_Code),
+    INDEX hstation_code (Housing_Code),
+    INDEX hstation_name (Station_THName_Display),
+    INDEX hstation_line (Line_Code))
 ENGINE = InnoDB;
 
 -- table housing_around_express_way
@@ -40,7 +44,11 @@ CREATE TABLE IF NOT EXISTS housing_around_express_way (
     Place_Attribute_2 VARCHAR(150) NOT NULL,
     Housing_Code VARCHAR(50) NOT NULL,
     Distance FLOAT NOT NULL,
-    PRIMARY KEY (ID))
+    PRIMARY KEY (ID),
+    INDEX hway (Place_ID),
+    INDEX hway_code (Housing_Code),
+    INDEX hway1 (Place_Attribute_1),
+    INDEX hway2 (Place_Attribute_2))
 ENGINE = InnoDB;
 
 -- table housing_popular_carousel
@@ -165,6 +173,8 @@ CREATE TABLE IF NOT EXISTS housing (
     INDEX housing_province (Province_ID),
     INDEX housing_realsubdistrict (RealSubDistrict_Code),
     INDEX housing_realdistrict (RealDistrict_Code),
+    INDEX housing_name (Housing_Name),
+    INDEX housing_enname (Housing_ENName),
     CONSTRAINT home_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
     CONSTRAINT home_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID))
 ENGINE = InnoDB;
@@ -182,7 +192,7 @@ CREATE TABLE IF NOT EXISTS housing_factsheet_view (
     RealDistrict VARCHAR(150) NOT NULL,
     District VARCHAR(150) NOT NULL,
     Province VARCHAR(150) NOT NULL,
-    Housing_Type VARCHAR(70) NOT NULL,
+    Housing_Type VARCHAR(200) NOT NULL,
     Housing_TotalRai VARCHAR(20) NOT NULL,
     TotalUnit VARCHAR(10) NOT NULL,
     Housing_Built_Start VARCHAR(4) NOT NULL,
@@ -197,7 +207,8 @@ CREATE TABLE IF NOT EXISTS housing_factsheet_view (
     Housing_Area_Factsheet VARCHAR(30) NOT NULL,
     Usable_Area_Factsheet VARCHAR(30) NOT NULL,
     Common_Fee VARCHAR(50) NOT NULL,
-    PRIMARY KEY (ID))
+    PRIMARY KEY (ID),
+    INDEX hftype (Housing_Type))
 ENGINE = InnoDB;
 
 -- table housing_fetch_for_map
@@ -206,7 +217,7 @@ CREATE TABLE IF NOT EXISTS housing_fetch_for_map (
     Housing_ID INT UNSIGNED NOT NULL,
     Housing_Code VARCHAR(50) NOT NULL,
     Housing_ENName VARCHAR(250) NULL,
-    Housing_Type VARCHAR(70) NOT NULL,
+    Housing_Type VARCHAR(200) NOT NULL,
     Price VARCHAR(30) NOT NULL,
     Housing_Area VARCHAR(30) NOT NULL,
     Usable_Area VARCHAR(30) NOT NULL,
@@ -270,6 +281,8 @@ CREATE TABLE IF NOT EXISTS housing_article_fetch_for_map (
     RealDistrict_Code VARCHAR(30) NULL,
     RealSubDistrict_Code VARCHAR(30) NULL,
     Province_ID INT NULL,
+    Housing_Type VARCHAR(200) NOT NULL,
+    Spotlight_List TEXT NULL,
     PRIMARY KEY (ID_Prime))
 ENGINE = InnoDB;
 
