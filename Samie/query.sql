@@ -6,6 +6,22 @@
 -- Station 07,13
 -- condo status 1
 
+select * from (SELECT Housing_Name, count(*) as name_count
+FROM `housing`
+where Housing_Name is not null
+and Housing_Status = '1' 
+group by Housing_Name) aa
+where name_count > 1;
+
+
+select * from (SELECT Housing_ENName, count(*) as name_count
+FROM `housing`
+where Housing_ENName is not null
+group by Housing_ENName) aa
+where name_count > 1  
+ORDER BY `aa`.`name_count`  DESC;
+
+
 -- province
 select name_th
     , name_en
