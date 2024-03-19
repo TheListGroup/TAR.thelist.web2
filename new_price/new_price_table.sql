@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS `real_condo_dd` (
     Data_Value FLOAT NOT NULL,
     Data_Note TEXT NULL,
     Data_Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`ID`))
+    PRIMARY KEY (`ID`),
+    INDEX ddcode (Condo_Code))
 ENGINE = InnoDB;
 
 -- Table `price_source`
@@ -46,7 +47,8 @@ CREATE TABLE IF NOT EXISTS `real_condo_price_new` (
     PRIMARY KEY (`ID`),
     INDEX new_price_admin1 (Created_By),
     INDEX new_price_admin2 (Last_Updated_By),
-    INDEX psource (Price_Source),
+    INDEX psource (Price_Source)
+    INDEX new_price_code (Condo_Code),
     CONSTRAINT new_price_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
     CONSTRAINT new_price_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID),
     CONSTRAINT new_price_source FOREIGN KEY (Price_Source) REFERENCES price_source(ID))
@@ -67,6 +69,7 @@ CREATE TABLE IF NOT EXISTS `all_price_view` (
     Remark TEXT NULL,
     PRIMARY KEY (`ID`),
     INDEX apsource (Price_Source),
+    INDEX apcode (Condo_Code),
     CONSTRAINT all_price_source FOREIGN KEY (Price_Source) REFERENCES price_source(ID))
 ENGINE = InnoDB;
 
