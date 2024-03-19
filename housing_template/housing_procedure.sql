@@ -466,6 +466,8 @@ BEGIN
 	DECLARE v_name11 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name12 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name13 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name14 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name15 TEXT DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_housing_article_fetch_for_map';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -478,7 +480,7 @@ BEGIN
 
     DECLARE cur CURSOR FOR SELECT Housing_ID, Housing_Code, Housing_ENName, Housing_Name_Search, Housing_ENName_Search
                                 , Housing_Latitude, Housing_Longitude, ID, post_date, post_name, post_title, RealDistrict_Code
-                                , RealSubDistrict_Code, Province_ID
+                                , RealSubDistrict_Code, Province_ID, Housing_Type, Spotlight_List
                             FROM source_article_housing_fetch_for_map;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -497,7 +499,7 @@ BEGIN
     OPEN cur;
     
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15;
         
         IF done THEN
             LEAVE read_loop;
@@ -519,8 +521,10 @@ BEGIN
                 , RealDistrict_Code
                 , RealSubDistrict_Code
                 , Province_ID
+				, Housing_Type
+				, Spotlight_List
 				)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15);
         
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
