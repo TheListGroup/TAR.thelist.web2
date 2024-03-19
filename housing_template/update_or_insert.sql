@@ -443,7 +443,7 @@ values (4682,'aaa_housing','HP4280'),
         (158262,'aaa_housing','HP1339'),
         (158330,'aaa_housing','HP1287'),
         (158366,'aaa_housing','HP1760'),
-        (159364,'aaa_housing','HP3374'),
+        (159364,'aaa_housing','HP3122'),
         (159540,'aaa_housing','HP1419'),
         (160101,'aaa_housing','HP1404'),
         (160173,'aaa_housing','HP1253'),
@@ -895,3 +895,30 @@ values (4682,'aaa_housing','HP4280'),
         (97449,'aaa_housing','HP2733'),
         (53895,'aaa_housing','HP2655'),
         (53895,'aaa_housing','HP3558');
+
+ALTER TABLE `thailand_district` ADD INDEX(`name_en`);
+ALTER TABLE `thailand_district` ADD INDEX(`name_th`);
+ALTER TABLE `thailand_district` ADD INDEX(`district_code `);
+
+ALTER TABLE `thailand_province` ADD INDEX(`province_code`);
+ALTER TABLE `thailand_province` ADD INDEX(`name_en`);
+ALTER TABLE `thailand_province` ADD INDEX(`name_th`);
+
+ALTER TABLE `condo_developer` ADD INDEX(`Developer_ENName`);
+ALTER TABLE `condo_developer` ADD INDEX(`Developer_THName `);
+
+ALTER TABLE `thailand_subdistrict` ADD INDEX(`subdistrict_code`);
+ALTER TABLE `thailand_subdistrict` ADD INDEX(`name_th`);
+ALTER TABLE `thailand_subdistrict` ADD INDEX(`name_en`);
+
+ALTER TABLE `real_yarn_sub` ADD INDEX(`SubDistrict_Name_Eng`);
+ALTER TABLE `real_yarn_sub` ADD INDEX(`SubDistrict_Name`);
+
+ALTER TABLE `real_yarn_main` ADD INDEX(`District_Name_Eng`);
+ALTER TABLE `real_yarn_main` ADD INDEX(`District_Name`);
+
+ALTER TABLE `mass_transit_station` ADD INDEX(`Station_Code`);
+ALTER TABLE `mass_transit_station` ADD INDEX(`Station_THName_Display`);
+ALTER TABLE `mass_transit_station` ADD INDEX(`Station_ENName_Display`);
+
+ALTER TABLE `mass_transit_line` ADD INDEX(`Line_Name`);
