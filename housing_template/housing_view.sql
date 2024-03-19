@@ -293,7 +293,9 @@ SELECT
     `c`.`post_title` AS `post_title`,
     `b`.`RealDistrict_Code` AS `RealDistrict_Code`,
     `b`.`RealSubDistrict_Code` AS `RealSubdistrict_Code`,
-    `b`.`Province_ID` AS `Province_ID`
+    `b`.`Province_ID` AS `Province_ID`,
+    b.Housing_Type as Housing_Type,
+    b.Spotlight_List as Spotlight_List
 FROM
     (
         (
