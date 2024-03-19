@@ -48,6 +48,11 @@ select h.Housing_Code
     , h.Realist_Score as Realist_Score
     , null as Brand_Name
     , null as Brand_Name_TH
+    , concat_ws(', ',if(h.IS_SD=1,'บ้านเดี่ยว',null),if(h.IS_DD=1,'บ้านแฝด',null),if(h.IS_TH=1,'ทาวน์โฮม',null)
+                        , if(h.IS_HO=1,'โฮมออฟฟิศ',null), if(h.IS_SH=1,'อาคารพาณิชย์',null)) as Housing_Type_TH
+    , concat_ws(', ',if(h.IS_SD=1,'Single Detached House',null),if(h.IS_DD=1,'Double Detached House',null)
+                        ,if(h.IS_TH=1,'Townhome',null), if(h.IS_HO=1,'Home Office',null)
+                        , if(h.IS_SH=1,'Shophouse',null)) as Housing_Type_EN
 from housing h
 left join thailand_district td on h.District_ID = td.district_code
 left join thailand_province tp on h.Province_ID = tp.province_code
@@ -169,11 +174,14 @@ CREATE TABLE IF NOT EXISTS `search_housing_detail_view` (
     Housing_Spotlight TEXT NULL,
     Housing_URL TEXT NULL,
     Housing_Cover Text NULL,
-    Realist_Score DOUBLE NULL,
+    Realist_Score DOUBLE NULL, 
     Brand_Name VARCHAR(150) NULL,
     Brand_Name_TH VARCHAR(150) NULL,
+    Housing_Type_TH VARCHAR(200) NULL,
+    Housing_Type_EN VARCHAR(200) NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`ID`))
+    PRIMARY KEY (`ID`),
+    INDEX hscode (Housing_Code))
 ENGINE = InnoDB;
 
 -- truncateInsert_search_housing_detail_view
@@ -215,6 +223,8 @@ BEGIN
     DECLARE v_name28 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name29 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name30 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name31 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name32 VARCHAR(250) DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_search_housing_detail_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -230,6 +240,7 @@ BEGIN
                                 ,Sub_DistrictEN,DistrictTH,DistrictEN,ProvinceTH,ProvinceEN,Real_SubDistrictTH,Real_SubDistrictEN
                                 ,Real_DistrictTH,Real_DistrictEN,StationTH,StationEN,Housing_Around_Station,Housing_Around_Line
                                 ,Express_Way,Housing_Around_Express_Way,Housing_URL,Housing_Cover,Realist_Score,Brand_Name,Brand_Name_TH
+                                ,Housing_Type_TH,Housing_Type_EN
                             FROM source_search_housing_detail_view;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -248,7 +259,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32;
 
         IF done THEN
             LEAVE read_loop;
@@ -286,9 +297,11 @@ BEGIN
                 `Housing_Cover`,
                 `Realist_Score`,
                 `Brand_Name`,
-                `Brand_Name_TH`
+                `Brand_Name_TH`,
+                `Housing_Type_TH`,
+                `Housing_Type_EN`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
