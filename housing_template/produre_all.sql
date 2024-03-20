@@ -58,8 +58,11 @@ DELIMITER $$
 CREATE PROCEDURE HousingUpdate ()
 BEGIN
 
+    SELECT CURRENT_TIMESTAMP () AS 'Start updatehousing5Point';
 	CALL updateHousing5Point();
+    SELECT CURRENT_TIMESTAMP () AS 'Start UpdateHousingCount';
 	CALL UpdateHousingCount();
+    SELECT CURRENT_TIMESTAMP () AS 'Start truncateInsertHousingViewToTable';
 	CALL truncateInsertHousingViewToTable();
 
 END$$
