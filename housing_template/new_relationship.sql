@@ -9,7 +9,8 @@ CREATE TABLE `housing_spotlight_relationship` (
     `Housing_Type` enum('SD','DD','TH','HO','SH') NOT NULL,
     `Spotlight_Code` varchar(20) NOT NULL,
     PRIMARY KEY (id),
-    INDEX hsp_code (Housing_Code)) ENGINE=InnoDB;
+    INDEX hsp_code (Housing_Code),
+    INDEX hsp_spcode (Spotlight_Code)) ENGINE=InnoDB;
 
 CREATE TABLE `housing_spotlight_relationship_manual` (
     `id` int UNSIGNED NOT NULL,
@@ -17,7 +18,8 @@ CREATE TABLE `housing_spotlight_relationship_manual` (
     `Housing_Type` enum('SD','DD','TH','HO','SH') NOT NULL,
     `Spotlight_Code` varchar(20) NOT NULL,
     PRIMARY KEY (id),
-    INDEX hspm_code (Housing_Code)) ENGINE=InnoDB;
+    INDEX hspm_code (Housing_Code),
+    INDEX hspm_spcode (Spotlight_Code)) ENGINE=InnoDB;
 
 
 -- procedure truncateInsert_housing_spotlight
