@@ -86,7 +86,8 @@ CREATE TABLE housing_spotlight (
     Spotlight_Description_End text NULL,
     Keyword_TH text null,
     Keyword_ENG text null,
-    PRIMARY KEY (Spotlight_ID))
+    PRIMARY KEY (Spotlight_ID),
+    INDEX spc (Spotlight_Code))
 ENGINE = InnoDB;
 
 -- -----------------------------------------------------
@@ -208,7 +209,8 @@ CREATE TABLE IF NOT EXISTS housing_factsheet_view (
     Usable_Area_Factsheet VARCHAR(30) NOT NULL,
     Common_Fee VARCHAR(50) NOT NULL,
     PRIMARY KEY (ID),
-    INDEX hftype (Housing_Type))
+    INDEX hftype (Housing_Type),
+    INDEX hfcode (Housing_Code))
 ENGINE = InnoDB;
 
 -- table housing_fetch_for_map
@@ -261,7 +263,17 @@ CREATE TABLE IF NOT EXISTS housing_fetch_for_map (
     Bathroom_Max INT NULL,
     Parking_Min INT NULL,
     Parking_Max INT NULL,
-    PRIMARY KEY (ID))
+    PRIMARY KEY (ID),
+    INDEX hfmcode (Housing_Code),
+    INDEX hfmlat (Housing_Latitude),
+    INDEX hfmlong (Housing_Longitude),
+    INDEX hfmbrand (Brand_Code),
+    INDEX hfmdev (Developer_Code),
+    INDEX hfmrsd (RealSubDistrict_Code),
+    INDEX hfmrd (RealDistrict_Code),
+    INDEX hfmsd (SubDistrict_ID),
+    INDEX hfmd (District_ID),
+    INDEX hfmp (Province_ID))
 ENGINE = InnoDB;
 
 -- table housing_article_fetch_for_map
@@ -283,7 +295,9 @@ CREATE TABLE IF NOT EXISTS housing_article_fetch_for_map (
     Province_ID INT NULL,
     Housing_Type VARCHAR(200) NOT NULL,
     Spotlight_List TEXT NULL,
-    PRIMARY KEY (ID_Prime))
+    PRIMARY KEY (ID_Prime),
+    INDEX hafcode (Housing_Code),
+    INDEX arid (ID))
 ENGINE = InnoDB;
 
 -- table housing_gallery
