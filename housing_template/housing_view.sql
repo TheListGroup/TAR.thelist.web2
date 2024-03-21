@@ -35,7 +35,7 @@ from (SELECT mtsmr.Station_Code
         FROM mass_transit_station_match_route mtsmr
         left join mass_transit_route mtr on mtsmr.Route_Code = mtr.Route_Code
         cross join (select * from mass_transit_station_match_route where Station_Code = 'E4') asok
-        cross join (select * from housing where Housing_Status = '1') h) aaa  
+        cross join (select * from housing where Housing_Status = '1' and Housing_Latitude is not null AND Housing_Longitude is not null) h) aaa  
 where aaa.Distance <= aaa.cal_radians;
 
 
@@ -67,7 +67,7 @@ from (SELECT rpe.Place_ID
                 POWER(SIN((RADIANS(h.Housing_Longitude - rpe.Place_Longitude)) / 2), 2 )))) AS Distance
         FROM real_place_express_way rpe
         cross join (select * from mass_transit_station_match_route where Station_Code = 'E4') asok
-        cross join (select * from housing where Housing_Status = '1') h) aaa  
+        cross join (select * from housing where Housing_Status = '1' and Housing_Latitude is not null AND Housing_Longitude is not null) h) aaa  
 where aaa.Distance <= aaa.cal_radians;
 
 -- view source_housing_factsheet_view
@@ -161,6 +161,8 @@ left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2) 
             where ew.RowNum = 1 ) express_way 
 on a.Housing_Code = express_way.Housing_Code
 where a.Housing_Status = '1'
+and a.Housing_Latitude is not null
+AND a.Housing_Longitude is not null
 and a.Housing_ENName is not null;
 
 
@@ -223,7 +225,7 @@ select a.Housing_ID as Housing_ID
                     , concat(format(a.Housing_Usable_Area_Min,0),' - ',format(a.Housing_Usable_Area_Max,0)))
                 , format(ifnull(a.Housing_Usable_Area_Max,a.Housing_Usable_Area_Min),0)) as Usable_Area_Carousel
     , housing_line.Housing_Around_Line as Housing_Around_Line
-    , housing_spotlight.Spotlight_List as Spotlight_List
+    , concat_ws('', housing_spotlight.Spotlight_List, housing_spotlight_manual.Spotlight_List)  as Spotlight_List
     , a.Housing_TotalUnit as TotalUnit
     , a.Housing_TotalRai as TotalRai
     , a.Housing_Common_Fee_Min as Common_Fee_Min
@@ -274,8 +276,18 @@ left join ( select Housing_Code
                     group by Housing_Code,Spotlight_Code) h_spotlight
             group by Housing_Code) housing_spotlight
 on b.Housing_Code = housing_spotlight.Housing_Code
+left join ( select Housing_Code
+                , group_concat('[',Spotlight_Code,']' separator '') AS `Spotlight_List`
+            from ( SELECT Housing_Code
+                        , Spotlight_Code
+                    FROM `housing_spotlight_relationship_manual`
+                    group by Housing_Code,Spotlight_Code) h_spotlight
+            group by Housing_Code) housing_spotlight_manual
+on b.Housing_Code = housing_spotlight_manual.Housing_Code
 where a.Housing_Status = '1'
-and a.Housing_ENName is not null;
+and a.Housing_ENName is not null
+and a.Housing_Latitude is not null
+AND a.Housing_Longitude is not null;
 
 -- view source_article_housing_fetch_for_map
 create or replace view source_article_housing_fetch_for_map as

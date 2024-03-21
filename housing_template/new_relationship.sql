@@ -13,7 +13,7 @@ CREATE TABLE `housing_spotlight_relationship` (
     INDEX hsp_spcode (Spotlight_Code)) ENGINE=InnoDB;
 
 CREATE TABLE `housing_spotlight_relationship_manual` (
-    `id` int UNSIGNED NOT NULL,
+    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
     `Housing_Code` varchar(50) NOT NULL,
     `Housing_Type` enum('SD','DD','TH','HO','SH') NOT NULL,
     `Spotlight_Code` varchar(20) NOT NULL,
@@ -203,7 +203,9 @@ BEGIN
                                         group by aaa.Housing_Code) hospital
                             on h.Housing_Code = hospital.Housing_Code
                             where h.Housing_Status = '1'
-                            and h.Housing_ENName is not null; -- เปลี่ยนตามจำนวน listing
+                            and h.Housing_ENName is not null
+                            and h.Housing_Latitude is not null
+                            AND h.Housing_Longitude is not null; -- เปลี่ยนตามจำนวน listing
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
     BEGIN
