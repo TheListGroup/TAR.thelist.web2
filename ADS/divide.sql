@@ -64,7 +64,8 @@ BEGIN
                                                     ,sum(Left_Days) as Total_left 
                                                     ,count(*) as Proj
                                                 FROM `ads_base` 
-                                                where AD_Type = 'Auto' 
+                                                where AD_Type = 'Auto'
+                                                and AD_Status = '1'
                                                 group by AD_Code,Auto_AD_Budget) main
                                     where Total_left > 0;
 
@@ -98,14 +99,14 @@ BEGIN
                 set each_newdays = each_newdays - each_cal;
                 set each_proj = each_proj - 1;
                 select AD_ID into each_id from ads_base where AD_Code = each_group order by AD_ID limit 1 offset each_off;
-                update ads_base set Left_Days = each_cal, Last_Update_Date = CURRENT_TIMESTAMP, Last_Update_User = 0
+                update ads_base set Left_Days = each_cal, Last_Update_Date = CURRENT_TIMESTAMP, Last_Update_User = 32
                 where AD_Code = each_group and AD_ID = each_id;
                 set each_off = each_off + 1;
                 set each_id = null;
             end while;
             while each_proj > 0 do
                 select AD_ID into each_id from ads_base where AD_Code = each_group limit 1 offset each_off;
-                update ads_base set Left_Days = 0, Last_Update_Date = CURRENT_TIMESTAMP, Last_Update_User = 0
+                update ads_base set Left_Days = 0, Last_Update_Date = CURRENT_TIMESTAMP, Last_Update_User = 32
                 where AD_Code = each_group and AD_ID = each_id;
                 set each_off = each_off + 1;
                 set each_id = null;
