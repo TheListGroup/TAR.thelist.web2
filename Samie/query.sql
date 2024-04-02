@@ -137,3 +137,12 @@ left join ( SELECT cpc.Condo_Code,
             ORDER BY cpc.Condo_Code) condo_thname
 on cpc.Condo_Code = condo_thname.Condo_Code
 ORDER BY cpc.Condo_Code  ASC
+
+-- article
+SELECT po.post_title, po.post_date, concat('https://thelist.group/realist/blog/',po.post_name) as link, CAST(pm.meta_value AS SIGNED) as 'view'
+FROM wp_postmeta pm
+left join wp_posts po on pm.post_id = po.ID
+WHERE pm.meta_key LIKE '_gapp_post_views'
+and year(po.post_date) >= 2015
+and po.post_type = 'post'
+ORDER BY CAST(pm.meta_value AS SIGNED)  DESC;
