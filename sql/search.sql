@@ -59,7 +59,9 @@ ALTER TABLE `real_condo_spotlight`
 ADD `Keyword_TH` TEXT NULL AFTER `Spotlight_Description`
 , ADD `Keyword_ENG` TEXT NULL AFTER `Keyword_TH`; */
 
-CREATE OR REPLACE VIEW source_search_condo_detail_view as 
+ALTER TABLE `real_condo_spotlight` ADD `Classified_Unit_Count` INT NOT NULL AFTER `Condo_Count`;
+
+/* CREATE OR REPLACE VIEW source_search_condo_detail_view as 
 select rc.Condo_Code
     , condo_thname.Condo_Name
     , condo_enname.Condo_ENName
@@ -182,7 +184,7 @@ left join (SELECT Condo_Code, count(*) as Classified_Condo_Count
             group by Condo_Code) ccc
 on rc.Condo_Code = ccc.Condo_Code
 where rc.Condo_Status = 1
-order by rc.Condo_Code;
+order by rc.Condo_Code; */
 
 -- Table `search_condo_detail_view`
 /* CREATE TABLE IF NOT EXISTS `search_condo_detail_view` (
@@ -219,15 +221,16 @@ order by rc.Condo_Code;
     Condo_URL TEXT NULL,
     Condo_Cover Text NULL,
     Realist_Score DOUBLE NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
 -- Table `search_condo_detail_view`
-ALTER TABLE search_condo_detail_view ADD Classified_Unit_Count INT NULL AFTER Realist_Score;
+-- ALTER TABLE search_condo_detail_view ADD Classified_Unit_Count INT NULL AFTER Realist_Score;
 
 -- truncateInsert_search_condo_detail_view
-DROP PROCEDURE IF EXISTS truncateInsert_search_condo_detail_view;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_condo_detail_view;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_condo_detail_view ()
@@ -354,7 +357,7 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
 
 -- search_condo_detail_getCondoTopSpotlight
 /* DROP PROCEDURE IF EXISTS search_condo_detail_getCondoTopSpotlight;
@@ -489,6 +492,7 @@ select Spotlight_Code
     , Keyword_TH
     , Keyword_ENG
     , concat('/realist/condo/list/spotlight/',REGEXP_REPLACE(Spotlight_Name,' ','-'),'/') as Spotlight_URL
+    , Classified_Unit_Count
 from real_condo_spotlight
 where Condo_Count > 0;
 
@@ -501,15 +505,16 @@ where Condo_Count > 0;
     Keyword_TH TEXT NULL,
     Keyword_ENG TEXT NULL,
     Spotlight_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;*/
 
 -- Table `search_category_spotlight`
-ALTER TABLE search_category_spotlight ADD Classified_Unit_Count INT NULL AFTER Spotlight_URL;
+-- ALTER TABLE search_category_spotlight ADD Classified_Unit_Count INT NULL AFTER Spotlight_URL;
 
 -- truncateInsert_search_category_spotlight
-/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_spotlight;
+DROP PROCEDURE IF EXISTS truncateInsert_search_category_spotlight;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_spotlight ()
@@ -522,6 +527,7 @@ BEGIN
     DECLARE v_name3 TEXT DEFAULT NULL;
     DECLARE v_name4 TEXT DEFAULT NULL;
     DECLARE v_name5 TEXT DEFAULT NULL;
+    DECLARE v_name6 TEXT DEFAULT NULL;
     
     DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_search_category_spotlight';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -533,6 +539,7 @@ BEGIN
     DECLARE done INT DEFAULT FALSE;
 
     DECLARE cur CURSOR FOR SELECT Spotlight_Code,Spotlight_Name,Spotlight_Name_Search,Keyword_TH,Keyword_ENG,Spotlight_URL
+                                , Classified_Unit_Count
                             FROM source_search_category_spotlight;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -551,7 +558,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6;
 
         IF done THEN
             LEAVE read_loop;
@@ -564,9 +571,10 @@ BEGIN
                 `Spotlight_Name_Search`,
                 `Keyword_TH`,
                 `Keyword_ENG`, 
-                `Spotlight_URL`
+                `Spotlight_URL`,
+                `Classified_Unit_Count`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
@@ -580,7 +588,7 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ; */
+DELIMITER ;
 
 -- procedure updatespotlightCountclassified
 DROP PROCEDURE IF EXISTS updatespotlightCountclassified;
@@ -597,10 +605,9 @@ BEGIN
     DECLARE nrows           INTEGER     DEFAULT 0;
 	DECLARE errorcheck      BOOLEAN		DEFAULT 1;
     DECLARE done INT DEFAULT 0;
-    DECLARE queryBase1		VARCHAR(1000)	DEFAULT "UPDATE search_category_spotlight SET Classified_Unit_Count = (SELECT COUNT(1) FROM classified c inner join condo_spotlight_relationship_view csv on c.Condo_Code = csv.Condo_Code where c.Classified_Status = '1' and ";
-    DECLARE queryBase2		VARCHAR(100)	DEFAULT " = 'Y') ";
-    DECLARE queryBase3		VARCHAR(100)	DEFAULT "WHERE Spotlight_Code = '";
-    DECLARE queryBase4		VARCHAR(100)	DEFAULT "'";
+    DECLARE queryBase1		VARCHAR(1000)	DEFAULT "UPDATE real_condo_spotlight SET Classified_Unit_Count = (SELECT COUNT(1) FROM classified c inner join condo_spotlight_relationship_view csv on c.Condo_Code = csv.Condo_Code where c.Classified_Status = '1' and ";
+    DECLARE queryBase2		VARCHAR(100)	DEFAULT " = 'Y') WHERE Spotlight_Code = '";
+    DECLARE queryBase3		VARCHAR(100)	DEFAULT "'";
     DECLARE queryFinal		VARCHAR(2000)	DEFAULT NULL;
     DECLARE stmt 			VARCHAR(2000);
 
@@ -623,7 +630,7 @@ BEGIN
             LEAVE read_loop;
         END IF;
 
-        SET queryFinal = CONCAT(queryBase1, each_listing, queryBase2, queryBase3, each_listing, queryBase4);
+        SET queryFinal = CONCAT(queryBase1, each_listing, queryBase2, each_listing, queryBase3);
         -- select queryFinal;
         SET @query = queryFinal;
         PREPARE stmt FROM @query;
@@ -644,20 +651,17 @@ BEGIN
 END //
 DELIMITER ;
 
+-- Table `search_category_segment`
+-- ALTER TABLE search_category_segment ADD Classified_Unit_Count INT NULL AFTER Segment_URL;
+ALTER TABLE real_condo_segment ADD Classified_Unit_Count INT NULL AFTER Condo_Count;
+
 -- source_search_category_segment
 CREATE OR REPLACE VIEW source_search_category_segment as
 select rs.Segment_Code
     , rs.Segment_Name
     , concat('/realist/condo/list/segment/',REGEXP_REPLACE(rs.Segment_Name,' ','-'),'/') as Segment_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , Classified_Unit_Count
 from real_condo_segment rs
-left join (SELECT rs.Segment_Code, count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo_price rcp on c.Condo_Code = rcp.Condo_Code
-            inner join real_condo_segment rs on rcp.Condo_Segment = rs.Segment_Code
-            where c.Classified_Status = '1'
-            group by rs.Segment_Code) c
-on rs.Segment_Code = c.Segment_Code
 where rs.Condo_Count > 0;
 
 -- Table `search_category_segment`
@@ -666,15 +670,13 @@ where rs.Condo_Count > 0;
     Segment_Code VARCHAR(30) NOT NULL,
     Segment_Name VARCHAR(200) NOT NULL,
     Segment_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_segment`
-ALTER TABLE search_category_segment ADD Classified_Unit_Count INT NULL AFTER Segment_URL;
-
 -- truncateInsert_search_category_segment
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_segment;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_segment;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_segment ()
@@ -741,7 +743,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_province`
+-- ALTER TABLE search_category_province ADD Classified_Unit_Count INT NULL AFTER Province_URL;
+ALTER TABLE thailand_province ADD Classified_Unit_Count INT NULL AFTER Housing_Count;
 
 -- source_search_category_province
 CREATE OR REPLACE VIEW source_search_category_province as
@@ -751,15 +757,8 @@ select tp.province_code
     , REGEXP_REPLACE(tp.name_th, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as name_th_Search
     , REGEXP_REPLACE(tp.name_en, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as name_en_Search
     , concat('/realist/condo/list/จังหวัด/',REGEXP_REPLACE(tp.name_th,' ','-'),'/') as Province_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , Classified_Unit_Count
 from thailand_province tp
-left join (SELECT rc.Province_ID, count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo rc on c.Condo_Code = rc.Condo_Code
-            inner join thailand_province tp on rc.Province_ID = tp.province_code
-            where c.Classified_Status = '1'
-            group by rc.Province_ID) c
-on tp.province_code = c.Province_ID
 where tp.Condo_Count > 0;
 
 -- Table `search_category_province`
@@ -771,15 +770,13 @@ where tp.Condo_Count > 0;
     name_th_Search VARCHAR(150) NOT NULL,
     name_en_Search VARCHAR(150) NOT NULL,
     Province_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_province`
-ALTER TABLE search_category_province ADD Classified_Unit_Count INT NULL AFTER Province_URL;
-
 -- truncateInsert_search_category_province
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_province;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_province;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_province ()
@@ -852,7 +849,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_developer`
+-- ALTER TABLE search_category_developer ADD Classified_Unit_Count INT NULL AFTER Developer_URL;
+ALTER TABLE condo_developer ADD Classified_Unit_Count INT NULL AFTER Condo_Count;
 
 -- souce_search_category_developer
 CREATE OR REPLACE VIEW source_search_category_developer as
@@ -862,15 +863,8 @@ select cd.Developer_Code
     , REGEXP_REPLACE(cd.Developer_THName, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Developer_THName_Search
     , REGEXP_REPLACE(cd.Developer_ENName, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Developer_ENName_Search
     , concat('/realist/condo/list/developer/',REGEXP_REPLACE(cd.Developer_ENName,' ','-'),'/') as Developer_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , cd.Classified_Unit_Count
 from condo_developer cd
-left join (SELECT cd.Developer_Code , count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo rc on c.Condo_Code = rc.Condo_Code
-            inner join condo_developer cd on rc.Developer_Code = cd.Developer_Code
-            where c.Classified_Status = '1'
-            group by cd.Developer_Code) c
-on cd.Developer_Code = c.Developer_Code
 where cd.Developer_Status = 1
 and cd.Condo_Count > 0;
 
@@ -883,15 +877,13 @@ and cd.Condo_Count > 0;
     Developer_THName_Search VARCHAR(200) NOT NULL,
     Developer_ENName_Search VARCHAR(200) NOT NULL,
     Developer_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_developer`
-ALTER TABLE search_category_developer ADD Classified_Unit_Count INT NULL AFTER Developer_URL;
-
 -- truncateInsert_search_category_developer
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_developer;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_developer;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_developer ()
@@ -965,7 +957,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ;*/ 
+
+-- Table `search_category_brand`
+-- ALTER TABLE search_category_brand ADD Classified_Unit_Count INT NULL AFTER Brand_URL;
+ALTER TABLE brand ADD Classified_Unit_Count INT NULL AFTER Condo_Count;
 
 -- source_search_category_brand
 CREATE OR REPLACE VIEW source_search_category_brand as
@@ -975,15 +971,8 @@ select b.Brand_Code
     , REGEXP_REPLACE(b.Brand_Name, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Brand_Name_Search
     , REGEXP_REPLACE(b.Brand_Name_TH, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Brand_Name_TH_Search
     , concat('/realist/condo/list/brand/',REGEXP_REPLACE(b.Brand_Name,' ','-'),'/') as Brand_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , b.Classified_Unit_Count
 from brand b
-left join (SELECT b.Brand_Code , count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo rc on c.Condo_Code = rc.Condo_Code
-            inner join brand b on rc.Brand_Code = b.Brand_Code
-            where c.Classified_Status = '1'
-            group by b.Brand_Code) c
-on b.Brand_Code = c.Brand_Code
 where b.Brand_Status = 1
 and b.Condo_Count > 0;
 
@@ -996,15 +985,13 @@ and b.Condo_Count > 0;
     Brand_Name_Search VARCHAR(150) NOT NULL,
     Brand_Name_TH_Search VARCHAR(250) NULL,
     Brand_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_brand`
-ALTER TABLE search_category_brand ADD Classified_Unit_Count INT NULL AFTER Brand_URL;
-
 -- truncateInsert_search_category_brand
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_brand;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_brand;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_brand ()
@@ -1078,7 +1065,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_line`
+-- ALTER TABLE search_category_line ADD Classified_Unit_Count INT NULL AFTER Line_URL;
+ALTER TABLE mass_transit_line ADD Classified_Unit_Count INT NULL AFTER Condo_Count;
 
 -- source_search_category_line
 CREATE OR REPLACE VIEW source_search_category_line as
@@ -1088,15 +1079,8 @@ select ml.Line_Code
     , REGEXP_REPLACE(ml.Line_Name, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Line_Name_Search
     , REGEXP_REPLACE(ml.Line_Name_Eng, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Line_Name_Eng_Search
     , concat('/realist/condo/list/รถไฟฟ้า/',REGEXP_REPLACE(ml.Line_Name,' ','-'),'/') as Line_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , ml.Classified_Unit_Count
 from  mass_transit_line ml
-left join (SELECT ml.Line_Code, COUNT(DISTINCT c.Classified_ID) AS Classified_Condo_Count
-            FROM classified c
-            INNER JOIN condo_around_station cas ON c.Condo_Code = cas.Condo_Code
-            inner join mass_transit_line ml on cas.Line_Code = ml.Line_Code
-            WHERE c.Classified_Status = '1'
-            GROUP BY ml.Line_Code) c
-on ml.Line_Code = c.Line_Code
 where ml.Condo_Count > 0;
 
 -- Table `search_category_line`
@@ -1108,15 +1092,13 @@ where ml.Condo_Count > 0;
     Line_Name_Search VARCHAR(50) NOT NULL,
     Line_Name_Eng_Search VARCHAR(50) NULL,
     Line_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_line`
-ALTER TABLE search_category_line ADD Classified_Unit_Count INT NULL AFTER Line_URL;
-
 -- truncateInsert_search_category_line
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_line;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_line;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_line ()
@@ -1190,7 +1172,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_station`
+-- ALTER TABLE search_category_station ADD Classified_Unit_Count INT NULL AFTER Station_URL;
+ALTER TABLE mass_transit_station ADD Classified_Unit_Count INT NULL AFTER Condo_Count;
 
 --source_search_category_station
 CREATE OR REPLACE VIEW source_search_category_station as
@@ -1204,18 +1190,11 @@ select mtsm.Station_Code
     , REGEXP_REPLACE(ms.Station_THName_Display, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Station_THName_Display_Search
     , REGEXP_REPLACE(ms.Station_ENName_Display, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as Station_ENName_Display_Search
     , concat('/realist/condo/list/รถไฟฟ้า/',REGEXP_REPLACE(ml.Line_Name,' ','-'),'/',REGEXP_REPLACE(ms.Station_THName_Display,' ','-')) as Station_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , ms.Classified_Unit_Count
 from mass_transit_station_match_route mtsm
 left join mass_transit_route mr on mtsm.Route_Code = mr.Route_Code
 left join mass_transit_line ml on mr.Line_Code = ml.Line_Code
 left join mass_transit_station ms on mtsm.Station_Code = ms.Station_Code
-left join (SELECT ms.Station_Code, COUNT(DISTINCT c.Classified_ID) AS Classified_Condo_Count
-            FROM classified c
-            INNER JOIN condo_around_station cas ON c.Condo_Code = cas.Condo_Code
-            inner join mass_transit_station ms on cas.Station_Code = ms.Station_Code
-            WHERE c.Classified_Status = '1'
-            GROUP BY ms.Station_Code) c
-on mtsm.Station_Code = c.Station_Code
 where ms.Condo_Count > 0;
 
 -- Table `search_category_station`
@@ -1231,15 +1210,13 @@ where ms.Condo_Count > 0;
     Station_THName_Display_Search VARCHAR(200) NOT NULL,
     Station_ENName_Display_Search VARCHAR(200) NOT NULL,
     Station_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_station`
-ALTER TABLE search_category_station ADD Classified_Unit_Count INT NULL AFTER Station_URL;
-
 -- truncateInsert_search_category_station
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_station;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_station;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_station ()
@@ -1323,7 +1300,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_realist_district`
+-- ALTER TABLE search_category_realist_district ADD Classified_Unit_Count INT NULL AFTER Real_District_URL;
+ALTER TABLE real_yarn_main ADD Classified_Unit_Count INT NULL AFTER Housing_Count;
 
 -- source_search_category_realist_district
 CREATE OR REPLACE VIEW source_search_category_realist_district as
@@ -1333,15 +1314,8 @@ select rm.District_Code
     , REGEXP_REPLACE(rm.District_Name, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as District_Name_Search
     , REGEXP_REPLACE(REGEXP_REPLACE(rm.District_Name_ENG,concat(rm.District_Code,'-'),''), '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as District_Name_ENG_Search
     , concat('/realist/condo/list/ย่าน/',REGEXP_REPLACE(rm.District_Name,' ','-'),'/') as Real_District_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , rm.Classified_Unit_Count
 from  real_yarn_main rm
-left join (SELECT rc.RealDistrict_Code, count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo rc on c.Condo_Code = rc.Condo_Code
-            inner join real_yarn_main rm on rc.RealDistrict_Code = rm.District_Code
-            where c.Classified_Status = '1'
-            group by rc.RealDistrict_Code) c
-on rm.District_Code = c.RealDistrict_Code
 where rm.Condo_Count > 0;
 
 -- Table `search_category_realist_district`
@@ -1353,15 +1327,13 @@ where rm.Condo_Count > 0;
     District_Name_Search VARCHAR(150) NOT NULL,
     District_Name_ENG_Search VARCHAR(150) NOT NULL,
     Real_District_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_realist_district`
-ALTER TABLE search_category_realist_district ADD Classified_Unit_Count INT NULL AFTER Real_District_URL;
-
 -- truncateInsert_search_category_realist_district
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_realist_district;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_realist_district;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_realist_district ()
@@ -1436,7 +1408,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_realist_subdistrict`
+-- ALTER TABLE search_category_realist_subdistrict ADD Classified_Unit_Count INT NULL AFTER Real_SubDistrict_URL;
+ALTER TABLE real_yarn_sub ADD Classified_Unit_Count INT NULL AFTER Housing_Count;
 
 -- source_search_category_realist_subdistrict
 CREATE OR REPLACE VIEW source_search_category_realist_subdistrict as
@@ -1446,16 +1422,9 @@ select rs.SubDistrict_Code
     , REGEXP_REPLACE(rs.SubDistrict_Name, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as SubDistrict_Name_Search
     , REGEXP_REPLACE(REGEXP_REPLACE(rs.SubDistrict_Name_ENG,concat(rs.SubDistrict_Code,'-'),''), '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as SubDistrict_Name_ENG_Search
     , concat('/realist/condo/list/ย่าน/',rm.District_Name,'/',REGEXP_REPLACE(rs.SubDistrict_Name,' ','-')) as Real_SubDistrict_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , rs.Classified_Unit_Count
 from real_yarn_main rm
 left join real_yarn_sub rs on rm.District_Code = rs.District_Code
-left join (SELECT rc.RealSubDistrict_Code, count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo rc on c.Condo_Code = rc.Condo_Code
-            inner join real_yarn_sub rs on rc.RealSubDistrict_Code = rs.SubDistrict_Code
-            where c.Classified_Status = '1'
-            group by rc.RealSubDistrict_Code) c
-on rs.SubDistrict_Code = c.RealSubDistrict_Code
 where rs.Condo_Count > 0;
 
 -- Table `search_category_realist_subdistrict`
@@ -1467,15 +1436,13 @@ where rs.Condo_Count > 0;
     SubDistrict_Name_Search VARCHAR(250) NOT NULL,
     SubDistrict_Name_ENG_Search VARCHAR(200) NOT NULL,
     Real_SubDistrict_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_realist_subdistrict`
-ALTER TABLE search_category_realist_subdistrict ADD Classified_Unit_Count INT NULL AFTER Real_SubDistrict_URL;
-
 -- truncateInsert_search_category_realist_subdistrict
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_realist_subdistrict;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_realist_subdistrict;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_realist_subdistrict ()
@@ -1550,7 +1517,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_district`
+-- ALTER TABLE search_category_district ADD Classified_Unit_Count INT NULL AFTER District_URL;
+ALTER TABLE thailand_district ADD Classified_Unit_Count INT NULL AFTER Condo_Count;
 
 -- source_search_category_district
 CREATE OR REPLACE VIEW source_search_category_district AS
@@ -1561,16 +1532,9 @@ SELECT
     REGEXP_REPLACE(td.name_th, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as name_th_Search,
     REGEXP_REPLACE(td.name_en, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as name_en_Search,
     concat('/realist/condo/list/จังหวัด/',tp.name_th,'/',td.name_th) AS District_URL,
-    c.Classified_Condo_Count as Classified_Unit_Count
+    td.Classified_Unit_Count
 FROM thailand_district td
 left join thailand_province tp on td.province_id = tp.province_code
-left join (SELECT rc.District_ID, count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo rc on c.Condo_Code = rc.Condo_Code
-            inner join thailand_district td on rc.District_ID = td.district_code 
-            where c.Classified_Status = '1'
-            group by rc.District_ID) c
-on td.district_code = c.District_ID
 WHERE td.Condo_Count > 0
 AND tp.Condo_Count > 0;
 
@@ -1583,15 +1547,13 @@ AND tp.Condo_Count > 0;
     District_Name_Search varchar(250) NOT NULL,
     District_Name_ENG_Search varchar(200) NOT NULL,
     District_URL text NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_district`
-ALTER TABLE search_category_district ADD Classified_Unit_Count INT NULL AFTER District_URL;
-
 -- truncateInsert_search_category_district
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_district;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_district;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_district ()
@@ -1665,7 +1627,11 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
+
+-- Table `search_category_subdistrict`
+-- ALTER TABLE search_category_subdistrict ADD Classified_Unit_Count INT NULL AFTER SubDistrict_URL;
+ALTER TABLE thailand_subdistrict ADD Classified_Unit_Count INT NULL AFTER Condo_Count;
 
 -- source_search_category_subdistrict
 CREATE OR REPLACE VIEW source_search_category_subdistrict as
@@ -1675,17 +1641,10 @@ select ts.subdistrict_code
     , REGEXP_REPLACE(ts.name_th, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as name_th_Search
     , REGEXP_REPLACE(ts.name_en, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '') as name_en_Search
     , concat('/realist/condo/list/จังหวัด/',REGEXP_REPLACE(tp.name_th,' ','-'),'/',REGEXP_REPLACE(td.name_th,' ','-'),'/',REGEXP_REPLACE(ts.name_th,' ','-')) as SubDistrict_URL
-    , c.Classified_Condo_Count as Classified_Unit_Count
+    , ts.Classified_Unit_Count
 from thailand_subdistrict ts
 left join thailand_district td on ts.district_id = td.district_code
 left join thailand_province tp on td.province_id = tp.province_code
-left join (SELECT rc.SubDistrict_ID, count(c.Classified_ID) as Classified_Condo_Count
-            FROM classified c
-            inner join real_condo rc on c.Condo_Code = rc.Condo_Code
-            inner join thailand_subdistrict ts on rc.SubDistrict_ID = ts.subdistrict_code 
-            where c.Classified_Status = '1'
-            group by rc.SubDistrict_ID) c
-on ts.subdistrict_code = c.SubDistrict_ID
 where td.Condo_Count > 0
 and tp.Condo_Count > 0
 and ts.Condo_Count > 0;
@@ -1699,15 +1658,13 @@ and ts.Condo_Count > 0;
     SubDistrict_Name_Search VARCHAR(250) NOT NULL,
     SubDistrict_Name_ENG_Search VARCHAR(200) NOT NULL,
     SubDistrict_URL TEXT NOT NULL,
+    Classified_Unit_Count INT NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB; */
 
--- Table `search_category_subdistrict`
-ALTER TABLE search_category_subdistrict ADD Classified_Unit_Count INT NULL AFTER SubDistrict_URL;
-
 -- truncateInsert_search_category_subdistrict
-DROP PROCEDURE IF EXISTS truncateInsert_search_category_subdistrict;
+/* DROP PROCEDURE IF EXISTS truncateInsert_search_category_subdistrict;
 DELIMITER //
 
 CREATE PROCEDURE truncateInsert_search_category_subdistrict ()
@@ -1781,7 +1738,7 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
 
 
 -- truncateInsertViewSearch
@@ -1793,8 +1750,8 @@ BEGIN
 
     CALL truncateInsert_search_condo_detail_view ();
     CALL search_condo_detail_update_spotlight ();
-    CALL truncateInsert_search_category_spotlight ();
     CALL updatespotlightCountclassified ();
+    CALL truncateInsert_search_category_spotlight ();
     CALL truncateInsert_search_category_segment ();
     CALL truncateInsert_search_category_province ();
     CALL truncateInsert_search_category_developer ();
