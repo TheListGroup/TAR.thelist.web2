@@ -315,7 +315,7 @@ BEGIN
     END WHILE;
 
     SET x = 1;
-    SET listing_group = concat_ws(',','CUS039','CUS040','PS013','PS019');
+    SET listing_group = concat_ws(',','PS016','CUS040','PS013','PS019');
 
     WHILE x <= 4 DO
         SET each_listing = SUBSTRING_INDEX(SUBSTRING_INDEX(listing_group, ',', x), ',', -1);
