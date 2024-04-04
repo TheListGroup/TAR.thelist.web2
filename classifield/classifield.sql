@@ -205,3 +205,14 @@ CREATE TABLE IF NOT EXISTS `classified_all_logs` (
     CONSTRAINT cl_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID),
     CONSTRAINT classifiedl_user FOREIGN KEY (User_ID) REFERENCES classified_user(User_ID))
 ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table `classified_popular_carousel`
+-- -----------------------------------------------------
+CREATE TABLE `classified_popular_carousel` (
+    `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+    `popular_type` varchar(30) NOT NULL,
+    `popular_Code` varchar(30) NOT NULL,
+    `flipboard_display_list` int NOT NULL,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
