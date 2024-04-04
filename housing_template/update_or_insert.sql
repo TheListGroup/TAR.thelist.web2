@@ -943,28 +943,3 @@ ALTER TABLE `search_category_spotlight` ADD INDEX(`Spotlight_Code`);
 set popular_type = 'Spotlight'
 , popular_Code = 'PS016'
 where popular_Code = 'CUS039'; */
-
-
-insert into classified_popular_carousel (popular_type, popular_Code, flipboard_display_list)
-values ('spotlight','PS006',1)
-    , ('spotlight','PS007',2)
-    , ('spotlight','PS008',3)
-    , ('spotlight','PS009',4)
-    , ('spotlight','PS016',5)
-    , ('spotlight','PS017',6)
-    , ('spotlight','PS019',7)
-    , ('spotlight','PS024',8)
-    , ('spotlight','PS025',9)
-    , ('spotlight','PS001',10)
-    , ('custom','CUS003',11)
-    , ('custom','CUS001',12)
-    , ('custom','CUS002',13)
-    , ('spotlight','PS002',14)
-    , ('spotlight','PS003',15)
-    , ('spotlight','PS021',16)
-    , ('spotlight','PS022',17)
-    , ('custom','CUS008',18)
-    , ('custom','CUS014',19)
-    , ('custom','CUS009',20)
-    , ('custom','CUS039',21)
-    , ('custom','CUS040',22);
