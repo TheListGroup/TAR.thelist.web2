@@ -212,7 +212,7 @@ ENGINE = InnoDB;
 CREATE TABLE `classified_popular_carousel` (
     `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
     `popular_type` varchar(30) NOT NULL,
-    `popular_Code` varchar(30) NOT NULL,
+    `popular_code` varchar(30) NOT NULL,
     `flipboard_display_list` int NOT NULL,
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
