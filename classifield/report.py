@@ -586,6 +586,7 @@ if sql:
             for k, use_list in enumerate(report_list):
                 df = pd.DataFrame(use_list)
                 df = df.dropna(subset=df.columns.difference([df.columns[0]]), how='all')
+                df = df.sort_values(by=[df.columns[1],df.columns[5]], ascending=[False,False])
                 df.to_excel(writer, sheet_name=title_list[k], index=False)  
     except Exception as e:
         print(f'Error: {e} at {title_list[i]} Query')
