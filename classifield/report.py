@@ -46,515 +46,515 @@ try:
 except Exception as e:
     print(f'Error: {e}')
 
-station_query = "SELECT \
-                    ms.Station_THName_Display as Station_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr,\
-                    JSON_TABLE(\
-                        cr.Condo_Around_Station,\
-                        '$[*]'\
-                        COLUMNS (\
-                            station_code varchar(100) PATH '$.Station_Code'\
-                        )\
-                    ) AS station\
-                JOIN \
-                    mass_transit_station ms ON station.station_code = ms.Station_Code\
-                group by ms.Station_THName_Display"
+station_query = """SELECT 
+                        ms.Station_THName_Display as Station_Name,
+                        sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                        sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                        sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                        sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                        sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                        sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                        sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                        sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                        sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                        sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                        sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                    FROM 
+                        classified_condo_report cr,
+                        JSON_TABLE(
+                            cr.Condo_Around_Station,
+                            '$[*]'
+                            COLUMNS (
+                                station_code varchar(100) PATH '$.Station_Code'
+                            )
+                        ) AS station
+                    JOIN 
+                        mass_transit_station ms ON station.station_code = ms.Station_Code
+                    group by ms.Station_THName_Display"""
 
-line_query = "SELECT \
-                ml.Line_Name as Line_Name,\
-                sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-            FROM \
-                classified_condo_report cr,\
-                JSON_TABLE(\
-                    cr.Condo_Around_Line,\
-                    '$[*]'\
-                    COLUMNS (\
-                        line_code varchar(100) PATH '$.Line_Code'\
-                    )\
-                ) AS c_line\
-            JOIN \
-                mass_transit_line ml ON c_line.line_code = ml.Line_Code\
-            group by ml.Line_Name"
+line_query = """SELECT 
+                    ml.Line_Name as Line_Name,
+                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                    sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                    SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                    sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                    SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                    sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                    SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                    sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                    SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                    sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                    SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                    sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                    SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                    sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                    SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                    sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                    SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                    sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                    SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                    sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                    SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                FROM 
+                    classified_condo_report cr,
+                    JSON_TABLE(
+                        cr.Condo_Around_Line,
+                        '$[*]'
+                        COLUMNS (
+                            line_code varchar(100) PATH '$.Line_Code'
+                        )
+                    ) AS c_line
+                JOIN 
+                    mass_transit_line ml ON c_line.line_code = ml.Line_Code
+                group by ml.Line_Name"""
 
-spotlight_query = "SELECT \
-                    rs.Spotlight_Name as Spotlight_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr,\
-                    JSON_TABLE(\
-                        cr.Spotlight_List,\
-                        '$[*]'\
-                        COLUMNS (\
-                            spotlight_code varchar(100) PATH '$.Spotlight_Code'\
-                        )\
-                    ) AS spotlight\
-                JOIN \
-                    real_condo_spotlight rs ON spotlight.spotlight_code = rs.Spotlight_Code\
-                where rs.Menu_List > 0\
-                group by rs.Spotlight_Name"
+spotlight_query = """SELECT 
+                        rs.Spotlight_Name as Spotlight_Name,
+                        sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                        sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                        sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                        sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                        sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                        sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                        sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                        sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                        sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                        sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                        sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                    FROM 
+                        classified_condo_report cr,
+                        JSON_TABLE(
+                            cr.Spotlight_List,
+                            '$[*]'
+                            COLUMNS (
+                                spotlight_code varchar(100) PATH '$.Spotlight_Code'
+                            )
+                        ) AS spotlight
+                    JOIN 
+                        real_condo_spotlight rs ON spotlight.spotlight_code = rs.Spotlight_Code
+                    where rs.Menu_List > 0
+                    group by rs.Spotlight_Name"""
 
-menu_price_query = "SELECT \
-                    rs.Spotlight_Name as Spotlight_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr,\
-                    JSON_TABLE(\
-                        cr.Spotlight_List,\
-                        '$[*]'\
-                        COLUMNS (\
-                            spotlight_code varchar(100) PATH '$.Spotlight_Code'\
-                        )\
-                    ) AS spotlight\
-                JOIN \
-                    real_condo_spotlight rs ON spotlight.spotlight_code = rs.Spotlight_Code\
-                where rs.Menu_Price_Order > 0\
-                group by rs.Spotlight_Name"
+menu_price_query = """SELECT 
+                            rs.Spotlight_Name as Spotlight_Name,
+                            sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                            sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                            SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                            SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                            sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                            SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                            SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                            sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                            SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                            SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                            sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                            SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                            SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                            sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                            SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                            SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                            sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                            SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                            SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                            sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                            SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                            SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                            sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                            SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                            SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                            sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                            SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                            SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                            sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                            SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                            SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                        FROM 
+                            classified_condo_report cr,
+                            JSON_TABLE(
+                                cr.Spotlight_List,
+                                '$[*]'
+                                COLUMNS (
+                                    spotlight_code varchar(100) PATH '$.Spotlight_Code'
+                                )
+                            ) AS spotlight
+                        JOIN 
+                            real_condo_spotlight rs ON spotlight.spotlight_code = rs.Spotlight_Code
+                        where rs.Menu_Price_Order > 0
+                        group by rs.Spotlight_Name"""
 
-segment_query = "SELECT \
-                    rs.Segment_Name as Segment_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr\
-                JOIN \
-                    real_condo_segment rs ON cr.Condo_Segment = rs.Segment_Code\
-                group by rs.Segment_Name"
+segment_query = """SELECT 
+                        rs.Segment_Name as Segment_Name,
+                        sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                        sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                        sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                        sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                        sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                        sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                        sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                        sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                        sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                        sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                        sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                    FROM 
+                        classified_condo_report cr
+                    JOIN 
+                        real_condo_segment rs ON cr.Condo_Segment = rs.Segment_Code
+                    group by rs.Segment_Name"""
 
-province_query = "SELECT \
-                    tp.name_th as Province_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr\
-                JOIN \
-                    thailand_province tp ON cr.Province_code = tp.province_code\
-                group by tp.name_th"
+province_query = """SELECT 
+                        tp.name_th as Province_Name,
+                        sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                        sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                        sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                        sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                        sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                        sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                        sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                        sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                        sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                        sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                        sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                    FROM 
+                        classified_condo_report cr
+                    JOIN 
+                        thailand_province tp ON cr.Province_code = tp.province_code
+                    group by tp.name_th"""
 
-district_query = "SELECT \
-                    rm.District_Name as District_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr\
-                JOIN \
-                    real_yarn_main rm ON cr.District_Code = rm.District_Code\
-                group by rm.District_Name"
+district_query = """SELECT 
+                        rm.District_Name as District_Name,
+                        sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                        sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                        sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                        sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                        sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                        sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                        sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                        sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                        sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                        sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                        sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                    FROM 
+                        classified_condo_report cr
+                    JOIN 
+                        real_yarn_main rm ON cr.District_Code = rm.District_Code
+                    group by rm.District_Name"""
 
-subdistrict_query = "SELECT \
-                        rs.SubDistrict_Name as SubDistrict_Name,\
-                        sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                        avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                        SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                        SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                        sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                        avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                        SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                        SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                        sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                        avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                        SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                        SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                        sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                        avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                        SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                        SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                        sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                        avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                        SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                        SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                        sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                        avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                        SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                        SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                        sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                        avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                        SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                        SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                        sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                        avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                        SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                        SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                        sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                        avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                        SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                        SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                        sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                        avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                        SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                        SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                    FROM \
-                        classified_condo_report cr\
-                    JOIN \
-                        real_yarn_sub rs ON cr.SubDistrict_Code = rs.SubDistrict_Code\
-                    group by rs.SubDistrict_Name"
+subdistrict_query = """SELECT 
+                            rs.SubDistrict_Name as SubDistrict_Name,
+                            sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                            sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                            SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                            SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                            sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                            SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                            SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                            sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                            SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                            SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                            sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                            SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                            SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                            sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                            SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                            SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                            sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                            SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                            SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                            sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                            SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                            SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                            sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                            SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                            SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                            sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                            sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                            SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                            SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                            sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                            sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                            SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                            SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                        FROM 
+                            classified_condo_report cr
+                        JOIN 
+                            real_yarn_sub rs ON cr.SubDistrict_Code = rs.SubDistrict_Code
+                        group by rs.SubDistrict_Name"""
 
-developer_query = "SELECT \
-                    cd.Developer_Name as Developer_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr\
-                JOIN \
-                    condo_developer cd ON cr.Developer_Code = cd.Developer_Code\
-                group by cd.Developer_Name"
+developer_query = """SELECT 
+                        cd.Developer_Name as Developer_Name,
+                        sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                        sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                        sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                        SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                        sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                        sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                        SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                        sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                        sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                        SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                        sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                        sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                        SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                        sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                        sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                        sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                        sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                        SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                    FROM 
+                        classified_condo_report cr
+                    JOIN 
+                        condo_developer cd ON cr.Developer_Code = cd.Developer_Code
+                    group by cd.Developer_Name"""
 
-brand_query = "SELECT \
-                    b.Brand_Name as Brand_Name,\
-                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,\
-                    avg(cr.Total_Average_Sqm_Sale) as Total_Average_Sqm_Sale,\
-                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,\
-                    SUM((cr.Total_Price_Per_Unit_Sale/cr.Total_Total_Sqm_Sale)*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,\
-                    avg(cr.Total_Average_Sqm_Rent) as Total_Average_Sqm_Rent,\
-                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,\
-                    SUM((cr.Total_Price_Per_Unit_Rent/cr.Total_Total_Sqm_Rent)*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,\
-                    avg(cr.Bed1_Average_Sqm_Sale) as Bed1_Average_Sqm_Sale,\
-                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed1_Price_Per_Unit_Sale/cr.Bed1_Total_Sqm_Sale)*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,\
-                    avg(cr.Bed1_Average_Sqm_Rent) as Bed1_Average_Sqm_Rent,\
-                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed1_Price_Per_Unit_Rent/cr.Bed1_Total_Sqm_Rent)*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,\
-                    avg(cr.Bed2_Average_Sqm_Sale) as Bed2_Average_Sqm_Sale,\
-                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed2_Price_Per_Unit_Sale/cr.Bed2_Total_Sqm_Sale)*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,\
-                    avg(cr.Bed2_Average_Sqm_Rent) as Bed2_Average_Sqm_Rent,\
-                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed2_Price_Per_Unit_Rent/cr.Bed2_Total_Sqm_Rent)*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,\
-                    avg(cr.Bed3_Average_Sqm_Sale) as Bed3_Average_Sqm_Sale,\
-                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed3_Price_Per_Unit_Sale/cr.Bed3_Total_Sqm_Sale)*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,\
-                    avg(cr.Bed3_Average_Sqm_Rent) as Bed3_Average_Sqm_Rent,\
-                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed3_Price_Per_Unit_Rent/cr.Bed3_Total_Sqm_Rent)*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,\
-                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,\
-                    avg(cr.Bed4_Average_Sqm_Sale) as Bed4_Average_Sqm_Sale,\
-                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,\
-                    SUM((cr.Bed4_Price_Per_Unit_Sale/cr.Bed4_Total_Sqm_Sale)*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,\
-                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,\
-                    avg(cr.Bed4_Average_Sqm_Rent) as Bed4_Average_Sqm_Rent,\
-                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,\
-                    SUM((cr.Bed4_Price_Per_Unit_Rent/cr.Bed4_Total_Sqm_Rent)*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent\
-                FROM \
-                    classified_condo_report cr\
-                JOIN \
-                    brand b ON cr.Brand_Code = b.Brand_Code\
-                group by b.Brand_Name"
+brand_query = """SELECT 
+                    b.Brand_Name as Brand_Name,
+                    sum(cr.Total_Room_Count_Sale) as Total_Room_Count_Sale,
+                    sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale) as Total_Average_Sqm_Sale,
+                    SUM(cr.Total_Price_Per_Unit_Sale*cr.Total_Total_Sqm_Sale)/SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sale,
+                    SUM(cr.Total_Price_Per_Unit_Sqm_Sale * cr.Total_Total_Sqm_Sale) / SUM(cr.Total_Total_Sqm_Sale) as Total_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Total_Room_Count_Rent) as Total_Room_Count_Rent,
+                    sum(cr.Total_Average_Sqm_Rent*cr.Total_Room_Count_Rent)/sum(cr.Total_Room_Count_Rent) as Total_Average_Sqm_Rent,
+                    SUM(cr.Total_Price_Per_Unit_Rent*cr.Total_Total_Sqm_Rent)/SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Rent,
+                    SUM(cr.Total_Price_Per_Unit_Sqm_Rent * cr.Total_Total_Sqm_Rent) / SUM(cr.Total_Total_Sqm_Rent) as Total_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed1_Room_Count_Sale) as Bed1_Room_Count_Sale,
+                    sum(cr.Bed1_Average_Sqm_Sale*cr.Bed1_Room_Count_Sale)/sum(cr.Bed1_Room_Count_Sale) as Bed1_Average_Sqm_Sale,
+                    SUM(cr.Bed1_Price_Per_Unit_Sale*cr.Bed1_Total_Sqm_Sale)/SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sale,
+                    SUM(cr.Bed1_Price_Per_Unit_Sqm_Sale * cr.Bed1_Total_Sqm_Sale) / SUM(cr.Bed1_Total_Sqm_Sale) as Bed1_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed1_Room_Count_Rent) as Bed1_Room_Count_Rent,
+                    sum(cr.Bed1_Average_Sqm_Rent*cr.Bed1_Room_Count_Rent)/sum(cr.Bed1_Room_Count_Rent) as Bed1_Average_Sqm_Rent,
+                    SUM(cr.Bed1_Price_Per_Unit_Rent*cr.Bed1_Total_Sqm_Rent)/SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Rent,
+                    SUM(cr.Bed1_Price_Per_Unit_Sqm_Rent * cr.Bed1_Total_Sqm_Rent) / SUM(cr.Bed1_Total_Sqm_Rent) as Bed1_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed2_Room_Count_Sale) as Bed2_Room_Count_Sale,
+                    sum(cr.Bed2_Average_Sqm_Sale*cr.Bed2_Room_Count_Sale)/sum(cr.Bed2_Room_Count_Sale) as Bed2_Average_Sqm_Sale,
+                    SUM(cr.Bed2_Price_Per_Unit_Sale*cr.Bed2_Total_Sqm_Sale)/SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sale,
+                    SUM(cr.Bed2_Price_Per_Unit_Sqm_Sale * cr.Bed2_Total_Sqm_Sale) / SUM(cr.Bed2_Total_Sqm_Sale) as Bed2_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed2_Room_Count_Rent) as Bed2_Room_Count_Rent,
+                    sum(cr.Bed2_Average_Sqm_Rent*cr.Bed2_Room_Count_Rent)/sum(cr.Bed2_Room_Count_Rent) as Bed2_Average_Sqm_Rent,
+                    SUM(cr.Bed2_Price_Per_Unit_Rent*cr.Bed2_Total_Sqm_Rent)/SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Rent,
+                    SUM(cr.Bed2_Price_Per_Unit_Sqm_Rent * cr.Bed2_Total_Sqm_Rent) / SUM(cr.Bed2_Total_Sqm_Rent) as Bed2_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed3_Room_Count_Sale) as Bed3_Room_Count_Sale,
+                    sum(cr.Bed3_Average_Sqm_Sale*cr.Bed3_Room_Count_Sale)/sum(cr.Bed3_Room_Count_Sale) as Bed3_Average_Sqm_Sale,
+                    SUM(cr.Bed3_Price_Per_Unit_Sale*cr.Bed3_Total_Sqm_Sale)/SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sale,
+                    SUM(cr.Bed3_Price_Per_Unit_Sqm_Sale * cr.Bed3_Total_Sqm_Sale) / SUM(cr.Bed3_Total_Sqm_Sale) as Bed3_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed3_Room_Count_Rent) as Bed3_Room_Count_Rent,
+                    sum(cr.Bed3_Average_Sqm_Rent*cr.Bed3_Room_Count_Rent)/sum(cr.Bed3_Room_Count_Rent) as Bed3_Average_Sqm_Rent,
+                    SUM(cr.Bed3_Price_Per_Unit_Rent*cr.Bed3_Total_Sqm_Rent)/SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Rent,
+                    SUM(cr.Bed3_Price_Per_Unit_Sqm_Rent * cr.Bed3_Total_Sqm_Rent) / SUM(cr.Bed3_Total_Sqm_Rent) as Bed3_Price_Per_Unit_Sqm_Rent,
+                    sum(cr.Bed4_Room_Count_Sale) as Bed4_Room_Count_Sale,
+                    sum(cr.Bed4_Average_Sqm_Sale*cr.Bed4_Room_Count_Sale)/sum(cr.Bed4_Room_Count_Sale) as Bed4_Average_Sqm_Sale,
+                    SUM(cr.Bed4_Price_Per_Unit_Sale*cr.Bed4_Total_Sqm_Sale)/SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sale,
+                    SUM(cr.Bed4_Price_Per_Unit_Sqm_Sale * cr.Bed4_Total_Sqm_Sale) / SUM(cr.Bed4_Total_Sqm_Sale) as Bed4_Price_Per_Unit_Sqm_Sale,
+                    sum(cr.Bed4_Room_Count_Rent) as Bed4_Room_Count_Rent,
+                    sum(cr.Bed4_Average_Sqm_Rent*cr.Bed4_Room_Count_Rent)/sum(cr.Bed4_Room_Count_Rent) as Bed4_Average_Sqm_Rent,
+                    SUM(cr.Bed4_Price_Per_Unit_Rent*cr.Bed4_Total_Sqm_Rent)/SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Rent,
+                    SUM(cr.Bed4_Price_Per_Unit_Sqm_Rent * cr.Bed4_Total_Sqm_Rent) / SUM(cr.Bed4_Total_Sqm_Rent) as Bed4_Price_Per_Unit_Sqm_Rent
+                FROM 
+                    classified_condo_report cr
+                JOIN 
+                    brand b ON cr.Brand_Code = b.Brand_Code
+                group by b.Brand_Name"""
 
 query_list = [station_query, line_query,spotlight_query,menu_price_query,segment_query,province_query,district_query,subdistrict_query,developer_query,brand_query]
 title_list = ['Station','Line','Spotlight','Menu_Price','Segment','Province','District','SubDistrict','Developer','Brand']
