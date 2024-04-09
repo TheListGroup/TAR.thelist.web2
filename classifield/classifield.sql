@@ -185,6 +185,7 @@ CREATE TABLE IF NOT EXISTS `classified_all_logs` (
     `Advance_Payment` SMALLINT UNSIGNED NULL,
     `Room_Type` ENUM('Studio','1 Bedroom','2 Bedroom','3 Bedroom','4 Bedroom') NULL,
     `Unit_Floor_Type` ENUM('Loft','Duplex') NULL,
+    `PentHouse` BOOLEAN NULL DEFAULT FALSE,
     `Bedroom` SMALLINT UNSIGNED NULL,
     `Bathroom` SMALLINT UNSIGNED NULL,
     `Size` FLOAT(8,3) UNSIGNED NULL,
