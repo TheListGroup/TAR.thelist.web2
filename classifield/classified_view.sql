@@ -532,11 +532,11 @@ BEGIN
 
     INSERT INTO classified_all_logs (Classified_ID, Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale, Sale_with_Tenant
         , Rent, Price_Sale, Sale_Transfer_Fee, Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract, Rent_Deposit
-        , Advance_Payment, Room_Type, Unit_Floor_Type, Bedroom, Bathroom, Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH
+        , Advance_Payment, Room_Type, Unit_Floor_Type, PentHouse, Bedroom, Bathroom, Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH
         , User_ID, Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
     SELECT Classified_ID, Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale, Sale_with_Tenant, Rent, Price_Sale
         , Sale_Transfer_Fee, Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract, Rent_Deposit, Advance_Payment
-        , Room_Type, Unit_Floor_Type, Bedroom, Bathroom, Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH, User_ID
+        , Room_Type, Unit_Floor_Type, PentHouse, Bedroom, Bathroom, Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH, User_ID
         , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date
     FROM classified;
 
