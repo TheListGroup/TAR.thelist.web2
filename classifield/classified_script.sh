@@ -21,3 +21,14 @@ echo "AG Start Insert Property"
 python3 /home/gitprod/ta_python/classifield/AG/AG_insert_prop.py
 
 echo "AG Finished"
+
+echo "Plus Call Project_API"
+python3 /home/gitprod/ta_python/classifield/Plus/Plus_getAPI_proj.py
+echo "Plus Call Property_API"
+python3 /home/gitprod/ta_python/classifield/Plus/Plus_getAPI_prop.py
+echo "Plus Start Match Project"
+python3 /home/gitprod/ta_python/classifield/Plus/Plus_match.py
+echo "Plus Start Insert Property"
+python3 /home/gitprod/ta_python/classifield/Plus/Plus_insert_prop.py
+
+echo "Plus Finished"
