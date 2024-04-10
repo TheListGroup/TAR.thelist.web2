@@ -1,4 +1,4 @@
-insert into classified_popular_carousel (popular_type, popular_code, flipboard_display_list)
+/*insert into classified_popular_carousel (popular_type, popular_code, flipboard_display_list)
 values ('Spotlight','PS006',1)
     , ('Spotlight','PS007',2)
     , ('Spotlight','PS008',3)
@@ -20,4 +20,12 @@ values ('Spotlight','PS006',1)
     , ('Custom','CUS014',19)
     , ('Custom','CUS009',20)
     , ('Custom','CUS039',21)
-    , ('Custom','CUS040',22);
+    , ('Custom','CUS040',22);*/
+
+INSERT INTO classified_user (User_ID, First_Name, Last_Name, Profile_Picture, User_Type, `Call`, Line_ID, Email, Facebook, Registration_Date, Company
+    , User_Status, Created_By, Created_Date, Last_Updated_By, Last_Updated_Date) 
+VALUES (NULL, 'Plus', NULL, NULL, 'Agent', NULL, NULL, NULL, NULL, CURRENT_TIMESTAMP, NULL, '1', '32', CURRENT_TIMESTAMP, '32', CURRENT_TIMESTAMP);
+
+ALTER TABLE `classified_project_staging` CHANGE `Ref_ID` `Ref_ID` VARCHAR(100) NULL DEFAULT '10';
+
+ALTER TABLE `classified` ADD `PentHouse` BOOLEAN NULL DEFAULT FALSE AFTER `Unit_Floor_Type`;
