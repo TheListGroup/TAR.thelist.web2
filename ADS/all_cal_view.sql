@@ -215,7 +215,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -235,7 +235,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -255,7 +255,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -274,7 +274,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -294,7 +294,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -314,7 +314,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -333,7 +333,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -365,7 +365,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -386,7 +386,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -407,7 +407,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -427,7 +427,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -448,7 +448,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -469,7 +469,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -489,7 +489,7 @@ left join ( select Condo_Code
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Sub as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
