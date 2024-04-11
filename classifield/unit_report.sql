@@ -217,9 +217,7 @@ left join (select Condo_Code
                     group by Condo_Code,Station_Code) c_station
             group by Condo_Code) astation
 on rc.Condo_Code = astation.Condo_Code
-where rc.Condo_Status = 1
-and ((total_sale.Total_Price_Per_Unit_Sale or 1bed_sale.Bed1_Price_Per_Unit_Sale or 2bed_sale.Bed2_Price_Per_Unit_Sale or 3bed_sale.Bed3_Price_Per_Unit_Sale or 4bed_sale.Bed4_Price_Per_Unit_Sale)
-or (total_rent.Total_Price_Per_Unit_Rent or 1bed_rent.Bed1_Price_Per_Unit_Rent or 2bed_rent.Bed2_Price_Per_Unit_Rent or 3bed_rent.Bed3_Price_Per_Unit_Rent or 4bed_rent.Bed4_Price_Per_Unit_Rent));
+where rc.Condo_Status = 1;
 
 -- table classified_condo_report
 CREATE TABLE IF NOT EXISTS classified_condo_report (
@@ -303,66 +301,6 @@ CREATE PROCEDURE truncateInsert_classified_condo_report ()
 BEGIN
     DECLARE i INT DEFAULT 0;
 	DECLARE total_rows INT DEFAULT 0;
-    DECLARE v_name VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name1 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name2 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name3 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name4 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name5 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name6 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name7 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name8 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name9 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name10 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name11 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name12 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name13 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name14 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name15 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name16 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name17 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name18 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name19 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name20 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name21 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name22 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name23 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name24 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name25 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name26 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name27 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name28 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name29 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name30 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name31 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name32 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name33 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name34 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name35 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name36 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name37 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name38 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name39 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name40 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name41 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name42 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name43 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name44 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name45 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name46 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name47 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name48 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name49 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name50 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name51 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name52 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name53 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name54 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name55 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name56 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name57 VARCHAR(250) DEFAULT NULL;
-	DECLARE v_name58 JSON DEFAULT NULL;
-	DECLARE v_name59 JSON DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_classified_condo_report';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -370,122 +308,99 @@ BEGIN
 	DECLARE rowCount        INTEGER     DEFAULT 0;
 	DECLARE nrows           INTEGER     DEFAULT 0;
 	DECLARE errorcheck      BOOLEAN  DEFAULT 1;
-
-    DECLARE done INT DEFAULT FALSE;
-
-    DECLARE cur CURSOR FOR select Condo_Code, Total_Room_Count, Total_Room_Count_Sale, Total_Average_Sqm_Sale, Total_Price_Per_Unit_Sale, Total_Price_Per_Unit_Sqm_Sale
-                                , Total_Total_Sqm_Sale, Total_Room_Count_Rent, Total_Average_Sqm_Rent, Total_Price_Per_Unit_Rent, Total_Price_Per_Unit_Sqm_Rent
-                                , Total_Total_Sqm_Rent, Bed1_Room_Count_Sale, Bed1_Average_Sqm_Sale, Bed1_Price_Per_Unit_Sale, Bed1_Price_Per_Unit_Sqm_Sale
-                                , Bed1_Total_Sqm_Sale, Bed1_Room_Count_Rent, Bed1_Average_Sqm_Rent, Bed1_Price_Per_Unit_Rent, Bed1_Price_Per_Unit_Sqm_Rent, Bed1_Total_Sqm_Rent
-                                , Bed2_Room_Count_Sale, Bed2_Average_Sqm_Sale, Bed2_Price_Per_Unit_Sale, Bed2_Price_Per_Unit_Sqm_Sale, Bed2_Total_Sqm_Sale, Bed2_Room_Count_Rent
-                                , Bed2_Average_Sqm_Rent, Bed2_Price_Per_Unit_Rent, Bed2_Price_Per_Unit_Sqm_Rent, Bed2_Total_Sqm_Rent, Bed3_Room_Count_Sale, Bed3_Average_Sqm_Sale
-                                , Bed3_Price_Per_Unit_Sale, Bed3_Price_Per_Unit_Sqm_Sale, Bed3_Total_Sqm_Sale, Bed3_Room_Count_Rent, Bed3_Average_Sqm_Rent, Bed3_Price_Per_Unit_Rent
-                                , Bed3_Price_Per_Unit_Sqm_Rent, Bed3_Total_Sqm_Rent, Bed4_Room_Count_Sale, Bed4_Average_Sqm_Sale, Bed4_Price_Per_Unit_Sale
-                                , Bed4_Price_Per_Unit_Sqm_Sale, Bed4_Total_Sqm_Sale, Bed4_Room_Count_Rent, Bed4_Average_Sqm_Rent, Bed4_Price_Per_Unit_Rent
-                                , Bed4_Price_Per_Unit_Sqm_Rent, Bed4_Total_Sqm_Rent, Condo_Segment, Province_code, District_Code, SubDistrict_Code, Developer_Code , Brand_Code
-                                , Condo_Around_Line, Condo_Around_Station
-                            from source_classified_condo_report;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
     BEGIN
 		GET DIAGNOSTICS CONDITION 1
             code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
-			SET msg = CONCAT(msg,' AT ',v_name);
+			SET msg = msg;
         INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
 		set errorcheck = 0;
     END;
-    
-    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
 	TRUNCATE TABLE  classified_condo_report;
-	
-    OPEN cur;
-    
-    read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46,v_name47,v_name48,v_name49,v_name50,v_name51,v_name52,v_name53,v_name54,v_name55,v_name56,v_name57,v_name58,v_name59;
-        
-        IF done THEN
-            LEAVE read_loop;
-        END IF;
 
-		INSERT INTO
-			classified_condo_report(
-				Condo_Code
-                , Total_Room_Count
-                , Total_Room_Count_Sale
-                , Total_Average_Sqm_Sale
-                , Total_Price_Per_Unit_Sale
-                , Total_Price_Per_Unit_Sqm_Sale
-                , Total_Total_Sqm_Sale
-                , Total_Room_Count_Rent
-                , Total_Average_Sqm_Rent
-                , Total_Price_Per_Unit_Rent
-                , Total_Price_Per_Unit_Sqm_Rent
-                , Total_Total_Sqm_Rent
-                , Bed1_Room_Count_Sale
-                , Bed1_Average_Sqm_Sale
-                , Bed1_Price_Per_Unit_Sale
-                , Bed1_Price_Per_Unit_Sqm_Sale
-                , Bed1_Total_Sqm_Sale
-                , Bed1_Room_Count_Rent
-                , Bed1_Average_Sqm_Rent
-                , Bed1_Price_Per_Unit_Rent	
-                , Bed1_Price_Per_Unit_Sqm_Rent
-                , Bed1_Total_Sqm_Rent
-                , Bed2_Room_Count_Sale
-                , Bed2_Average_Sqm_Sale
-                , Bed2_Price_Per_Unit_Sale
-                , Bed2_Price_Per_Unit_Sqm_Sale
-                , Bed2_Total_Sqm_Sale
-                , Bed2_Room_Count_Rent
-                , Bed2_Average_Sqm_Rent
-                , Bed2_Price_Per_Unit_Rent
-                , Bed2_Price_Per_Unit_Sqm_Rent
-                , Bed2_Total_Sqm_Rent
-                , Bed3_Room_Count_Sale
-                , Bed3_Average_Sqm_Sale
-                , Bed3_Price_Per_Unit_Sale
-                , Bed3_Price_Per_Unit_Sqm_Sale
-                , Bed3_Total_Sqm_Sale
-                , Bed3_Room_Count_Rent
-                , Bed3_Average_Sqm_Rent
-                , Bed3_Price_Per_Unit_Rent
-                , Bed3_Price_Per_Unit_Sqm_Rent
-                , Bed3_Total_Sqm_Rent
-                , Bed4_Room_Count_Sale
-                , Bed4_Average_Sqm_Sale
-                , Bed4_Price_Per_Unit_Sale
-                , Bed4_Price_Per_Unit_Sqm_Sale
-                , Bed4_Total_Sqm_Sale
-                , Bed4_Room_Count_Rent
-                , Bed4_Average_Sqm_Rent
-                , Bed4_Price_Per_Unit_Rent
-                , Bed4_Price_Per_Unit_Sqm_Rent
-                , Bed4_Total_Sqm_Rent
-                , Condo_Segment
-                , Province_code
-                , District_Code
-                , SubDistrict_Code
-                , Developer_Code 
-                , Brand_Code
-                , Condo_Around_Line
-                , Condo_Around_Station
-				)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46,v_name47,v_name48,v_name49,v_name50,v_name51,v_name52,v_name53,v_name54,v_name55,v_name56,v_name57,v_name58,v_name59);
-        
-		GET DIAGNOSTICS nrows = ROW_COUNT;
-		SET total_rows = total_rows + nrows;
-		SET i = i + 1;
-    END LOOP;
+    INSERT INTO classified_condo_report(
+            Condo_Code
+            , Total_Room_Count
+            , Total_Room_Count_Sale
+            , Total_Average_Sqm_Sale
+            , Total_Price_Per_Unit_Sale
+            , Total_Price_Per_Unit_Sqm_Sale
+            , Total_Total_Sqm_Sale
+            , Total_Room_Count_Rent
+            , Total_Average_Sqm_Rent
+            , Total_Price_Per_Unit_Rent
+            , Total_Price_Per_Unit_Sqm_Rent
+            , Total_Total_Sqm_Rent
+            , Bed1_Room_Count_Sale
+            , Bed1_Average_Sqm_Sale
+            , Bed1_Price_Per_Unit_Sale
+            , Bed1_Price_Per_Unit_Sqm_Sale
+            , Bed1_Total_Sqm_Sale
+            , Bed1_Room_Count_Rent
+            , Bed1_Average_Sqm_Rent
+            , Bed1_Price_Per_Unit_Rent	
+            , Bed1_Price_Per_Unit_Sqm_Rent
+            , Bed1_Total_Sqm_Rent
+            , Bed2_Room_Count_Sale
+            , Bed2_Average_Sqm_Sale
+            , Bed2_Price_Per_Unit_Sale
+            , Bed2_Price_Per_Unit_Sqm_Sale
+            , Bed2_Total_Sqm_Sale
+            , Bed2_Room_Count_Rent
+            , Bed2_Average_Sqm_Rent
+            , Bed2_Price_Per_Unit_Rent
+            , Bed2_Price_Per_Unit_Sqm_Rent
+            , Bed2_Total_Sqm_Rent
+            , Bed3_Room_Count_Sale
+            , Bed3_Average_Sqm_Sale
+            , Bed3_Price_Per_Unit_Sale
+            , Bed3_Price_Per_Unit_Sqm_Sale
+            , Bed3_Total_Sqm_Sale
+            , Bed3_Room_Count_Rent
+            , Bed3_Average_Sqm_Rent
+            , Bed3_Price_Per_Unit_Rent
+            , Bed3_Price_Per_Unit_Sqm_Rent
+            , Bed3_Total_Sqm_Rent
+            , Bed4_Room_Count_Sale
+            , Bed4_Average_Sqm_Sale
+            , Bed4_Price_Per_Unit_Sale
+            , Bed4_Price_Per_Unit_Sqm_Sale
+            , Bed4_Total_Sqm_Sale
+            , Bed4_Room_Count_Rent
+            , Bed4_Average_Sqm_Rent
+            , Bed4_Price_Per_Unit_Rent
+            , Bed4_Price_Per_Unit_Sqm_Rent
+            , Bed4_Total_Sqm_Rent
+            , Condo_Segment
+            , Province_code
+            , District_Code
+            , SubDistrict_Code
+            , Developer_Code 
+            , Brand_Code
+            , Condo_Around_Line
+            , Condo_Around_Station
+            )
+    select Condo_Code, Total_Room_Count, Total_Room_Count_Sale, Total_Average_Sqm_Sale, Total_Price_Per_Unit_Sale, Total_Price_Per_Unit_Sqm_Sale
+        , Total_Total_Sqm_Sale, Total_Room_Count_Rent, Total_Average_Sqm_Rent, Total_Price_Per_Unit_Rent, Total_Price_Per_Unit_Sqm_Rent
+        , Total_Total_Sqm_Rent, Bed1_Room_Count_Sale, Bed1_Average_Sqm_Sale, Bed1_Price_Per_Unit_Sale, Bed1_Price_Per_Unit_Sqm_Sale
+        , Bed1_Total_Sqm_Sale, Bed1_Room_Count_Rent, Bed1_Average_Sqm_Rent, Bed1_Price_Per_Unit_Rent, Bed1_Price_Per_Unit_Sqm_Rent, Bed1_Total_Sqm_Rent
+        , Bed2_Room_Count_Sale, Bed2_Average_Sqm_Sale, Bed2_Price_Per_Unit_Sale, Bed2_Price_Per_Unit_Sqm_Sale, Bed2_Total_Sqm_Sale, Bed2_Room_Count_Rent
+        , Bed2_Average_Sqm_Rent, Bed2_Price_Per_Unit_Rent, Bed2_Price_Per_Unit_Sqm_Rent, Bed2_Total_Sqm_Rent, Bed3_Room_Count_Sale, Bed3_Average_Sqm_Sale
+        , Bed3_Price_Per_Unit_Sale, Bed3_Price_Per_Unit_Sqm_Sale, Bed3_Total_Sqm_Sale, Bed3_Room_Count_Rent, Bed3_Average_Sqm_Rent, Bed3_Price_Per_Unit_Rent
+        , Bed3_Price_Per_Unit_Sqm_Rent, Bed3_Total_Sqm_Rent, Bed4_Room_Count_Sale, Bed4_Average_Sqm_Sale, Bed4_Price_Per_Unit_Sale
+        , Bed4_Price_Per_Unit_Sqm_Sale, Bed4_Total_Sqm_Sale, Bed4_Room_Count_Rent, Bed4_Average_Sqm_Rent, Bed4_Price_Per_Unit_Rent
+        , Bed4_Price_Per_Unit_Sqm_Rent, Bed4_Total_Sqm_Rent, Condo_Segment, Province_code, District_Code, SubDistrict_Code, Developer_Code , Brand_Code
+        , Condo_Around_Line, Condo_Around_Station
+    from source_classified_condo_report;
 
 	if errorcheck then
 		SET code    = '00000';
-		SET msg     = CONCAT(total_rows,' rows inserted.');
+		SET msg     = CONCAT('OK');
 		INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
 	end if;
 
-	
-    CLOSE cur;
 END //
 DELIMITER ;
 
@@ -674,7 +589,8 @@ JOIN
     mass_transit_station ms ON station.station_code = ms.Station_Code
 join mass_transit_station_match_route msr on ms.station_code = msr.Station_Code
 group by ms.Station_Code,ms.Station_THName_Display,msr.Route_Name,msr.Line_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- line query
 SELECT 
@@ -732,7 +648,8 @@ FROM
 JOIN 
     mass_transit_line ml ON c_line.line_code = ml.Line_Code
 group by ml.Line_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- spotlight query
 SELECT 
@@ -791,7 +708,8 @@ JOIN
     real_condo_spotlight rs ON spotlight.spotlight_code = rs.Spotlight_Code
 where rs.Menu_List > 0
 group by rs.Spotlight_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- menu price query
 SELECT 
@@ -901,7 +819,8 @@ FROM
 JOIN 
     real_condo_segment rs ON cr.Condo_Segment = rs.Segment_Code
 group by rs.Segment_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- province query
 SELECT 
@@ -952,7 +871,8 @@ FROM
 JOIN 
     thailand_province tp ON cr.Province_code = tp.province_code
 group by tp.name_th
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- district query
 SELECT 
@@ -1003,7 +923,8 @@ FROM
 JOIN 
     real_yarn_main rm ON cr.District_Code = rm.District_Code
 group by rm.District_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- subdistrict query
 SELECT 
@@ -1054,7 +975,8 @@ FROM
 JOIN 
     real_yarn_sub rs ON cr.SubDistrict_Code = rs.SubDistrict_Code
 group by rs.SubDistrict_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- developer query
 SELECT 
@@ -1105,7 +1027,8 @@ FROM
 JOIN 
     condo_developer cd ON cr.Developer_Code = cd.Developer_Code
 group by cd.Developer_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
 
 -- brand query
 SELECT 
@@ -1156,4 +1079,5 @@ FROM
 JOIN 
     brand b ON cr.Brand_Code = b.Brand_Code
 group by b.Brand_Name
-order by `Total_Room_Count` DESC, `Total_Room_Count_Sale` DESC, `Total_Room_Count_Rent` DESC, `Total_Average_Sqm_Sale` DESC;
+order by sum(cr.Total_Room_Count) DESC, sum(cr.Total_Room_Count_Sale) DESC, sum(cr.Total_Room_Count_Rent) DESC
+    , round(sum(cr.Total_Average_Sqm_Sale*cr.Total_Room_Count_Sale)/sum(cr.Total_Room_Count_Sale),1) DESC;
