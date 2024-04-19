@@ -146,3 +146,58 @@ WHERE pm.meta_key LIKE '_gapp_post_views'
 and year(po.post_date) >= 2015
 and po.post_type = 'post'
 ORDER BY CAST(pm.meta_value AS SIGNED)  DESC;
+
+
+
+
+SELECT ss.Condo_Code
+    , condo_enname.Condo_ENName
+    , condo_thname.Condo_Name
+    , if(ff.Condo_Code is not null,'TRUE','FALSE') as Floor_Plan
+    , if(ss.Article_Image is not null,'TRUE','FALSE') as Article
+    , rc.Condo_LastUpdate as Condo_LastUpdate
+FROM full_template_section_shortcut_view ss
+left join real_condo rc on ss.Condo_Code = rc.Condo_Code
+left join ( SELECT cpc.Condo_Code, 
+                if(Condo_ENName1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Condo_ENName1,'\n',1),' ',SUBSTRING_INDEX(Condo_ENName1,'\n',-1))
+                    , Condo_ENName2) as Condo_ENName
+            FROM real_condo AS cpc
+            left JOIN ( select Condo_Code as Condo_Code1
+                            ,   Condo_ENName as Condo_ENName1
+                        from real_condo
+                        where Condo_ENName LIKE '%\n%') real_condo1
+            on cpc.Condo_Code = real_condo1.Condo_Code1
+            left JOIN ( select Condo_Code as Condo_Code2
+                            ,   Condo_ENName as Condo_ENName2
+                        from real_condo
+                        WHERE Condo_ENName NOT LIKE '%\n%' 
+                        AND Condo_ENName NOT LIKE '%\r%') real_condo2
+            on cpc.Condo_Code = real_condo2.Condo_Code2
+            where cpc.Condo_Status = 1
+            ORDER BY cpc.Condo_Code) condo_enname
+on ss.Condo_Code = condo_enname.Condo_Code
+left join ( SELECT cpc.Condo_Code, 
+                if(Condo_Name1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Condo_Name1,'\n',1),' ',SUBSTRING_INDEX(Condo_Name1,'\n',-1))
+                    , Condo_Name2) as Condo_Name,
+                if(Condo_Name1 is not null
+                    , SUBSTRING_INDEX(Condo_Name1,'\n',-1)
+                    , '') as condo_location
+            FROM real_condo AS cpc
+            left JOIN ( select Condo_Code as Condo_Code1
+                            ,   Condo_Name as Condo_Name1
+                        from real_condo
+                        where Condo_Name LIKE '%\n%') real_condo1
+            on cpc.Condo_Code = real_condo1.Condo_Code1
+            left JOIN ( select Condo_Code as Condo_Code2
+                            ,   Condo_Name as Condo_Name2
+                        from real_condo
+                        WHERE Condo_Name NOT LIKE '%\n%' 
+                        AND Condo_Name NOT LIKE '%\r%') real_condo2
+            on cpc.Condo_Code = real_condo2.Condo_Code2
+            where cpc.Condo_Status = 1
+            ORDER BY cpc.Condo_Code) condo_thname
+on ss.Condo_Code = condo_thname.Condo_Code
+left join (select Condo_Code from full_template_floor_plan_fullscreen_view group by Condo_Code) ff
+on ss.Condo_Code = ff.Condo_Code;
