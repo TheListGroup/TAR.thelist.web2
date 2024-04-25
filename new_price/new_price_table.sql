@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `real_condo_price_new` (
     PRIMARY KEY (`ID`),
     INDEX new_price_admin1 (Created_By),
     INDEX new_price_admin2 (Last_Updated_By),
-    INDEX psource (Price_Source)
+    INDEX psource (Price_Source),
     INDEX new_price_code (Condo_Code),
     CONSTRAINT new_price_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
     CONSTRAINT new_price_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID),
