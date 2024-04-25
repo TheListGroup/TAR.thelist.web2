@@ -54,9 +54,9 @@ try:
     if connection.is_connected():
         print('Connected to MySQL server')
         cursor = connection.cursor()
-        #cursor.callproc('truncateInsert_classified_condo_report', args=())
-        #cursor.callproc('classified_condo_report_update_spotlight', args=())
-        #connection.commit()
+        cursor.callproc('truncateInsert_classified_condo_report', args=())
+        cursor.callproc('classified_condo_report_update_spotlight', args=())
+        connection.commit()
         sql = True
     
 except Exception as e:
