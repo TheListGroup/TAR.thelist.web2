@@ -65,17 +65,17 @@ END //
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `factsheet_price_view` (
     `Condo_Code` VARCHAR(10) NOT NULL,
-    `Price_Average_Square_Date` VARCHAR(6) NULL,
+    `Price_Average_Square_Date` VARCHAR(9) NULL,
     `Price_Average_Square` VARCHAR(50) NOT NULL,
     `Source_Price_Average_Square` VARCHAR(250) NOT NULL,
-    `Price_Average_Resale_Square_Date` VARCHAR(6) NULL,
+    `Price_Average_Resale_Square_Date` VARCHAR(9) NULL,
     `Price_Average_Resale_Square` VARCHAR(50) NOT NULL,
     `Source_Price_Average_Resale_Square` VARCHAR(250) NOT NULL,
-    `Price_Start_Square_Date` VARCHAR(6) NULL,
+    `Price_Start_Square_Date` VARCHAR(9) NULL,
     `Price_Start_Square` VARCHAR(50) NOT NULL,
     `Source_Price_Start_Square` VARCHAR(250) NOT NULL,
     `Condo_Price_Per_Unit_Text` VARCHAR(60) NOT NULL,
-    `Price_Start_Unit_Date` VARCHAR(6) NULL,
+    `Price_Start_Unit_Date` VARCHAR(9) NULL,
     `Price_Start_Unit` VARCHAR(20) NOT NULL,
     `Source_Price_Start_Unit` VARCHAR(250) NOT NULL,
     PRIMARY KEY (`Condo_Code`))
@@ -86,8 +86,8 @@ CREATE OR REPLACE VIEW source_factsheet_price_view AS
 select cpc.Condo_Code,
     bk(CASE
         WHEN COALESCE(avg_compre_sqm.Price_Date, '1900-01-01') > COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') 
-        THEN year(avg_compre_sqm.Price_Date)
-        ELSE year(avg_dev_survey_sqm.Price_Date)
+        THEN concat(if(month(avg_compre_sqm.Price_Date)<10,concat('0',month(avg_compre_sqm.Price_Date)),month(avg_compre_sqm.Price_Date)),'/',year(avg_compre_sqm.Price_Date))
+        ELSE concat(if(month(avg_dev_survey_sqm.Price_Date)<10,concat('0',month(avg_dev_survey_sqm.Price_Date)),month(avg_dev_survey_sqm.Price_Date)),'/',year(avg_dev_survey_sqm.Price_Date))
     END) as Price_Average_Square_Date,
     nun(bath(format(CASE
                         WHEN COALESCE(avg_compre_sqm.Price_Date, '1900-01-01') > COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') 
@@ -99,13 +99,13 @@ select cpc.Condo_Code,
             THEN avg_compre_sqm.Price_Source
             ELSE avg_dev_survey_sqm.Price_Source
         END) as Source_Price_Average_Square,
-    bk(year(resale.Price_Date)) as Price_Average_Resale_Square_Date,
+    bk(concat(if(month(resale.Price_Date)<10,concat('0',month(resale.Price_Date)),month(resale.Price_Date)),'/',year(resale.Price_Date))) as Price_Average_Resale_Square_Date,
     nun(bath(format(round(resale.Price,-3),0))) as Price_Average_Resale_Square,
     nun(resale.Price_Source) as Source_Price_Average_Resale_Square,
     bk(CASE
         WHEN COALESCE(start_compre_sqm.Price_Date, '1900-01-01') > COALESCE(start_dev_survey_sqm.Price_Date, '1900-01-01') 
-        THEN year(start_compre_sqm.Price_Date)
-        ELSE year(start_dev_survey_sqm.Price_Date)
+        THEN concat(if(month(start_compre_sqm.Price_Date)<10,concat('0',month(start_compre_sqm.Price_Date)),month(start_compre_sqm.Price_Date)),'/',year(start_compre_sqm.Price_Date))
+        ELSE concat(if(month(start_dev_survey_sqm.Price_Date)<10,concat('0',month(start_dev_survey_sqm.Price_Date)),month(start_dev_survey_sqm.Price_Date)),'/',year(start_dev_survey_sqm.Price_Date))
     END) as Price_Start_Square_Date,
     nun(bath(format(CASE
                         WHEN COALESCE(start_compre_sqm.Price_Date, '1900-01-01') > COALESCE(start_dev_survey_sqm.Price_Date, '1900-01-01') 
@@ -118,7 +118,7 @@ select cpc.Condo_Code,
             ELSE start_dev_survey_sqm.Price_Source
         END) as Source_Price_Start_Square,
     'ราคาเริ่มต้น / ยูนิต' as Condo_Price_Per_Unit_Text,
-    bk(year(start_unit.Price_Date)) as Price_Start_Unit_Date,
+    bk(concat(if(month(start_unit.Price_Date)<10,concat('0',month(start_unit.Price_Date)),month(start_unit.Price_Date)),'/',year(start_unit.Price_Date))) as Price_Start_Unit_Date,
     nun(concat(round((cpc.Condo_Price_Per_Unit_Cal/1000000),2),' ลบ.')) as Price_Start_Unit,
     nun(start_unit.Price_Source) as Source_Price_Start_Unit
 from all_condo_price_calculate cpc
@@ -126,7 +126,7 @@ left join ( select Condo_Code
                 , Price
                 , Price_Date
                 , Price_Source
-            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Sub as Price_Source
+            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Head as Price_Source
                     , ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
                     FROM all_price_view ap
                     left join price_source ps on ap.Price_Source = ps.ID
@@ -140,7 +140,7 @@ left join ( select Condo_Code
                 , Price
                 , Price_Date
                 , Price_Source
-            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Sub as Price_Source
+            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Head as Price_Source
                     , ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
                     FROM all_price_view ap
                     left join price_source ps on ap.Price_Source = ps.ID
@@ -154,7 +154,7 @@ left join ( select Condo_Code
                 , Price
                 , Price_Date
                 , Price_Source
-            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Sub as Price_Source
+            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Head as Price_Source
                     , ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
                     FROM all_price_view ap
                     left join price_source ps on ap.Price_Source = ps.ID
@@ -167,7 +167,7 @@ left join ( select Condo_Code
                 , Price
                 , Price_Date
                 , Price_Source
-            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Sub as Price_Source
+            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Head as Price_Source
                     , ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
                     FROM all_price_view ap
                     left join price_source ps on ap.Price_Source = ps.ID
@@ -181,7 +181,7 @@ left join ( select Condo_Code
                 , Price
                 , Price_Date
                 , Price_Source
-            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Sub as Price_Source
+            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Head as Price_Source
                     , ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
                     FROM all_price_view ap
                     left join price_source ps on ap.Price_Source = ps.ID
@@ -195,7 +195,7 @@ left join ( select Condo_Code
                 , Price
                 , Price_Date
                 , Price_Source
-            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Sub as Price_Source
+            from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ps.Head as Price_Source
                     , ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
                     FROM all_price_view ap
                     left join price_source ps on ap.Price_Source = ps.ID
@@ -203,7 +203,7 @@ left join ( select Condo_Code
                     and ap.Start_or_AVG = 'เริ่มต้น'
                     and ap.Resale = '0') order_start_unit
             where Myorder = 1) start_unit
-on cpc.Condo_Code = start_unit.Condo_Code
+on cpc.Condo_Code = start_unit.Condo_Code;
 
 
 -- truncateInsert_factsheet_price_view
@@ -491,17 +491,17 @@ CREATE TABLE IF NOT EXISTS `full_template_factsheet` (
     `District_Name` VARCHAR(150) NOT NULL,
     `Real_District` VARCHAR(150) NOT NULL,
     `Province` VARCHAR(150) NOT NULL,
-    `Price_Average_Square_Date` VARCHAR(6) NULL,
+    `Price_Average_Square_Date` VARCHAR(9) NULL,
     `Price_Average_Square` VARCHAR(50) NOT NULL,
     `Source_Price_Average_Square` VARCHAR(250) NOT NULL,
-    `Price_Average_Resale_Square_Date` VARCHAR(6) NULL,
+    `Price_Average_Resale_Square_Date` VARCHAR(9) NULL,
     `Price_Average_Resale_Square` VARCHAR(50) NOT NULL,
     `Source_Price_Average_Resale_Square` VARCHAR(250) NOT NULL,
-    `Price_Start_Square_Date` VARCHAR(6) NULL,
+    `Price_Start_Square_Date` VARCHAR(9) NULL,
     `Price_Start_Square` VARCHAR(50) NOT NULL,
     `Source_Price_Start_Square` VARCHAR(250) NOT NULL,
     `Condo_Price_Per_Unit_Text` VARCHAR(60) NOT NULL,
-    `Price_Start_Unit_Date` VARCHAR(6) NULL,
+    `Price_Start_Unit_Date` VARCHAR(9) NULL,
     `Price_Start_Unit` VARCHAR(20) NOT NULL,
     `Source_Price_Start_Unit` VARCHAR(250) NOT NULL,
     `Common_Fee` VARCHAR(50) NOT NULL,
