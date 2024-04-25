@@ -1,0 +1,11 @@
+1. new_price_table (new_price/new_price_table)
+2. transfer data (new_price_script)
+3. delete column from real_condo_price (new_price/format_column_real_condo_price)
+4. create view (new_price_view)
+5. create procedure (new_price_procedure)
+6. source_condo_spotlight_relationship_view
+7. procedure segment (sql/pro segment)
+8. view and procedure all_condo_price_calculate_view, all_condo_spotlight_relationship_view  (ADS/all_call_view)
+9. view ads_condo_project (ADS/ADS)
+10. view, procedure and alter table fetch_for_map (sql/new source_condo_fetch_for_map)
+11. view and procedure factsheet (full_template/factsheet)
