@@ -4,11 +4,11 @@
 -- classified_condo_fetch_for_map_getCondoSpotlight
 -- classified_condo_fetch_for_map_update_spotlight
 
-update classified set Sale = 0 where Price_Sale is null and classified_status = '1';
+/* update classified set Sale = 0 where Price_Sale is null and classified_status = '1';
 update classified set Rent = 0 where Price_Rent is null and classified_status = '1';
 update classified set Sale = 1 where Price_Sale is not null and classified_status = '1';
 update classified set Rent = 1 where Price_Rent is not null and classified_status = '1';
-update classified set Sale_with_Tenant = 0 where Price_Sale is null and classified_status = '1';
+update classified set Sale_with_Tenant = 0 where Price_Sale is null and classified_status = '1';*/
 
 -- table classified_condo_fetch_for_map
 CREATE TABLE IF NOT EXISTS classified_condo_fetch_for_map (
