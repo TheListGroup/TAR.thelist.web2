@@ -462,7 +462,9 @@ BEGIN
     CLOSE curTopSpotlight;
 	
 	SET finalSpotlight = TRIM(finalSpotlight);
-    SET finalSpotlight = concat('[',finalSpotlight,']');
+    IF finalSpotlight = "" THEN
+        SET finalSpotlight = NULL;
+    END IF;
     -- select finalSpotlight;
 
 END //
@@ -527,6 +529,11 @@ BEGIN
 	end if;
 
     CLOSE cur;
+
+    UPDATE classified_condo_fetch_for_map
+    SET Spotlight_List = null
+    WHERE TRIM(Spotlight_List) = "[]";
+
 END //
 DELIMITER ;
 
