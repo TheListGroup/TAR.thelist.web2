@@ -5,9 +5,12 @@ import os
 import requests
 import io
 from datetime import datetime
+from PIL import Image as a
+from io import BytesIO
+from wand.image import Image as b
 
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/1DL3EIH9h2begYCOSpAfiuCZHrNUQvRjSjjxuKQ8rS7A/export?format=csv'
-save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\Bridge\classified_image"
+save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\Serve\classified_image"
 
 host = '157.230.242.204'
 user = 'real-research2'
@@ -35,6 +38,24 @@ def price(va1,va2):
     else:
         va1 = None
     return va1
+
+def check_image_url_validity(url):
+    try:
+        response = requests.head(url)
+        content_length = response.headers.get('content-length')
+        
+        if content_length:
+            if int(content_length) < 1024 * 1024: 
+                try:
+                    image_response = requests.get(url)
+                    img = a.open(BytesIO(image_response.content))
+                    img.verify()
+                    return True
+                except (IOError, SyntaxError):
+                    pass
+        return False
+    except requests.RequestException:
+        return False
 
 def create_folder_and_remove_image_and_save_image():
     response = requests.get(folder_url)
@@ -75,24 +96,29 @@ def create_folder_and_remove_image_and_save_image():
         cursor.execute(query,val)
         connection.commit()
     
-    for l, image_url in enumerate(pic_list):
+    l = 0
+    for image_url in pic_list:
         file_id_match = re.search(r'/d/([a-zA-Z0-9_-]+)/', image_url)
         if file_id_match:
             file_id = file_id_match.group(1)
             direct_download_url = f"https://drive.google.com/uc?id={file_id}"
-            response = requests.get(direct_download_url)
-            if response.status_code == 200:
-                filename = f"{1:06d}-{l+1:02d}.jpg"
-                save_path = os.path.join(full_path, filename)
-                with open(save_path, "wb") as file:
-                    file.write(response.content)
             
-            query = """INSERT INTO classified_image (Classified_Image_URL,Displayed_Order_in_Classified,Classified_ID,Classified_Image_Status
-                        , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-            val = (filename, l+1, classified_id, '1', 32, create_date, 32, last_updated_date)
-            cursor.execute(query,val)
-            connection.commit()
+            if check_image_url_validity(direct_download_url):
+                response = requests.get(direct_download_url)
+                with b(file=BytesIO(response.content)) as img:
+                    img.transform(resize=f"1900x1900>")
+                    filename = f"{classified_id:06d}-{l+1:02d}.webp"
+                    img.format = 'webp'
+                    save_path = os.path.join(full_path, filename)
+                    img.save(filename=save_path)
+            
+                query = """INSERT INTO classified_image (Classified_Image_URL,Displayed_Order_in_Classified,Classified_ID,Classified_Image_Status
+                            , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                val = (filename, l+1, classified_id, '1', 32, create_date, 32, last_updated_date)
+                cursor.execute(query,val)
+                connection.commit()
+                l += 1
 
 def insert_log(location):
     if log:
@@ -196,6 +222,7 @@ if sql:
                         stop_processing = True
                         print(f'Error: {e} at SERVE_insert_prop_Update')
                         log = True
+                        insert_log("SERVE_insert_prop_Update")
                         break
             
             if not found:
