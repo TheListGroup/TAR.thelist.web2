@@ -10,11 +10,16 @@ from io import BytesIO
 from wand.image import Image as b
 
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/1DL3EIH9h2begYCOSpAfiuCZHrNUQvRjSjjxuKQ8rS7A/export?format=csv'
-save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\Serve\classified_image"
+#save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\Serve\classified_image"
+save_folder = "/var/www/html/realist/condo/uploads/classified"
 
-host = '157.230.242.204'
-user = 'real-research2'
-password = 'DQkuX/vgBL(@zRRa'
+#host = '157.230.242.204'
+#user = 'real-research2'
+#password = 'DQkuX/vgBL(@zRRa'
+
+host = '127.0.0.1'
+user = 'real-research'
+password = 'shA0Y69X06jkiAgaX&ng'
 
 user_id = 4
 
@@ -79,7 +84,8 @@ def create_folder_and_remove_image_and_save_image():
             if "ddrive_web" in file_link:
                 pic_list.append(file_link)
     
-    folder_path = f'//{classified_id:06d}'
+    #folder_path = f'//{classified_id:06d}'
+    folder_path = f'/{classified_id:06d}'
     full_path = save_folder + folder_path
     if not os.path.exists(full_path):
         os.makedirs(full_path)
@@ -214,7 +220,7 @@ if sql:
                         upd += 1
                         update_stat = True
                         create_folder_and_remove_image_and_save_image()
-                        if upd % 50 == 0:
+                        if upd % 10 == 0:
                             print(f'Update {upd} Rows')
                         log = True
                         break
@@ -245,7 +251,7 @@ if sql:
                     classified_id = cursor.fetchone()
                     classified_id = classified_id[0]
                     create_folder_and_remove_image_and_save_image()
-                    if insert % 50 == 0:
+                    if insert % 10 == 0:
                         print(f'Insert {insert} Rows')
                     log = True
                 except Exception as e:
