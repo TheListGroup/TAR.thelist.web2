@@ -1,17 +1,17 @@
 import pandas as pd
 import mysql.connector
 
-csv_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Plus\Plus_Match.csv'
+#csv_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Plus\Plus_Match.csv'
 #csv_path = r'/home/gitdev/ta_python/classifield/Plus/Plus_Match.csv'
-#csv_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_Match.csv'
+csv_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_Match.csv'
 
-host = '157.230.242.204'
-user = 'real-research2'
-password = 'DQkuX/vgBL(@zRRa'
+#host = '157.230.242.204'
+#user = 'real-research2'
+#password = 'DQkuX/vgBL(@zRRa'
 
-#host = '127.0.0.1'
-#user = 'real-research'
-#password = 'shA0Y69X06jkiAgaX&ng'
+host = '127.0.0.1'
+user = 'real-research'
+password = 'shA0Y69X06jkiAgaX&ng'
 
 real = pd.read_csv(csv_path, encoding='utf-8')
 log = False

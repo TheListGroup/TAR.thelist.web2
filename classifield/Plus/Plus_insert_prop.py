@@ -7,19 +7,19 @@ import requests
 from PIL import Image
 from io import BytesIO
 
-save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\classified_image"
-#save_folder = r"/var/www/html/realist/condo/uploads/classified"
-json_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Plus\Plus_PROPERTY.json'
+#save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\classified_image"
+save_folder = r"/var/www/html/realist/condo/uploads/classified"
+#json_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Plus\Plus_PROPERTY.json'
 #json_path = r'/home/gitdev/ta_python/classifield/Plus/Plus_PROPERTY.json'
-#json_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_PROPERTY.json'
+json_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_PROPERTY.json'
 
-host = '157.230.242.204'
-user = 'real-research2'
-password = 'DQkuX/vgBL(@zRRa'
+#host = '157.230.242.204'
+#user = 'real-research2'
+#password = 'DQkuX/vgBL(@zRRa'
 
-#host = '127.0.0.1'
-#user = 'real-research'
-#password = 'shA0Y69X06jkiAgaX&ng'
+host = '127.0.0.1'
+user = 'real-research'
+password = 'shA0Y69X06jkiAgaX&ng'
 
 user_id = 3
 
