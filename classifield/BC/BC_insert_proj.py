@@ -2,16 +2,16 @@ import pandas as pd
 import mysql.connector
 
 #csv_path = 'D:\PYTHON\TAR.thelist.web-1\classifield\BC\BC_Match.csv'
-#csv_path = '/home/gitdev/ta_python/classifield/BC/BC_Match.csv'
-csv_path = '/home/gitprod/ta_python/classifield/BC/BC_Match.csv'
+csv_path = '/home/gitdev/ta_python/classifield/BC/BC_Match.csv'
+#csv_path = '/home/gitprod/ta_python/classifield/BC/BC_Match.csv'
 
-host = '127.0.0.1'
+#host = '127.0.0.1'
 #user real-research
 #password = 'shA0Y69X06jkiAgaX&ng'
 
-#host = '157.230.242.204'
-user = 'real-research'
-password = 'shA0Y69X06jkiAgaX&ng'
+host = '157.230.242.204'
+user = 'real-research2'
+password = 'DQkuX/vgBL(@zRRa'
 
 real = pd.read_csv(csv_path, encoding='utf-8')
 log = False

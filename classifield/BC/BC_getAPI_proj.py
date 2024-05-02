@@ -2,8 +2,8 @@ import requests
 import json
 
 #project_file_path = 'D:\PYTHON\TAR.thelist.web-1\classifield\BC\BC_PROJECT.json'
-#project_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROJECT.json'
-project_file_path = '/home/gitprod/ta_python/classifield/BC/BC_PROJECT.json'
+project_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROJECT.json'
+#project_file_path = '/home/gitprod/ta_python/classifield/BC/BC_PROJECT.json'
 
 api_url = 'https://crm-interface-api.bkkcitismart.com/api/ext/bc/v1/auth'
 response = requests.get(api_url)
