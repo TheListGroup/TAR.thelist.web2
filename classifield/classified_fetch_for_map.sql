@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS classified_condo_fetch_for_map (
     Condo_Around_Station json DEFAULT NULL,
     Condo_URL_Tag varchar(200) null,
     Condo_Cover int not null default 0,
-    Total_Point double not null default 0, 
+    Total_Point double not null default 0,
+    Last_Updated_Date varchar(20) null,
+    Last_Updated_Date_Sort date null,
     Spotlight_List json DEFAULT NULL,
     PRIMARY KEY (ID),
     INDEX cfcode (Condo_Code),
@@ -105,6 +107,8 @@ select rc.Condo_Code
     , rc.Condo_Cover
     , ifnull(rc.No_of_Unit_Point, 0) + ifnull(rc.Finish_Year_Point, 0) + ifnull(rc.HighRise_Point, 0)
         + ifnull(rc.ListCompany_Point, 0) + ifnull(rc.DistanceFromStation_Point, 0) AS Total_Point
+    , updateday.Last_Updated_Date
+    , updateday.Last_Updated_Date_Sort
 from real_condo rc
 left join real_condo_price rcp on rc.Condo_Code = rcp.Condo_Code
 left join thailand_province tp on rc.Province_ID = tp.province_code
@@ -170,6 +174,19 @@ left join (select Condo_Code
                     group by Condo_Code,Station_Code) c_station
             group by Condo_Code) astation
 on rc.Condo_Code = astation.Condo_Code
+left join (SELECT Condo_Code
+                , max(date(Last_Updated_Date)) as Last_Updated_Date_Sort  
+                , concat(if(length(day(max(Last_Updated_Date)))=2
+                            , day(max(Last_Updated_Date))
+                            , concat("0",day(max(Last_Updated_Date)))) ,'/'
+                        ,if(length(month(max(Last_Updated_Date)))=2
+                            , month(max(Last_Updated_Date))
+                            , concat("0",month(max(Last_Updated_Date)))),'/'
+                        ,year(max(Last_Updated_Date))) as Last_Updated_Date
+            FROM classified
+            where Classified_Status = '1'
+            group by Condo_Code) updateday
+on rc.Condo_Code = updateday.Condo_Code
 where rc.Condo_Status = 1;
 
 
@@ -211,6 +228,8 @@ BEGIN
 	DECLARE v_name27 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name28 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name29 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name30 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name31 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_classified_condo_fetch_for_map';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -225,7 +244,7 @@ BEGIN
                                 Price_Sale_Sqm, Use_Price_Sale_Sqm, AVG_Price_Per_Unit_Sqm_Sale, Use_AVG_Per_Unit_Sqm_Sale, Room_Count_Rent, Price_Rent_Min,
                                 Use_Price_Rent_Min, Price_Rent_Sqm, Use_Price_Rent_Sqm, AVG_Price_Per_Unit_Sqm_Rent, Use_AVG_Per_Unit_Sqm_Rent, Condo_Segment,
                                 Province_code, District_Code, SubDistrict_Code, Developer_Code, Brand_Code, Condo_Around_Line, Condo_Around_Station, Condo_URL_Tag,
-                                Condo_Cover, Total_Point
+                                Condo_Cover, Total_Point, Last_Updated_Date, Last_Updated_Date_Sort
                             FROM source_classified_condo_fetch_for_map;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -244,7 +263,7 @@ BEGIN
     OPEN cur;
     
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31;
         
         IF done THEN
             LEAVE read_loop;
@@ -281,8 +300,10 @@ BEGIN
                 , Condo_Around_Station
                 , Condo_URL_Tag
                 , Condo_Cover
-                , Total_Point)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29);
+                , Total_Point
+                , Last_Updated_Date
+                , Last_Updated_Date_Sort)
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31);
         
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
