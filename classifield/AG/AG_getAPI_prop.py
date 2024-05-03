@@ -4,8 +4,8 @@ import json
 import math
 
 #property_file_path = 'D:\PYTHON\TAR.thelist.web-1\classifield\AG\AG_PROPERTY.json'
-#property_file_path = '/home/gitdev/ta_python/classifield/AG/AG_PROPERTY.json'
-property_file_path = '/home/gitprod/ta_python/classifield/AG/AG_PROPERTY.json'
+property_file_path = '/home/gitdev/ta_python/classifield/AG/AG_PROPERTY.json'
+#property_file_path = '/home/gitprod/ta_python/classifield/AG/AG_PROPERTY.json'
 
 api_path = 'https://feed.theagent.co.th/feed/agreallist/property.ashx?c=ag&t=a&p='
 api_url = 'https://feed.theagent.co.th/feed/agreallist/property.ashx?c=ag&t=a&p=1'

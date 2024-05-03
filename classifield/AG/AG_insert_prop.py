@@ -9,18 +9,18 @@ from io import BytesIO
 
 #save_folder = "D:\PYTHON\TAR.thelist.web-1\classifield\classified_image"
 #json_path = 'D:\PYTHON\TAR.thelist.web-1\classifield\AG\AG_PROPERTY.json'
-#json_path = '/home/gitdev/ta_python/classifield/AG/AG_PROPERTY.json'
+json_path = '/home/gitdev/ta_python/classifield/AG/AG_PROPERTY.json'
 save_folder = "/var/www/html/realist/condo/uploads/classified"
-json_path = '/home/gitprod/ta_python/classifield/AG/AG_PROPERTY.json'
+#json_path = '/home/gitprod/ta_python/classifield/AG/AG_PROPERTY.json'
 user_id = 2
 
-host = '127.0.0.1'
-user = 'real-research'
-password = 'shA0Y69X06jkiAgaX&ng'
+#host = '127.0.0.1'
+#user = 'real-research'
+#password = 'shA0Y69X06jkiAgaX&ng'
 
-#host = '157.230.242.204'
-#user = 'real-research2'
-#password = 'Y2qhLqIV9Vwqg]U@'
+host = '157.230.242.204'
+user = 'real-research2'
+password = 'DQkuX/vgBL(@zRRa'
 
 def create_folder_and_remove_image_and_save_image():
     only_1_pic = False

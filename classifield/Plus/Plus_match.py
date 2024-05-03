@@ -7,19 +7,19 @@ import math
 #project_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Plus\Plus_PROJECT.json'
 #csv_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Plus\Plus_Match.csv'
 
-#project_path = r'/home/gitdev/ta_python/classifield/Plus/Plus_PROJECT.json'
-#csv_path = r"/home/gitdev/ta_python/classifield/Plus/Plus_Match.csv"
+project_path = r'/home/gitdev/ta_python/classifield/Plus/Plus_PROJECT.json'
+csv_path = r"/home/gitdev/ta_python/classifield/Plus/Plus_Match.csv"
 
-project_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_PROJECT.json'
-csv_path = r"/home/gitprod/ta_python/classifield/Plus/Plus_Match.csv"
+#project_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_PROJECT.json'
+#csv_path = r"/home/gitprod/ta_python/classifield/Plus/Plus_Match.csv"
 
-#host = '157.230.242.204'
-#user = 'real-research2'
-#password = 'DQkuX/vgBL(@zRRa'
+host = '157.230.242.204'
+user = 'real-research2'
+password = 'DQkuX/vgBL(@zRRa'
 
-host = '127.0.0.1'
-user = 'real-research'
-password = 'shA0Y69X06jkiAgaX&ng'
+#host = '127.0.0.1'
+#user = 'real-research'
+#password = 'shA0Y69X06jkiAgaX&ng'
 
 agent = 'Plus'
 sql = False

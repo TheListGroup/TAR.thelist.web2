@@ -2,8 +2,8 @@ import requests
 import json
 
 #project_file_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Plus\Plus_PROJECT.json'
-#project_file_path = r'/home/gitdev/ta_python/classifield/Plus/Plus_PROJECT.json'
-project_file_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_PROJECT.json'
+project_file_path = r'/home/gitdev/ta_python/classifield/Plus/Plus_PROJECT.json'
+#project_file_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_PROJECT.json'
 
 api_url = "https://cm.plus.co.th/ApiSystem/Realist?key=f8dd385a719549d58ef0dadf168f6b17"
 
