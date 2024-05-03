@@ -2,7 +2,7 @@ import requests
 import json
 
 #property_file_path = 'D:\PYTHON\TAR.thelist.web-1\classifield\BC\BC_PROPERTY.json'
-property_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROJECT.json'
+property_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROPERTY.json'
 #property_file_path = '/home/gitprod/ta_python/classifield/BC/BC_PROPERTY.json'
 
 api_url = 'https://crm-interface-api.bkkcitismart.com/api/ext/bc/v1/auth'
