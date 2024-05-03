@@ -41,29 +41,34 @@ def create_folder_and_remove_image_and_save_image():
         val = (classified_id,)
         cursor.execute(query,val)
         connection.commit()
-            
-    for l, image_url in enumerate(image_urls):
+    
+    l = 0        
+    for image_url in image_urls:
         try:
-            response = requests.get(image_url)
-        except:
-            response = requests.get(image_urls)
-            only_1_pic = True
-        
-        if response.status_code == 200:
-            image_data = response.content
-            image = Image.open(BytesIO(image_data))
-            file_name = f"{classified_id:06d}-{l+1:02d}.webp"
-            save_path = os.path.join(full_path, file_name)
-            image.save(save_path, "WebP")
+            try:
+                response = requests.get(image_url)
+            except:
+                response = requests.get(image_urls)
+                only_1_pic = True
             
-            query = """INSERT INTO classified_image (Classified_Image_URL,Displayed_Order_in_Classified,Classified_ID,Classified_Image_Status
-                        , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-            val = (file_name, l+1, classified_id, '1', 32, created_Date, 32, last_Updated_Date)
-            cursor.execute(query,val)
-            connection.commit()
-            if only_1_pic:
-                break
+            if response.status_code == 200:
+                image_data = response.content
+                image = Image.open(BytesIO(image_data))
+                file_name = f"{classified_id:06d}-{l+1:02d}.webp"
+                save_path = os.path.join(full_path, file_name)
+                image.save(save_path, "WebP")
+                
+                query = """INSERT INTO classified_image (Classified_Image_URL,Displayed_Order_in_Classified,Classified_ID,Classified_Image_Status
+                            , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                val = (file_name, l+1, classified_id, '1', 32, created_Date, 32, last_Updated_Date)
+                cursor.execute(query,val)
+                connection.commit()
+                l += 1
+                if only_1_pic:
+                    break
+        except:
+            pass
 
 def insert_log(location):
     if log:
@@ -188,30 +193,27 @@ for i, prop in enumerate(property_list):
             description_ENG = prop["Description_ENG"]
             description_ENG = re.sub(f' - {idid}', '', description_ENG)
         
-        if prop["Sale"] == 'True':
-            sale = True
-        else:
-            sale = False
-        
-        if prop["Sale_with_Tenant"] == 'True':
-            sale_with_Tenant = True
-        else:
-            sale_with_Tenant = False
-        
-        if prop["Rent"] == 'True':
-            rent = True
-        else:
-            rent = False
-        
         if prop["Price_Sale"] == None or prop["Price_Sale"] == "0":
             price_Sale = None
+            sale = False
         else:
             price_Sale = prop["Price_Sale"]
+            sale = True
         
         if prop["Price_Rent"] == None or prop["Price_Rent"] == "0":
             price_Rent = None
+            rent = False
         else:
             price_Rent = prop["Price_Rent"]
+            rent = True
+        
+        if prop["Sale_with_Tenant"] == 'True':
+            if sale == True:
+                sale_with_Tenant = True
+            else:
+                sale_with_Tenant = False
+        else:
+            sale_with_Tenant = False
         
         if prop["Min_Rental_Contract"] == None:
             min_Rental_Contract = None
@@ -276,6 +278,9 @@ for i, prop in enumerate(property_list):
         if created_Date[:4] == '1900':
             created_Date = last_Updated_Date
         
+        insert_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        update_insert_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
         found = False
         for k in update:
             update_date = k[3]
@@ -292,11 +297,11 @@ for i, prop in enumerate(property_list):
                                     , Sale_with_Tenant = %s, Rent = %s, Price_Sale = %s, Price_Rent = %s, Min_Rental_Contract = %s
                                     , Rent_Deposit = %s, Advance_Payment = %s, Unit_Floor_Type = %s, Bedroom = %s, Bathroom = %s
                                     , Size = %s, Furnish = %s , Parking = %s, Descriptions_Eng = %s, Descriptions_TH = %s
-                                    , Last_Updated_Date = %s
+                                    , Last_Updated_Date = %s, Last_Update_Insert_Date = %s
                                 WHERE Ref_ID = %s and Project_ID = %s"""
                     val = (idid, project_id, title_TH, title_ENG, condo_code, sale, sale_with_Tenant, rent, price_Sale, price_Rent
                         , min_Rental_Contract, deposit, advance_Payment, unit_floor_type, bedroom, bathroom, size, furnish
-                        , fix_Parking, description_ENG, description_TH, last_Updated_Date, idid, project_id)
+                        , fix_Parking, description_ENG, description_TH, last_Updated_Date, update_insert_date, idid, project_id)
                     try:
                         cursor.execute(query,val)
                         connection.commit()
@@ -320,18 +325,18 @@ for i, prop in enumerate(property_list):
             query = "INSERT INTO classified (Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale, Sale_with_Tenant\
                     , Rent, Price_Sale, Price_Rent, Min_Rental_Contract, Rent_Deposit, Advance_Payment, Unit_Floor_Type\
                     , Bedroom, Bathroom, Size, Furnish, Parking, Descriptions_ENG, Descriptions_TH, User_ID\
-                    , Classified_Status, Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)\
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    , Classified_Status, Created_By, Created_Date, Last_Updated_By, Last_Updated_Date, Insert_Date)\
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
             val = (idid, project_id, title_TH, title_ENG, condo_code, sale, sale_with_Tenant, rent, price_Sale, price_Rent, min_Rental_Contract
                     , deposit, advance_Payment, unit_floor_type, bedroom, bathroom, size, furnish, fix_Parking, description_ENG, description_TH, user_id
-                    , '1', 32, created_Date, 32, last_Updated_Date)
+                    , '1', 32, created_Date, 32, last_Updated_Date, insert_date)
             try:
                 cursor.execute(query,val)
                 connection.commit()
                 insert += 1
                 update_stat = False
-                query = "SELECT Classified_ID, Ref_ID FROM classified WHERE Ref_ID = %s AND Project_ID = %s"
-                val = (idid, project_id)
+                query = "SELECT Classified_ID, Ref_ID FROM classified WHERE Ref_ID = %s AND Project_ID = %s AND Classified_Status = %s Limit 1"
+                val = (idid, project_id, '1')
                 cursor.execute(query,val)
                 classified_id = cursor.fetchone()
                 classified_id = classified_id[0]
