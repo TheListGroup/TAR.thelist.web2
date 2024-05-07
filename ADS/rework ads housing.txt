@@ -1,0 +1,8 @@
+- เปลี่ยน ads จาก table ads_base ให้ใช้ code จาก housing แทน ads_housing (tranfer_housing.sql)
+- insert housing top spotlight (search_housing_detail_update_spotlight)(search_view.sql)
+- ปรับ ads_housing_project_view ให้ใช้ข้อมูลของ housing แทน ads_housing_project (ADS.sql)
+- เปลี่ยน data type realist score ใน table housing เป็น float
+- สร้าง view housing_realist_score (realist_score.sql)
+- คิดคะแนน realist score (point.sql)
+- เพิ่ม realist score เข้าไปใน column total_point ใน housing_fetch_for_map
+- เปลี่ยนชื่อ procedure จาก updateHousing5Point เป็น updateHousingPoint เปลี่ยนใน procedure รวมด้วย

@@ -1,9 +1,9 @@
-DROP PROCEDURE IF EXISTS updateHousing5Point;
+DROP PROCEDURE IF EXISTS updateHousingPoint;
 DELIMITER //
 
-CREATE PROCEDURE updateHousing5Point ()
+CREATE PROCEDURE updateHousingPoint ()
 BEGIN
-    DECLARE proc_name       VARCHAR(50) DEFAULT 'updateHousing5Point';
+    DECLARE proc_name       VARCHAR(50) DEFAULT 'updateHousingPoint';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
     DECLARE msg             TEXT;
     DECLARE errorcheck      BOOLEAN		DEFAULT 1;
@@ -55,6 +55,14 @@ BEGIN
     DECLARE expressway_score_max INTEGER     DEFAULT 10;
     DECLARE expressway_m         FLOAT       DEFAULT 0;
     DECLARE expressway_b         FLOAT       DEFAULT 0;
+
+    DECLARE rs_weight    INTEGER     DEFAULT 20;
+    DECLARE rs_min       INTEGER     DEFAULT 1;
+    DECLARE rs_max       INTEGER     DEFAULT 10;
+    DECLARE rs_score_min INTEGER     DEFAULT 1;
+    DECLARE rs_score_max INTEGER     DEFAULT 10;
+    DECLARE rs_m         FLOAT       DEFAULT 0;
+    DECLARE rs_b         FLOAT       DEFAULT 0;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -124,11 +132,15 @@ BEGIN
 
     SET expressway_m = (expressway_score_min - expressway_score_max) / (expressway_min - expressway_max);
     SET expressway_b = expressway_score_min - expressway_m * expressway_min;
+
+    SET rs_m = (rs_score_min - rs_score_max) / (rs_min - rs_max);
+    SET rs_b = rs_score_min - rs_m * rs_min;
     
     UPDATE  housing h
     left join condo_developer cd on h.Developer_Code  = cd.Developer_Code
     left join housing_around_station2 h2 on h.Housing_Code = h2.Housing_Code
     left join housing_around_express_way2 ew on h.Housing_Code = ew.Housing_Code
+    left join housing_realist_score hs on h.Housing_Code = hs.Housing_Code
     SET	    h.Price_Min_Point              = ROUND(GREATEST(LEAST((ifnull((h.Housing_Price_Min / 1000000), price_min) * price_m+price_b) * price_weight, price_weight * price_score_max) ,price_weight * price_score_min), 1),
             h.NO_of_Unit_Point             = ROUND(GREATEST(LEAST((ifnull(h.Housing_TotalUnit, unit_min) * unit_m + unit_b) * unit_weight, unit_weight * unit_score_max), unit_weight * unit_score_min), 1),
             h.Age_Point                    = ROUND(GREATEST(LEAST((ifnull(if(h.Housing_Built_Finished is not null
@@ -138,7 +150,8 @@ BEGIN
                                                                                 , null)),age_min) * age_m + age_b) * age_weight, age_weight * age_score_max), age_weight * age_score_min), 1),
             h.ListCompany_Point            = ROUND(GREATEST(LEAST((ifnull(cd.Developer_ListedCompany, list_min) * list_m + list_b) * list_weight, list_weight * list_score_max), list_weight * list_score_min), 1),
             h.DistanceFromStation_Point    = ROUND(GREATEST(LEAST((ifnull(h2.Distance*1000, station_min) * station_m + station_b) * station_weight, station_weight * station_score_max), station_weight * station_score_min), 1),
-            h.DistanceFromExpressway_Point = ROUND(GREATEST(LEAST((ifnull(ew.Distance*1000, expressway_min) * expressway_m + expressway_b) * expressway_weight, expressway_weight * expressway_score_max), expressway_weight * expressway_score_min), 1);
+            h.DistanceFromExpressway_Point = ROUND(GREATEST(LEAST((ifnull(ew.Distance*1000, expressway_min) * expressway_m + expressway_b) * expressway_weight, expressway_weight * expressway_score_max), expressway_weight * expressway_score_min), 1),
+            h.Realist_Score                = ROUND(GREATEST(LEAST((ifnull(hs.Realist_Score, rs_min) * rs_m + rs_b) * rs_weight, rs_weight * rs_score_max), rs_weight * rs_score_min), 1);
 
     if errorcheck then
 		SET code    = '00000';

@@ -380,6 +380,7 @@ left join (select post_id
                     FROM `wp_postmeta` me
                     left join wp_posts po on me.post_id = po.ID
                     where me.meta_key = 'aaa_condo'
+                    and po.post_status = 'publish'
                     order by me.meta_value, po.post_date desc) post
             where RowNum = 1) link
 on cpc.Condo_Code = link.meta_value
@@ -387,124 +388,122 @@ order by cpc.Condo_Code;
 
 -- ads_housing_project_view
 CREATE OR REPLACE VIEW ads_housing_project_view AS
-select hp.House_Code as Prop_Code
-    , hp.House_Latitude as Latitude
-    , hp.House_Longitude as Longitude
-    , hp.House_ENName as Project_Name
-    , concat('เริ่มต้น ',format((hp.Price_Start_Unit/1000000),2),' ลบ.') as Price
-    , if(hp.House_Build_Finish is not null
-        ,if(year(curdate()) - year(hp.House_Build_Finish) > 0
-            ,if(home4.Prop_Code is not null
-                ,'โครงการ พร้อมอยู่'
-                ,if(home2.Prop_Code is not null
-                    ,'โฮมออฟฟิศ พร้อมอยู่'
-                    ,if(home3.Prop_Code is not null
-                        ,'อาคารพาณิชย์ พร้อมอยู่'
-                        ,if(home5.Prop_Code is not null
-                            ,'ทาวน์โฮม พร้อมอยู่'
-                            ,if(home6.Prop_Code is not null
-                                ,'บ้านแฝด พร้อมอยู่'
-                                ,if(home7.Prop_Code is not null
-                                    ,'บ้านเดี่ยว พร้อมอยู่'
-                                    ,null))))))
-            ,if(home4.Prop_Code is not null
-                ,'โครงการ ใหม่'
-                ,if(home2.Prop_Code is not null
-                    ,'โฮมออฟฟิศ ใหม่'
-                    ,if(home3.Prop_Code is not null
-                        ,'อาคารพาณิชย์ ใหม่'
-                        ,if(home5.Prop_Code is not null
-                            ,'ทาวน์โฮม ใหม่'
-                            ,if(home6.Prop_Code is not null
-                                ,'บ้านแฝด ใหม่'
-                                ,if(home7.Prop_Code is not null
-                                    ,'บ้านเดี่ยว ใหม่'
-                                    ,null)))))))
-        ,if(hp.House_Build_Start is not null
-            ,if(year(curdate()) - (year(hp.House_Build_Start) + 3) > 0
-                ,if(home4.Prop_Code is not null
-                    ,'โครงการ พร้อมอยู่'
-                    ,if(home2.Prop_Code is not null
-                        ,'โฮมออฟฟิศ พร้อมอยู่'
-                        ,if(home3.Prop_Code is not null
-                            ,'อาคารพาณิชย์ พร้อมอยู่'
-                            ,if(home5.Prop_Code is not null
-                                ,'ทาวน์โฮม พร้อมอยู่'
-                                ,if(home6.Prop_Code is not null
-                                    ,'บ้านแฝด พร้อมอยู่'
-                                    ,if(home7.Prop_Code is not null
-                                        ,'บ้านเดี่ยว พร้อมอยู่'
-                                        ,null))))))
-                ,if(home4.Prop_Code is not null
-                    ,'โครงการ ใหม่'
-                    ,if(home2.Prop_Code is not null
-                        ,'โฮมออฟฟิศ ใหม่'
-                        ,if(home3.Prop_Code is not null
-                            ,'อาคารพาณิชย์ ใหม่'
-                            ,if(home5.Prop_Code is not null
-                                ,'ทาวน์โฮม ใหม่'
-                                ,if(home6.Prop_Code is not null
-                                    ,'บ้านแฝด ใหม่'
-                                    ,if(home7.Prop_Code is not null
-                                        ,'บ้านเดี่ยว ใหม่'
-                                        ,null)))))))
-            ,null)) as Project_Status
-    , if(home1.Prop_Code is not null
-        ,if(hp.Price_Start_Unit <= 15000000
-            ,(select word from ads_words where `word_set` = '3' order by rand() limit 1)
-            ,if(hp.Price_Start_Unit > 15000000
-                ,(select word from ads_words where `word_set` = '4' order by rand() limit 1)
-                ,null))
-        ,if(home2.Prop_Code is not null
-            ,(select word from ads_words where `word_set` = '5' order by rand() limit 1)
-            ,if(home3.Prop_Code is not null
-                ,(select word from ads_words where `word_set` = '6' order by rand() limit 1)
-                ,NULL))) as Word
-    , concat_ws('\n',hp.House_Spotlight_1,hp.House_Spotlight_2) as Attribute
-    , rsd.SubDistrict_Name as Location
-    , ifnull((SELECT concat(Place_Type,' ',Place_Attribute_2) FROM `real_place_express_way` 
-        where ads_express_way(Place_Latitude, hp.House_Latitude, Place_Longitude, hp.House_Longitude) <= 10
-        order by ads_express_way(Place_Latitude, hp.House_Latitude, Place_Longitude, hp.House_Longitude) 
-        limit 1),null) as Surrounding
-    , 'Link' as Link -- ??? 
-    , concat(hp.House_Code,"/",hp.House_Code,ads_desktop_billboard('HP')) as Desktop_Billboard_Image
-    , concat(hp.House_Code,"/",hp.House_Code,ads_mobile_billboard('HP')) as Mobile_Billboard_Image
-    , concat(hp.House_Code,"/",hp.House_Code,ads_banner('HP')) as Banner_Image
-from ads_housing_project hp
-left join real_yarn_sub rsd on hp.RealSubDistrict_Code = rsd.SubDistrict_Code
-left join ( select Prop_Code
-            from property_type_relationship
-            where Property_Type_ID in (4,5,6)) home1
-on hp.House_Code = home1.Prop_Code
-left join ( select Prop_Code
-            from property_type_relationship
-            where Property_Type_ID = 2) home2
-on hp.House_Code = home2.Prop_Code
-left join ( select Prop_Code
-            from property_type_relationship
-            where Property_Type_ID = 3) home3
-on hp.House_Code = home3.Prop_Code
-left join (select Prop_Code 
-            from (SELECT Prop_Code,COUNT(ID) as pt 
-                FROM property_type_relationship
-                group by Prop_Code) homee
-            where pt > 1) home4
-on hp.House_Code = home4.Prop_Code
-left join ( select Prop_Code
-            from property_type_relationship
-            where Property_Type_ID = 4) home5
-on hp.House_Code = home5.Prop_Code
-left join ( select Prop_Code
-            from property_type_relationship
-            where Property_Type_ID = 5) home6
-on hp.House_Code = home6.Prop_Code
-left join ( select Prop_Code
-            from property_type_relationship
-            where Property_Type_ID = 6) home7
-on hp.House_Code = home7.Prop_Code
-where hp.House_Status = '1'
-group by hp.House_Code,hp.House_Latitude,hp.House_Longitude,hp.House_ENName,hp.Price_Start_Unit,hp.House_Build_Finish,hp.House_Build_Start
-        ,hp.House_Spotlight_1,hp.House_Spotlight_2,rsd.SubDistrict_Name;
+select h.Housing_Code as Prop_Code
+	, h.Housing_Latitude as Latitude
+    , h.Housing_Longitude as Longitude
+    , h.Housing_ENName as Project_Name
+    , concat('เริ่มต้น ',format((h.Housing_Price_Min/1000000),2),' ลบ.') as Price
+    , if(h.Housing_Built_Finished is not null
+        , if(year(curdate()) - year(h.Housing_Built_Finished) > 0
+            , if(h.IS_SD + h.IS_DD + h.IS_TH + h.IS_HO + h.IS_SH > 0
+                , 'โครงการ พร้อมอยู่'
+                , if(h.IS_SD
+                    , 'บ้านเดี่ยว พร้อมอยู่'
+                    , if(h.IS_DD
+                        , 'บ้านแฝด พร้อมอยู่'
+                        , if(h.IS_TH
+                            , 'ทาวน์โฮม พร้อมอยู่'
+                            , if(h.IS_HO
+                                , 'โฮมออฟฟิศ พร้อมอยู่'
+                                , if(h.IS_SH
+                                    , 'อาคารพาณิชย์ พร้อมอยู่'
+                                    , null))))))
+            , if(h.IS_SD + h.IS_DD + h.IS_TH + h.IS_HO + h.IS_SH > 0
+                , 'โครงการ ใหม่'
+                , if(h.IS_SD
+                    , 'บ้านเดี่ยว ใหม่'
+                    , if(h.IS_DD
+                        , 'บ้านแฝด ใหม่'
+                        , if(h.IS_TH
+                            , 'ทาวน์โฮม ใหม่'
+                            , if(h.IS_HO
+                                , 'โฮมออฟฟิศ ใหม่'
+                                , if(h.IS_SH
+                                    , 'อาคารพาณิชย์ ใหม่'
+                                    , null)))))))
+        , if(h.Housing_Built_Start is not null
+            , if(year(curdate()) - (year(h.Housing_Built_Start) + 3) > 0
+                , if(h.IS_SD + h.IS_DD + h.IS_TH + h.IS_HO + h.IS_SH > 0
+                    , 'โครงการ พร้อมอยู่'
+                    , if(h.IS_SD
+                        , 'บ้านเดี่ยว พร้อมอยู่'
+                        , if(h.IS_DD
+                            , 'บ้านแฝด พร้อมอยู่'
+                            , if(h.IS_TH
+                                , 'ทาวน์โฮม พร้อมอยู่'
+                                , if(h.IS_HO
+                                    , 'โฮมออฟฟิศ พร้อมอยู่'
+                                    , if(h.IS_SH
+                                        , 'อาคารพาณิชย์ พร้อมอยู่'
+                                        , null))))))
+                , if(h.IS_SD + h.IS_DD + h.IS_TH + h.IS_HO + h.IS_SH > 0
+                    , 'โครงการ ใหม่'
+                    , if(h.IS_SD
+                        , 'บ้านเดี่ยว ใหม่'
+                        , if(h.IS_DD
+                            , 'บ้านแฝด ใหม่'
+                            , if(h.IS_TH
+                                , 'ทาวน์โฮม ใหม่'
+                                , if(h.IS_HO
+                                    , 'โฮมออฟฟิศ ใหม่'
+                                    , if(h.IS_SH
+                                        , 'อาคารพาณิชย์ ใหม่'
+                                        , null)))))))
+            , null)) as Project_Status
+    , if(h.IS_SD or h.IS_DD or h.IS_TH
+        , if(h.Housing_Price_Min <= 15000000
+            , (select word from ads_words where `word_set` = '3' order by rand() limit 1)
+            , if(h.Housing_Price_Min > 15000000
+                , (select word from ads_words where `word_set` = '4' order by rand() limit 1)
+                , null))
+        , if(h.IS_HO
+            , (select word from ads_words where `word_set` = '5' order by rand() limit 1)
+            , if(h.IS_SH
+                , (select word from ads_words where `word_set` = '6' order by rand() limit 1)
+                , null))) as Word
+    , ifnull(h.Housing_Top_Spotlight,null) as Attribute
+    , rs.SubDistrict_Name as Location
+    , concat(express.Place_Type, ' ', express.Place_Attribute_2) as Surrounding
+    , ifnull(link.post_name,concat('https://thelist.group/realist/housing/proj/',h.Housing_URL_Tag)) as Link
+    , concat(h.Housing_Code,"/",h.Housing_Code,ads_desktop_billboard('HP')) as Desktop_Billboard_Image
+    , concat(h.Housing_Code,"/",h.Housing_Code,ads_mobile_billboard('HP')) as Mobile_Billboard_Image
+    , concat(h.Housing_Code,"/",h.Housing_Code,ads_banner('HP')) as Banner_Image
+from housing h
+left join real_yarn_sub rs on h.RealSubDistrict_Code = rs.SubDistrict_Code
+left join (select post_id
+                , meta_value
+                , concat('https://thelist.group/realist/blog/',post_name) as post_name
+            from (SELECT me.post_id, me.meta_value, po.post_date, po.post_name, ROW_NUMBER() OVER (PARTITION BY me.meta_value ORDER BY po.post_date desc) AS RowNum
+                    FROM `wp_postmeta` me
+                    left join wp_posts po on me.post_id = po.ID
+                    where me.meta_key = 'aaa_housing'
+                    and po.post_status = 'publish'
+                    order by me.meta_value, po.post_date desc) post
+            where RowNum = 1) link
+on h.Housing_Code = link.meta_value
+left join (select Housing_Code
+                , Place_Type
+                , Place_Attribute_2 
+            from (select Housing_Code
+                    , Place_Type
+                    , Place_Attribute_2
+                    , ROW_NUMBER() OVER (PARTITION BY Housing_Code ORDER BY Distance) AS RowNum
+                from (SELECT rpe.Place_Type
+                            , rpe.Place_Attribute_2
+                            , h.Housing_Code
+                            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(h.Housing_Latitude - rpe.Place_Latitude)) / 2), 2)
+                                + COS(RADIANS(rpe.Place_Latitude)) * COS(RADIANS(h.Housing_Latitude)) *
+                                POWER(SIN((RADIANS(h.Housing_Longitude - rpe.Place_Longitude)) / 2), 2 )))) AS Distance
+                        FROM real_place_express_way rpe
+                        cross join (select * from housing where Housing_Status = '1' and Housing_Latitude is not null AND Housing_Longitude is not null) h) aaa  
+                where aaa.Distance <= 10) aaaa
+            where aaaa.RowNum = 1) express
+on h.Housing_Code = express.Housing_Code
+where h.Housing_Status = '1'
+and h.Housing_Latitude is not null
+and h.Housing_Longitude is not null
+and h.Housing_ENName is not null
+order by h.Housing_Code;
 
 -- ads_non_residential_project
 CREATE OR REPLACE VIEW ads_non_residential_project AS
