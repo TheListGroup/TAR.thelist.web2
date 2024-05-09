@@ -1,22 +1,9 @@
--- real_condo_dd
 -- price_source
 -- real_condo_price_new
 -- all_price_view
 -- condo_price_calculate_view
 -- all_condo_price_calculate
-
--- Table `real_condo_dd`
-CREATE TABLE IF NOT EXISTS `real_condo_dd` (
-    Data_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Condo_Code VARCHAR(8) NOT NULL,
-    Data_Date DATE NOT NULL,
-    Data_Attribute VARCHAR(100) NULL,
-    Data_Value FLOAT NOT NULL,
-    Data_Note TEXT NULL,
-    Data_Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`ID`),
-    INDEX ddcode (Condo_Code))
-ENGINE = InnoDB;
+-- classified_price
 
 -- Table `price_source`
 CREATE TABLE IF NOT EXISTS `price_source` (
@@ -127,4 +114,15 @@ CREATE TABLE IF NOT EXISTS `all_condo_price_calculate` (
     PRIMARY KEY (`ID`),
     INDEX acpc_condo_code (Condo_Code),
     INDEX acpc_cal_date (Condo_Date_Calculate))
+ENGINE = InnoDB;
+
+-- Table `classified_price`
+CREATE TABLE IF NOT EXISTS `classified_price` (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Condo_Code varchar(50) not null,
+    Data_Date date NOT NULL,
+    Data_Attribute varchar(100) NULL,
+    Data_Value float NOT NULL,
+    PRIMARY KEY (`ID`),
+    INDEX cp_code (Condo_Code))
 ENGINE = InnoDB;
