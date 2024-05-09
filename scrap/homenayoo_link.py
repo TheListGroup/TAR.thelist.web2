@@ -12,8 +12,8 @@ def open_browser(path1,path2):
     #หาหน้ารวม
     page = soup.find('span', {'class': 'count_page'})
     page = page.text.strip()
-    page = re.findall("\d+ หน้า", page)
-    page = re.findall("\d+", str(page))
+    page = re.findall(r"\d+ หน้า", page)
+    page = re.findall(r"\d+", str(page))
     page = int(page[0])
 
     def get_link():
@@ -50,14 +50,14 @@ def open_browser(path1,path2):
 open_browser("townhome","ทาวน์โฮม")
 open_browser("home","บ้านเดี่ยว")
 link_df = pd.DataFrame(home_list)
-link_df.to_csv('D:\PYTHON\TAR.thelist.web-2\scrap\homenayoo_link_all.csv')
+link_df.to_csv(r'C:\PYTHON\TAR.thelist.web2\scrap\new_list_all.csv')
 
-group_link = pd.read_csv("D:\PYTHON\TAR.thelist.web-2\scrap\homenayoo_link_all.csv")
+group_link = pd.read_csv(r'C:\PYTHON\TAR.thelist.web2\scrap\new_list_all.csv')
 group_link['COUNT'] = group_link.groupby('Link')['Link'].transform('count')
 group_link = group_link.groupby('Link').first().reset_index()
 group_link = group_link.drop(columns=['Unnamed: 0'])
 group_link['COUNT'] = group_link['COUNT'].astype(int)
 group_link['MIX'] = group_link['COUNT'] > 1
 group_link = group_link.sort_values(by='Date', ascending=False)
-group_link.to_csv('D:\PYTHON\TAR.thelist.web-2\scrap\homenayoo_link_for_data.csv')
+group_link.to_csv(r'C:\PYTHON\TAR.thelist.web2\scrap\new_link.csv')
 print("Get Link Success")

@@ -10,8 +10,8 @@ def save(all_page_sources):
     with open(file_path, "w", encoding="utf-8") as file:
         file.write(all_page_sources)
 
-home_link = pd.read_csv("D:\PYTHON\TAR.thelist.web-2\scrap\homenayoo_link_for_data.csv")
-file_path = "D:\PYTHON\TAR.thelist.web-2\scrap\webpage_home_data.txt"
+home_link = pd.read_csv(r"C:\PYTHON\TAR.thelist.web2\scrap\format_link.csv")
+file_path = r"C:\PYTHON\TAR.thelist.web2\scrap\webpage_home_data.txt"
 search_string = '### '
 
 all_page_sources = ""
@@ -30,7 +30,7 @@ except:
 
 i = count
 while i in range(len(home_link.index)):
-    url = home_link.iloc[i][1]
+    url = home_link.iloc[i].iloc[0]
     response = requests.get(url)
     if response.status_code == 200:
         try:

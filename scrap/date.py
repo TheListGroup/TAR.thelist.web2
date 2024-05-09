@@ -1,7 +1,7 @@
 import pandas as pd
 import re
-file = 'D:\PYTHON\TAR.thelist.web-2\scrap\home.csv'
-csv_file = 'D:\PYTHON\TAR.thelist.web-2\scrap\home_date.csv'
+file = r'C:\PYTHON\TAR.thelist.web2\scrap\home.csv'
+csv_file = r'C:\PYTHON\TAR.thelist.web2\scrap\home_date.csv'
 
 urls = pd.read_csv(file)
 
@@ -28,10 +28,10 @@ def work(sp_text,index,column_name):
     find_month = False
     month, i = '', 0
     special_text = sp_text
-    schedule = urls.iloc[ind][index]
+    schedule = urls.iloc[ind].iloc[index]
     if pd.notna(schedule):
         data_dict[column_name + '_ต้นฉบับ'] = schedule
-        clean_schedule = re.sub('\.','',schedule)
+        clean_schedule = re.sub(r'\.','',schedule)
         clean_schedule = re.sub('พศ','',clean_schedule)
         clean_schedule = re.sub('ปี','',clean_schedule)
         clean_schedule = re.sub(' ','',clean_schedule)
@@ -43,7 +43,7 @@ def work(sp_text,index,column_name):
                     text = special_text
                     data_dict[sp_text] = text
                 else:
-                    number = re.search('\d+', clean_schedule)
+                    number = re.search(r'\d+', clean_schedule)
                     if number:
                         year = number.group(0)
                         year = calyear(year)
@@ -51,7 +51,7 @@ def work(sp_text,index,column_name):
                         data_dict[sp_text] = ''
                         data_dict[column_name + '_Check'] = 0
         if find_month == True:
-            number = re.search(f'{month}(\d+)', clean_schedule)
+            number = re.search(f'{month}(\\d+)', clean_schedule)
             month = str(i + 1) 
             if number:
                 year = number.group(1)
@@ -61,7 +61,7 @@ def work(sp_text,index,column_name):
                 data_dict[sp_text] = ''
                 data_dict[column_name + '_Check'] = 0
             else:
-                article_date = urls.iloc[ind][57]
+                article_date = urls.iloc[ind].iloc[57]
                 article_year = article_date[-2:]
                 text = '01/' + month + '/20' + article_year
                 data_dict[column_name] = text

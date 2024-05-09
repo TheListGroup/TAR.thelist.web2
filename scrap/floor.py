@@ -1,8 +1,8 @@
 import pandas as pd
 import re
 
-file = 'D:\PYTHON\TAR.thelist.web-2\scrap\home.csv'
-csv_file = 'D:\PYTHON\TAR.thelist.web-2\scrap\home_floor.csv'
+file = r'C:\PYTHON\TAR.thelist.web2\scrap\home.csv'
+csv_file = r'C:\PYTHON\TAR.thelist.web2\scrap\home_floor.csv'
 
 urls = pd.read_csv(file)
 
@@ -10,9 +10,9 @@ data_list = []
 
 ind = 0
 while ind in urls.index:
-    url = urls.iloc[ind][0]
+    url = urls.iloc[ind].iloc[0]
     data_dict = {'Link' : url}
-    house_type = urls.iloc[ind][7]
+    house_type = urls.iloc[ind].iloc[7]
     floor_min,floor_max = '',''
     if pd.notna(house_type):
         pattern = r'(\d+)\s+ชั้น'

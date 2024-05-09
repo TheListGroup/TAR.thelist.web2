@@ -6,10 +6,10 @@ import os
 from PIL import Image
 from io import BytesIO
 
-file_name = "D:\PYTHON\TAR.thelist.web-2\scrap\webpage_home_data.txt"
-save_folder = "D:\PYTHON\TAR.thelist.web-2\scrap\house_image"
-csv_file = 'D:\PYTHON\TAR.thelist.web-2\scrap\home.csv'
-link_file = "D:\PYTHON\TAR.thelist.web-2\scrap\homenayoo_link_for_data.csv"
+file_name = r"C:\PYTHON\TAR.thelist.web2\scrap\webpage_home_data.txt"
+save_folder = r"C:\PYTHON\TAR.thelist.web2\scrap\house_image"
+csv_file = r'C:\PYTHON\TAR.thelist.web2\scrap\home.csv'
+link_file = r"C:\PYTHON\TAR.thelist.web2\scrap\format_link.csv"
 
 url_path = 'https://maps.googleapis.com/maps/api/geocode/json?address=' ####
 key = '&key=AIzaSyAwL10BBi0BkxT1NbjNsG_A90QUM0WpgK4' ####
@@ -266,7 +266,7 @@ def extract_numbers(text):
 def format_name(head1,head2):
     pattern = r'\(.*?\)'
     f_name = re.sub(pattern, '', get_data)
-    f_name = re.sub('\)', '', f_name).strip()
+    f_name = re.sub(r'\)', '', f_name).strip()
     if '/' in f_name:
         name = f_name.split('/')[0].strip()
         name_eng = f_name.split('/')[1].strip()
@@ -352,7 +352,7 @@ def scrap(ct,bt,pic_name,ft,st,tt):
     return get_text,get_pic_link,get_pic
 
 def save_image(pic_name,pic):
-    folder_path = f'\{link+1:04d}'
+    folder_path = f'\\{link+1:04d}'
     full_path = save_folder + folder_path
     if not os.path.exists(full_path):
         os.makedirs(full_path)
@@ -550,8 +550,8 @@ while ind in urls.index:
     check_text = True
     big_text,big_pic,big_pic_link = [],[],[]
     first_text,second_text,third_text = '','',''
-    p_tag = soup.find('p', text=['HOUSE TYPE', 'แบบบ้าน',':: HOUSE TYPE ::'])
-    p_tag2 = soup.find('p', text=lambda text: text and ('HOUSE TYPE' in text or 'แบบบ้าน' in text))
+    p_tag = soup.find('p', string=['HOUSE TYPE', 'แบบบ้าน',':: HOUSE TYPE ::'])
+    p_tag2 = soup.find('p', string=lambda text: text and ('HOUSE TYPE' in text or 'แบบบ้าน' in text))
     select_house_type,count_image,all_pic = choose_pic(l,"count")
     if p_tag:
         p = p_tag.find_next_siblings(["p", "ul", "div"])

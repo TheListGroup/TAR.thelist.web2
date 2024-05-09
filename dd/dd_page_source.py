@@ -4,8 +4,8 @@ from bs4 import BeautifulSoup as bs
 import time
 import re
 
-link_file = "D:\PYTHON\TAR.thelist.web-2\dd\dd_link.csv"
-csv_file = 'D:\PYTHON\TAR.thelist.web-2\dd\dd_data.csv'
+link_file = r"C:\PYTHON\TAR.thelist.web2\dd\dd_link.csv"
+csv_file = r'C:\PYTHON\TAR.thelist.web2\dd\dd_data.csv'
 
 data_list = []
 
@@ -23,8 +23,8 @@ except:
 print(f"Start at Link {ind+1}")
 
 while ind in dd_link.index:
-    proj_name_eng,proj_name_th,province,price_min,price_max = '','','','',''
-    url = dd_link.iloc[ind][1]
+    proj_name_eng,proj_name_th,province,price_min,price_max,price_min_unit,price_max_unit = '','','','','','',''
+    url = dd_link.iloc[ind].iloc[1]
     code = url.split("/")[-1].split("-")[0]
     data_dict = {'LINK': url, 'DD_Code': code}
     browser = webdriver.Chrome()  
@@ -48,6 +48,17 @@ while ind in dd_link.index:
         proj_name_th = proj_name_format
     data_dict["Name_Eng"] = proj_name_eng
     data_dict["Name_TH"] = proj_name_th
+    
+    price_range = soup.find('div', {'itemprop': 'offers'})
+    for i, price in enumerate(price_range.find_all('span', {'class': 'element-label price'})):
+        if i == 0:
+            price_min_unit = price.text.strip()
+            price_min_unit = int(re.sub(",",'',price_min_unit))
+        elif i == 1:
+            price_max_unit = price.text.strip()
+            price_max_unit = int(re.sub(",",'',price_max_unit))
+    data_dict["Price_Per_Unit_Min"] = price_min_unit
+    data_dict["Price_Per_Unit_Max"] = price_max_unit
     
     address = soup.find('span', {'itemprop': 'streetAddress'})
     address = address.text.strip()

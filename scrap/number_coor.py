@@ -3,9 +3,9 @@ import re
 from bs4 import BeautifulSoup
 import pandas as pd
 
-file_name = "D:\PYTHON\TAR.thelist.web-2\scrap\webpage_home_data.txt"
-link_file = "D:\PYTHON\TAR.thelist.web-2\scrap\homenayoo_link_for_data.csv"
-csv_file = 'D:\PYTHON\TAR.thelist.web-2\scrap\coor_number.csv'
+file_name = r"C:\PYTHON\TAR.thelist.web2\scrap\webpage_home_data.txt"
+link_file = r"C:\PYTHON\TAR.thelist.web2\scrap\format_link.csv"
+csv_file = r'C:\PYTHON\TAR.thelist.web2\scrap\coor_number.csv'
 
 data_list = []
 
