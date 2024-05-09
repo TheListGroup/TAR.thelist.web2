@@ -1,5 +1,69 @@
+-- source_classified_price
 -- source_all_price_view
 -- source_condo_price_calculate_view
+
+-- source_classified_price
+create or replace view source_classified_price as
+select * from (select total_sale.Condo_Code
+					, CURRENT_DATE as Data_Date
+					, 'price_per_unit' as Data_Attribute
+					, round(total_sale.Total_Price_Per_Unit_Sale,-4) as Data_Value
+				from (select Condo_Code
+							, SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
+							, SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
+							, count(*) as Total_Room_Count_Sale
+							, AVG(Size) as Total_Average_Sqm_Sale
+							, sum(Size) as Total_Total_Sqm_Sale
+						from classified
+						where Classified_Status = '1'
+						and Sale = 1
+						group by Condo_Code) total_sale
+				where total_sale.Total_Room_Count_Sale >= 3) unit_sale
+union all select * from (select total_sale.Condo_Code
+							, CURRENT_DATE as Data_Date
+							, 'price_per_sqm' as Data_Attribute
+							, round(total_sale.Total_Price_Per_Unit_Sqm_Sale) as Data_Value
+						from (select Condo_Code
+									, SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
+									, SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
+									, count(*) as Total_Room_Count_Sale
+									, AVG(Size) as Total_Average_Sqm_Sale
+									, sum(Size) as Total_Total_Sqm_Sale
+								from classified
+								where Classified_Status = '1'
+								and Sale = 1
+								group by Condo_Code) total_sale
+						where total_sale.Total_Room_Count_Sale >= 3) sqm_sale
+union all select * from (select total_rent.Condo_Code
+							, CURRENT_DATE as Data_Date
+							, 'rent_per_unit' as Data_Attribute
+							, round(total_rent.Total_Price_Per_Unit_Rent) as Data_Value
+						from (select Condo_Code
+									, SUM(Price_Rent*Size)/SUM(Size) as Total_Price_Per_Unit_Rent
+									, SUM((Price_Rent/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Rent
+									, count(*) as Total_Room_Count_Rent
+									, AVG(Size) as Total_Average_Sqm_Rent
+									, sum(Size) as Total_Total_Sqm_Rent
+								from classified
+								where Classified_Status = '1'
+								and Rent = 1
+								group by Condo_Code) total_rent
+						where total_rent.Total_Room_Count_Rent >= 3) unit_rent
+union all select * from (select total_rent.Condo_Code
+							, CURRENT_DATE as Data_Date
+							, 'rent_per_sqm' as Data_Attribute
+							, round(total_rent.Total_Price_Per_Unit_Sqm_Rent) as Data_Value
+						from (select Condo_Code
+									, SUM(Price_Rent*Size)/SUM(Size) as Total_Price_Per_Unit_Rent
+									, SUM((Price_Rent/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Rent
+									, count(*) as Total_Room_Count_Rent
+									, AVG(Size) as Total_Average_Sqm_Rent
+									, sum(Size) as Total_Total_Sqm_Rent
+								from classified
+								where Classified_Status = '1'
+								and Rent = 1
+								group by Condo_Code) total_rent
+						where total_rent.Total_Room_Count_Rent >= 3) sqm_rent;
 
 -- source_all_price_view
 CREATE or replace VIEW `source_all_price_view` AS
@@ -30,9 +94,19 @@ union all select * from (select Condo_Code
 						, '0' as Special
 						, null as Remark
 					from real_condo_hipflat
-					where Data_Attribute = 'price_per_sqm') hip;
--- wait union ddprice
-
+					where Data_Attribute = 'price_per_sqm') hip
+union all select * from (select Condo_Code
+							, Data_Value as Price
+							, Data_Date as Price_Date
+							, '0' as Condo_Build_Date
+							, 'เฉลี่ย' as Start_or_Average
+							, '1' as Resale
+							, 14 as Price_Source
+							, if(Data_Attribute='price_per_sqm','บ/ตรม','บ/ยูนิต') as Price_Type
+							, '0' as Special
+							, null as Remark
+						from classified_price
+						where (Data_Attribute = 'price_per_sqm' or Data_Attribute = 'price_per_unit')) classified;
 
 -- source_condo_price_calculate_view
 create or replace view source_condo_price_calculate_view as
