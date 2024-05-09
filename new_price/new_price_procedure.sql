@@ -1,5 +1,76 @@
+-- truncateInsert_classified_price
 -- truncateInsert_all_price_view
 -- truncateInsert_condo_price_calculate_view
+
+-- truncateInsert_classified_price
+DROP PROCEDURE IF EXISTS truncateInsert_classified_price;
+DELIMITER //
+
+CREATE PROCEDURE truncateInsert_classified_price ()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    DECLARE total_rows INT DEFAULT 0;
+    DECLARE v_name VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name1 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name2 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name3 VARCHAR(250) DEFAULT NULL;
+
+    DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_classified_price';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE rowCount        INTEGER     DEFAULT 0;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+    DECLARE errorcheck      BOOLEAN  DEFAULT 1;
+    DECLARE done INT DEFAULT FALSE;
+
+    DECLARE cur CURSOR FOR SELECT Condo_Code, Data_Date, Data_Attribute, Data_Value
+                            FROM source_classified_price;
+
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        GET DIAGNOSTICS CONDITION 1
+            code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+            SET msg = CONCAT(msg,' AT ',v_name);
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+        set errorcheck = 0;
+    END;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    TRUNCATE TABLE classified_price;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3;
+
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        INSERT INTO
+            classified_price(
+                `Condo_Code`,
+                `Data_Date`,
+                `Data_Attribute`,
+                `Data_Value`
+                )
+        VALUES(v_name,v_name1,v_name2,v_name3);
+        
+        GET DIAGNOSTICS nrows = ROW_COUNT;
+        SET total_rows = total_rows + nrows;
+        SET i = i + 1;
+    END LOOP;
+
+    if errorcheck then
+        SET code    = '00000';
+        SET msg     = CONCAT(total_rows,' rows inserted.');
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+    end if;
+
+    CLOSE cur;
+END //
+DELIMITER ;
 
 -- truncateInsert_all_price_view
 DROP PROCEDURE IF EXISTS truncateInsert_all_price_view;
