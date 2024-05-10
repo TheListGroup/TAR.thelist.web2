@@ -4,22 +4,42 @@ import re
 import os
 import requests
 import io
-from datetime import datetime
+import datetime
 from PIL import Image as a
 from io import BytesIO
 from wand.image import Image as b
+from datetime import datetime as tt, timedelta
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.discovery import build
 
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/1DL3EIH9h2begYCOSpAfiuCZHrNUQvRjSjjxuKQ8rS7A/export?format=csv'
 #save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\Serve\classified_image"
 save_folder = "/var/www/html/realist/condo/uploads/classified"
+#json_file = r"C:\PYTHON\TAR.thelist.web2\classifield\Serve\serve.json"
+json_file = r"/home/gitdev/ta_python/classifield/Serve/serve.json"
 
-#host = '157.230.242.204'
-#user = 'real-research2'
-#password = 'DQkuX/vgBL(@zRRa'
+host = '157.230.242.204'
+user = 'real-research2'
+password = 'DQkuX/vgBL(@zRRa'
 
-host = '127.0.0.1'
-user = 'real-research'
-password = 'shA0Y69X06jkiAgaX&ng'
+#host = '127.0.0.1'
+#user = 'real-research'
+#password = 'shA0Y69X06jkiAgaX&ng'
+
+work = False
+yesterday = (tt.now() - timedelta(days=1)).strftime('%Y-%m-%d')
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
+creds = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
+client = gspread.authorize(creds)
+sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1DL3EIH9h2begYCOSpAfiuCZHrNUQvRjSjjxuKQ8rS7A/edit#gid=0')
+file_id = sheet.id
+drive_service = build('drive', 'v3', credentials=creds)
+file_metadata = drive_service.files().get(fileId=file_id, fields='modifiedTime').execute()
+last_modified_time = file_metadata['modifiedTime']
+last_modified_date = last_modified_time.split('T')[0]
+if last_modified_date == yesterday:
+    work = True
 
 user_id = 4
 
@@ -47,6 +67,8 @@ def price(va1,va2):
 def check_image_url_validity(url):
     try:
         response = requests.head(url)
+        #current_time = datetime.datetime.now()
+        #print(f"request to check at {current_time}")
         content_length = response.headers.get('content-length')
         
         if content_length:
@@ -61,11 +83,16 @@ def check_image_url_validity(url):
         return False
     except requests.RequestException:
         return False
+    
+    #current_time = datetime.datetime.now()
+    #print(f"check at {current_time}")
 
 def create_folder_and_remove_image_and_save_image():
     response = requests.get(folder_url)
     if response.status_code == 200:
         html_content = response.text
+        #current_time = datetime.datetime.now()
+        #print(f"request image at {current_time}")
 
         file_links = []
         start_index = 0
@@ -78,11 +105,15 @@ def create_folder_and_remove_image_and_save_image():
             file_links.append(file_link)
             start_index = end_index
             file_links = list(set(file_links))
+        #current_time = datetime.datetime.now()
+        #print(f"get all link at {current_time}")
 
         pic_list = []
         for file_link in file_links:
             if "ddrive_web" in file_link:
                 pic_list.append(file_link)
+        #current_time = datetime.datetime.now()
+        #print(f"get img link at {current_time}")
     
     #folder_path = f'//{classified_id:06d}'
     folder_path = f'/{classified_id:06d}'
@@ -94,6 +125,8 @@ def create_folder_and_remove_image_and_save_image():
         file_path = os.path.join(full_path, existing_file)
         if os.path.isfile(file_path):
             os.remove(file_path)
+    #current_time = datetime.datetime.now()
+    #print(f"create or delete file at {current_time}")
     
     if update_stat:
         query = """DELETE FROM classified_image
@@ -101,6 +134,8 @@ def create_folder_and_remove_image_and_save_image():
         val = (classified_id,)
         cursor.execute(query,val)
         connection.commit()
+        #current_time = datetime.datetime.now()
+        #print(f"delete from img table at {current_time}")
     
     l = 0
     for image_url in pic_list:
@@ -109,22 +144,41 @@ def create_folder_and_remove_image_and_save_image():
             file_id = file_id_match.group(1)
             direct_download_url = f"https://drive.google.com/uc?id={file_id}"
             
-            if check_image_url_validity(direct_download_url):
-                response = requests.get(direct_download_url)
+            #if check_image_url_validity(direct_download_url):
+            response = requests.get(direct_download_url)
+            #current_time = datetime.datetime.now()
+            #print(f"image {l+1} request to resize at {current_time}")
+            try:
                 with b(file=BytesIO(response.content)) as img:
                     img.transform(resize=f"1900x1900>")
+                    #current_time = datetime.datetime.now()
+                    #print(f"image {l+1} resize at {current_time}")
                     filename = f"{classified_id:06d}-{l+1:02d}.webp"
                     img.format = 'webp'
                     save_path = os.path.join(full_path, filename)
                     img.save(filename=save_path)
+                    #current_time = datetime.datetime.now()
+                    #print(f"image {l+1} save at {current_time}")
             
-                query = """INSERT INTO classified_image (Classified_Image_URL,Displayed_Order_in_Classified,Classified_ID,Classified_Image_Status
-                            , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
-                val = (filename, l+1, classified_id, '1', 32, create_date, 32, last_updated_date)
-                cursor.execute(query,val)
-                connection.commit()
-                l += 1
+                try:
+                    query = """INSERT INTO classified_image (Classified_Image_URL,Displayed_Order_in_Classified,Classified_ID,Classified_Image_Status
+                                , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                    val = (filename, l+1, classified_id, '1', 32, create_date, 32, last_updated_date)
+                    cursor.execute(query,val)
+                    connection.commit()
+                    stop_processing = False
+                    #current_time = datetime.datetime.now()
+                    #print(f"image {l+1} insert to img table at {current_time}")
+                    l += 1
+                except Exception as e:
+                    stop_processing = True
+                    print(f'Error: {e} at SERVE_insert_prop_Image')
+                    insert_log("SERVE_insert_prop_Image")
+                    break
+            except:
+                pass
+    return stop_processing
 
 def insert_log(location):
     if log:
@@ -140,6 +194,8 @@ def insert_log(location):
         cursor.execute(query,val)
         connection.commit()
 
+#current_time = datetime.datetime.now()
+#print(f"Start at {current_time}")
 match_list = []
 data_list = []
 sql = False
@@ -147,31 +203,35 @@ upd = 0
 insert = 0
 stop_processing = False
 log = False
-try:
-    connection = mysql.connector.connect(
-        host = host,
-        user = user,
-        password = password,
-        database = 'realist2'
-    )
+if work:
+    try:
+        connection = mysql.connector.connect(
+            host = host,
+            user = user,
+            password = password,
+            database = 'realist2'
+        )
 
-    if connection.is_connected():
-        print('Connected to MySQL server')
-        cursor = connection.cursor()
+        if connection.is_connected():
+            print('Connected to MySQL server')
+            cursor = connection.cursor()
 
-        bridge_classified = """select Classified_ID, Ref_ID, Created_Date from classified where User_ID = 4"""
-        cursor.execute(bridge_classified)
-        bridge_check = cursor.fetchall()
-        sql = True
+            bridge_classified = """select Classified_ID, Ref_ID, Created_Date from classified where User_ID = 4"""
+            cursor.execute(bridge_classified)
+            bridge_check = cursor.fetchall()
+            sql = True
 
-except Exception as e:
-    print(f'Error: {e}')
+    except Exception as e:
+        insert_log("Connect Database")
+        print(f'Error: {e}')
 
 if sql:
     response = requests.get(SHEET_URL)
     if response.status_code == 200:
         data = response.content.decode('utf-8')
         df = pd.read_csv(io.StringIO(data))
+        #current_time = datetime.datetime.now()
+        #print(f"Read ggsheet at {current_time}")
         
         for row in df.values:
             data_list.append(row)
@@ -194,8 +254,8 @@ if sql:
             bedroom = check_null(data[10])
             bathroom = check_null(data[11])
             classified_status = data[15][0]
-            last_updated_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            create_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            last_updated_date = tt.now().strftime('%Y-%m-%d %H:%M:%S')
+            create_date = tt.now().strftime('%Y-%m-%d %H:%M:%S')
             folder_url = data[14]
             
             if data[10] == 'Studio':
@@ -203,6 +263,9 @@ if sql:
                 bedroom = 1
             else:
                 room_type = None
+            
+            #current_time = datetime.datetime.now()
+            #print(f"Prepare Data at {current_time}")
             
             for bridge_id in bridge_check:
                 if prop_id == bridge_id[1]:
@@ -217,17 +280,20 @@ if sql:
                     try:
                         cursor.execute(query,val)
                         connection.commit()
+                        #current_time = datetime.datetime.now()
+                        #print(f"Update at {current_time}")
                         upd += 1
                         update_stat = True
-                        create_folder_and_remove_image_and_save_image()
+                        stop_processing = create_folder_and_remove_image_and_save_image()
                         if upd % 10 == 0:
                             print(f'Update {upd} Rows')
-                        log = True
+                        if not stop_processing:
+                            log = True
                         break
                     except Exception as e:
                         stop_processing = True
                         print(f'Error: {e} at SERVE_insert_prop_Update')
-                        log = True
+                        log = False
                         insert_log("SERVE_insert_prop_Update")
                         break
             
@@ -245,15 +311,16 @@ if sql:
                     connection.commit()
                     insert += 1
                     update_stat = False
-                    query = "SELECT Classified_ID, Ref_ID FROM classified WHERE Ref_ID = %s"
-                    val = (prop_id,)
+                    query = "SELECT Classified_ID, Ref_ID FROM classified WHERE Ref_ID = %s AND Classified_Status = %s Limit 1"
+                    val = (prop_id, '1')
                     cursor.execute(query,val)
                     classified_id = cursor.fetchone()
                     classified_id = classified_id[0]
-                    create_folder_and_remove_image_and_save_image()
+                    stop_processing = create_folder_and_remove_image_and_save_image()
                     if insert % 10 == 0:
                         print(f'Insert {insert} Rows')
-                    log = True
+                    if not stop_processing:
+                        log = True
                 except Exception as e:
                     stop_processing = True
                     print(f'Error: {prop_id} {e}')
@@ -264,6 +331,6 @@ if sql:
         if log:
             insert_log("SERVE_insert_prop")
 
-cursor.close()
-connection.close()
+    cursor.close()
+    connection.close()
 print('Connection closed')
