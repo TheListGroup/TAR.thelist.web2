@@ -140,7 +140,7 @@ on h.Housing_Code = housing_thname.Housing_Code
 where h.Housing_Status = '1'
 and h.Housing_ENName is not null
 and h.Housing_Latitude is not null
-AND h.Housing_Longitude is not null;
+AND h.Housing_Longitude is not null
 order by h.Housing_Code;
 
 
