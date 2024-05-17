@@ -2,7 +2,7 @@ import os
 from PIL import Image
 
 x = 0
-starting_directory = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\gall_house_image"
+starting_directory = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\house_image"
 for root, dirs, files in os.walk(starting_directory): #folder
     for file in files: #file
         filepath = os.path.join(root, file)

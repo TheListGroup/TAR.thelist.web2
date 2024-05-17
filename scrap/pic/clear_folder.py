@@ -7,6 +7,6 @@ def remove_empty_folders(root_folder):
             os.rmdir(folder_name)
 
 # Example usage
-root_folder = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\gall_house_image"
+root_folder = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\house_image"
 remove_empty_folders(root_folder)
 print('DONE')

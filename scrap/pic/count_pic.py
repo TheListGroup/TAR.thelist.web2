@@ -1,7 +1,7 @@
 from PIL import Image
 import os
 
-folder = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\housing_img_crop"
+folder = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\new 300\cover"
 
 files = os.listdir(folder)
 total = len(files)

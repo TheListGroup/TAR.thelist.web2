@@ -1,7 +1,7 @@
 import os
 import re
 
-folder = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\housing_img_crop"
+folder = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\new 300\cover"
 
 code_list = []
 files = os.listdir(folder)
@@ -11,4 +11,4 @@ for file_name in files:
     housing_code = 'HP' + file_name[:4]
     code_list.append(housing_code)
 
-print(len(list(set(code_list))))
+print(list(set(code_list)))

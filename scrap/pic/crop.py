@@ -31,10 +31,10 @@ def crop_and_resize(input_path,output_path1,output_path2,output_path3,target_rat
         output_path3 = os.path.join(output_path3, new_file_name)
         img.save(output_path3)
 
-folder = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\housing_img_crop"
-output_folder_1 = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\crop_1920"
-output_folder_2 = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\crop_675"
-output_folder_3 = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\crop_240"
+folder = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\new 300\cover"
+output_folder_1 = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\crop_1920"
+output_folder_2 = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\crop_675"
+output_folder_3 = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\crop_240"
 
 size_list = [(1920,1080),(675,1200),(240,240)]
 ratio_list = [16/9,9/16,1/1]

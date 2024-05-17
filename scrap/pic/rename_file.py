@@ -1,9 +1,9 @@
 import os
 from PIL import Image
 
-folder_real = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\gall_house_image" 
-folder_675 = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\crop_675"
-folder_240 = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\crop_240"
+folder_real = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\house_image" 
+folder_675 = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\crop_675"
+folder_240 = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\crop_240"
 folder = [folder_675,folder_240]
 
 print('WORKING.....')

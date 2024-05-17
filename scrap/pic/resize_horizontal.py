@@ -1,8 +1,8 @@
 from PIL import Image
 import os
 
-folder_real = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\gall_house_image" 
-folder_1920 = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\crop_1920"
+folder_real = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\house_image" 
+folder_1920 = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\crop_1920"
 size_list = [(1920,1080),(1280,720),(1024,576),(420,236),(240,135)]
 
 x = 1
