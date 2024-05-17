@@ -4,7 +4,7 @@ import re
 
 host = '157.230.242.204'
 user = 'real-research2'
-password = 'Y2qhLqIV9Vwqg]U@'
+password = 'DQkuX/vgBL(@zRRa'
 
 try:
     connection = mysql.connector.connect(
@@ -21,7 +21,7 @@ except Exception as e:
     print(f'Error: {e}')
 
 insert_list = []
-starting_directory = "D:\PYTHON\TAR.thelist.web-2\scrap\pic\gall_house_image"
+starting_directory = r"C:\PYTHON\TAR.thelist.web2\scrap\pic\house_image"
 
 a = 0
 for root, dirs, files in os.walk(starting_directory):
