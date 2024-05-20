@@ -943,3 +943,27 @@ ALTER TABLE `search_category_spotlight` ADD INDEX(`Spotlight_Code`);
 set popular_type = 'Spotlight'
 , popular_Code = 'PS016'
 where popular_Code = 'CUS039'; */
+
+-- URL_Tag
+update housing h
+left join (SELECT h.Housing_Code, 
+				if(Housing_ENName1 is not null
+					, CONCAT(SUBSTRING_INDEX(Housing_ENName1,'\n',1),' ',SUBSTRING_INDEX(Housing_ENName1,'\n',-1))
+					, Housing_ENName2) as Housing_ENName
+			FROM housing AS h
+			left JOIN ( select Housing_Code as Housing_Code1
+							,   Housing_ENName as Housing_ENName1
+						from housing
+						where Housing_ENName LIKE '%\n%') housing1
+			on h.Housing_Code = housing1.Housing_Code1
+			left JOIN ( select Housing_Code as Housing_Code2
+							,   Housing_ENName as Housing_ENName2
+						from housing
+						WHERE Housing_ENName NOT LIKE '%\n%' 
+						AND Housing_ENName NOT LIKE '%\r%') housing2
+			on h.Housing_Code = housing2.Housing_Code2
+			where h.Housing_Status = '1'
+			ORDER BY h.Housing_Code) housing_enname
+on h.Housing_Code = housing_enname.Housing_Code
+set h.Housing_URL_Tag = replace(concat(lower(REGEXP_REPLACE(housing_enname.Housing_ENName, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '-')),'-',h.Housing_Code),'--','-')
+where h.Housing_ENName is not null;
