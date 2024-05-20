@@ -434,17 +434,19 @@ BEGIN
         WHERE Housing_Code = housing;
 
         UPDATE housing
-        SET Housing_Top_Spotlight = concat_ws('\n',SUBSTRING_INDEX(SUBSTRING_INDEX(mySpotlight, ',', 1),',',-1),SUBSTRING_INDEX(SUBSTRING_INDEX(mySpotlight, ',', 2),',',-1))
+        SET Housing_Top_Spotlight = if(CASE WHEN LENGTH(mySpotlight) = 0 THEN 1 ELSE LENGTH(mySpotlight) - LENGTH(REPLACE(mySpotlight, ',', '')) + 1 END = 1
+                                        , mySpotlight
+                                        , concat_ws('\n',SUBSTRING_INDEX(SUBSTRING_INDEX(mySpotlight, ',', 1),',',-1),SUBSTRING_INDEX(SUBSTRING_INDEX(mySpotlight, ',', 2),',',-1)))
         WHERE Housing_Code = housing;
-
-        UPDATE housing
-        SET Housing_Top_Spotlight = null
-        WHERE Housing_Top_Spotlight = '\n';
 
         GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
         SET i = i + 1;
     END LOOP;
+
+    UPDATE housing
+    SET Housing_Top_Spotlight = null
+    WHERE Housing_Top_Spotlight in ('\n','');
 
     if errorcheck then
 		SET code    = '00000';
