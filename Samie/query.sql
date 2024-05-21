@@ -311,3 +311,62 @@ left join ( SELECT cpc.Condo_Code,
             where cpc.Condo_Status = 1
             ORDER BY cpc.Condo_Code) condo_thname
 on cpc.Condo_Code = condo_thname.Condo_Code;
+
+
+SELECT cpc.Condo_Code
+	, condo_enname.Condo_ENName
+    , condo_thname.Condo_Name
+    , concat(condo_enname.Condo_ENName_Line1, ' ', condo_thname.condo_location) as format_name
+    , concat('https://thelist.group/realist/condo/proj/',rc.Condo_URL_Tag,'-',cpc.Condo_Code) as URL 
+FROM condo_price_calculate_view cpc
+left join real_condo rc on cpc.Condo_Code = rc.Condo_Code
+left join ( SELECT cpc.Condo_Code, 
+                if(Condo_ENName1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Condo_ENName1,'\n',1),' ',SUBSTRING_INDEX(Condo_ENName1,'\n',-1))
+                    , Condo_ENName2) as Condo_ENName,
+                if(Condo_ENName1 is not null
+                    , SUBSTRING_INDEX(Condo_ENName1,'\n',1)
+                    , Condo_ENName2) as Condo_ENName_Line1,
+                SUBSTRING_INDEX(Condo_ENName1,'\n',-1) as Condo_ENName_Line2
+            FROM real_condo AS cpc
+            left JOIN ( select Condo_Code as Condo_Code1
+                            ,   Condo_ENName as Condo_ENName1
+                        from real_condo
+                        where Condo_ENName LIKE '%\n%') real_condo1
+            on cpc.Condo_Code = real_condo1.Condo_Code1
+            left JOIN ( select Condo_Code as Condo_Code2
+                            ,   Condo_ENName as Condo_ENName2
+                        from real_condo
+                        WHERE Condo_ENName NOT LIKE '%\n%' 
+                        AND Condo_ENName NOT LIKE '%\r%') real_condo2
+            on cpc.Condo_Code = real_condo2.Condo_Code2
+            where cpc.Condo_Status = 1
+            ORDER BY cpc.Condo_Code) condo_enname
+on cpc.Condo_Code = condo_enname.Condo_Code
+left join ( SELECT cpc.Condo_Code, 
+                if(Condo_Name1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Condo_Name1,'\n',1),' ',SUBSTRING_INDEX(Condo_Name1,'\n',-1))
+                    , Condo_Name2) as Condo_Name,
+                if(Condo_Name1 is not null
+                    , SUBSTRING_INDEX(Condo_Name1,'\n',-1)
+                    , '') as condo_location,
+                if(Condo_Name1 is not null
+                    , SUBSTRING_INDEX(Condo_Name1,'\n',1)
+                    , Condo_Name2) as Condo_Name_Line1,
+                SUBSTRING_INDEX(Condo_Name1,'\n',-1) as Condo_Name_Line2
+            FROM real_condo AS cpc
+            left JOIN ( select Condo_Code as Condo_Code1
+                            ,   Condo_Name as Condo_Name1
+                        from real_condo
+                        where Condo_Name LIKE '%\n%') real_condo1
+            on cpc.Condo_Code = real_condo1.Condo_Code1
+            left JOIN ( select Condo_Code as Condo_Code2
+                            ,   Condo_Name as Condo_Name2
+                        from real_condo
+                        WHERE Condo_Name NOT LIKE '%\n%' 
+                        AND Condo_Name NOT LIKE '%\r%') real_condo2
+            on cpc.Condo_Code = real_condo2.Condo_Code2
+            where cpc.Condo_Status = 1
+            ORDER BY cpc.Condo_Code) condo_thname
+on cpc.Condo_Code = condo_thname.Condo_Code  
+ORDER BY `cpc`.`Condo_Code` ASC
