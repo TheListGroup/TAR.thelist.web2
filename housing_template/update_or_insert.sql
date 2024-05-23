@@ -965,5 +965,5 @@ left join (SELECT h.Housing_Code,
 			where h.Housing_Status = '1'
 			ORDER BY h.Housing_Code) housing_enname
 on h.Housing_Code = housing_enname.Housing_Code
-set h.Housing_URL_Tag = replace(concat(lower(REGEXP_REPLACE(housing_enname.Housing_ENName, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '-')),'-',h.Housing_Code),'--','-')
+set h.Housing_URL_Tag = concat(lower(REGEXP_REPLACE(housing_enname.Housing_ENName, '[!@#\\$%^&*()_+{}\\[\\]:;<>,.?~\\\\|/`''"\\s-]', '-')),'-',h.Housing_Code)
 where h.Housing_ENName is not null;
