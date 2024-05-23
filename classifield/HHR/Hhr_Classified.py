@@ -13,12 +13,12 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from googleapiclient.discovery import build
 
-SHEET_URL = 'https://docs.google.com/spreadsheets/d/1DL3EIH9h2begYCOSpAfiuCZHrNUQvRjSjjxuKQ8rS7A/export?format=csv'
-#save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\Serve\classified_image"
+SHEET_URL = 'https://docs.google.com/spreadsheets/d/10lKaZ5jPUqikTOxVFjEHoFSeS6nqaf_ZEWwjvkj2Jsc/export?format=csv'
+#save_folder = r"C:\PYTHON\TAR.thelist.web2\classifield\HHR\classified_image"
 save_folder = "/var/www/html/realist/condo/uploads/classified"
-#json_file = r"C:\PYTHON\TAR.thelist.web2\classifield\Serve\serve.json"
-#json_file = r"/home/gitdev/ta_python/classifield/Serve/serve.json"
-json_file = r"/home/gitprod/ta_python/classifield/Serve/serve.json"
+#json_file = r"C:\PYTHON\TAR.thelist.web2\classifield\HHR\hhr.json"
+#json_file = r"/home/gitdev/ta_python/classifield/HHR/hhr.json"
+json_file = r"/home/gitprod/ta_python/classifield/HHR/hhr.json"
 
 #host = '157.230.242.204'
 #user = 'real-research2'
@@ -33,20 +33,22 @@ yesterday = (tt.now() - timedelta(days=1)).strftime('%Y-%m-%d')
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 client = gspread.authorize(creds)
-sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1DL3EIH9h2begYCOSpAfiuCZHrNUQvRjSjjxuKQ8rS7A/edit#gid=0')
+sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/10lKaZ5jPUqikTOxVFjEHoFSeS6nqaf_ZEWwjvkj2Jsc/edit#gid=0')
 file_id = sheet.id
 drive_service = build('drive', 'v3', credentials=creds)
 file_metadata = drive_service.files().get(fileId=file_id, fields='modifiedTime').execute()
 last_modified_time = file_metadata['modifiedTime']
 last_modified_date = last_modified_time.split('T')[0]
+#print(last_modified_date)
 if last_modified_date == yesterday:
     work = True
 
-user_id = 4
-#work = True
+#work = True ##########
+
+user_id = 6
 
 def check_null(variable):
-    if pd.isna(variable) or variable == 'N/A' or variable == '':
+    if pd.isna(variable) or variable == 'N/A' or variable == '' or variable == '-':
         variable = None
     else:
         variable = str(variable).strip()
@@ -175,8 +177,8 @@ def create_folder_and_remove_image_and_save_image():
                     l += 1
                 except Exception as e:
                     stop_processing = True
-                    print(f'Error: {e} at SERVE_insert_prop_Image')
-                    insert_log("SERVE_insert_prop_Image")
+                    print(f'Error: {e} at HHR_insert_prop_Image')
+                    insert_log("HHR_insert_prop_Image")
                     break
             except:
                 pass
@@ -196,8 +198,6 @@ def insert_log(location):
         cursor.execute(query,val)
         connection.commit()
 
-#current_time = datetime.datetime.now()
-#print(f"Start at {current_time}")
 match_list = []
 data_list = []
 sql = False
@@ -234,36 +234,38 @@ if sql:
         for row in df.values:
             data_list.append(row)
 
+        #count = 1
         for data in data_list:
             if stop_processing:
                 break
             found = False
             new = True
             prop_id = data[2]
-            query = """SELECT Ref_ID, Condo_Code, Sale, Rent, Price_Sale, Price_Rent, Room_Type, Bedroom, Bathroom, Size
-                        , Classified_Status, Classified_ID FROM classified WHERE Ref_ID = %s and User_ID = %s Limit 1"""
+            query = """SELECT Ref_ID,Condo_Code,Sale,Rent,Price_Sale,Price_Rent,Room_Type,Bedroom,Bathroom,Size 
+                    ,Classified_Status,Classified_ID FROM classified WHERE Ref_ID = %s and User_ID = %s Limit 1"""
             val = (prop_id, user_id)
             try:
                 cursor.execute(query,val)
                 column_check = cursor.fetchone()
             except Exception as e:
                 stop_processing = True
-                print(f'Error: {e} at SERVE_check_column')
+                print(f'Error: {e} at HHR_check_column')
                 log = False
-                insert_log("SERVE_check_column")
+                insert_log("HHR_check_column")
                 break
+            
             title_th = check_null(data[3])
             title_en = check_null(data[4])
             condo_code = data[0][:6]
             des_th = check_null(data[5])
             des_en = check_null(data[6])
             size = check_null(data[9])
+            bedroom = check_null(data[10])
+            bathroom = check_null(data[11])
             sale = sale_rent(data[13])
             rent = sale_rent(data[12])
             price_sale = price(sale,data[13])
             price_rent = price(rent,data[12])
-            bedroom = check_null(data[10])
-            bathroom = check_null(data[11])
             classified_status = data[15][0]
             last_updated_date = tt.now().strftime('%Y-%m-%d %H:%M:%S')
             create_date = tt.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -277,6 +279,9 @@ if sql:
             
             insert_date = tt.now().strftime('%Y-%m-%d %H:%M:%S')
             update_insert_date = tt.now().strftime('%Y-%m-%d %H:%M:%S')
+            
+            #print(f"room {count}")  #####
+            #count += 1 #####
             
             #current_time = datetime.datetime.now()
             #print(f"Prepare Data at {current_time}")
@@ -318,21 +323,20 @@ if sql:
                         print(f'Update {upd} Rows')
                     if not stop_processing:
                         log = True
-                    break
                 except Exception as e:
                     stop_processing = True
-                    print(f'Error: {e} at SERVE_insert_prop_Update')
+                    print(f'Error: {e} at HHR_insert_prop_Update')
                     log = False
-                    insert_log("SERVE_insert_prop_Update")
+                    insert_log("HHR_insert_prop_Update")
                     break
             
             elif new:
                 query = "INSERT INTO classified (Ref_ID, Title_TH, Title_ENG, Condo_Code, Sale, Rent\
-                        , Price_Sale, Price_Rent, Bedroom, Bathroom, Size\
+                        , Price_Sale, Price_Rent, Room_Type, Bedroom, Bathroom, Size\
                         , Descriptions_ENG, Descriptions_TH, User_ID, Classified_Status, Created_By, Created_Date\
                         , Last_Updated_By, Last_Updated_Date, Insert_Date)\
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-                val = (prop_id, title_th, title_en, condo_code, sale, rent, price_sale, price_rent
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                val = (prop_id, title_th, title_en, condo_code, sale, rent, price_sale, price_rent, room_type
                         , bedroom, bathroom, size, des_en, des_th, user_id
                         , classified_status, 32, create_date, 32, last_updated_date, insert_date)
                 try:
@@ -340,7 +344,7 @@ if sql:
                     connection.commit()
                     insert += 1
                     update_stat = False
-                    query = "SELECT Classified_ID, Ref_ID FROM classified WHERE Ref_ID = %s AND Classified_Status = %s and User_ID = %s Limit 1"
+                    query = "SELECT Classified_ID, Ref_ID FROM classified WHERE Ref_ID = %s AND Classified_Status = %s AND User_ID = %s Limit 1"
                     val = (prop_id, '1', user_id)
                     cursor.execute(query,val)
                     classified_id = cursor.fetchone()
@@ -355,11 +359,11 @@ if sql:
                     stop_processing = True
                     print(f'Error: {prop_id} {e}')
                     log = False
-                    insert_log("SERVE_insert_prop_Insert")
+                    insert_log("HHR_insert_prop_Insert")
                     break
         
         if log:
-            insert_log("SERVE_insert_prop")
+            insert_log("HHR_insert_prop")
 
     cursor.close()
     connection.close()
