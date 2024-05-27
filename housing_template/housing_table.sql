@@ -8,6 +8,7 @@
     -- table housing_fetch_for_map
     -- table housing_article_fetch_for_map
     -- table housing_gallery
+    -- table housing_brand
 
 -- function check null
 DELIMITER //
@@ -312,4 +313,25 @@ CREATE TABLE IF NOT EXISTS housing_gallery (
     PRIMARY KEY (Housing_Gallery_ID),
     INDEX hgall_code (Housing_Code),
     INDEX hgall_pic_name (Housing_Gallery_PicName))
+ENGINE = InnoDB;
+
+-- table housing_brand
+CREATE TABLE IF NOT EXISTS housing_brand (
+    ID SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Brand_Code VARCHAR(50) NOT NULL,
+    Brand_Name varchar(150) NOT NULL,
+    Housing_Count int UNSIGNED not null DEFAULT 0,
+    Brand_Logo varchar(250) null,
+    Brand_Cover int not null DEFAULT 0,
+    Brand_Status int NOT NULL DEFAULT 0,
+    Brand_Create_Date datetime NULL,
+    Brand_Create_User smallint UNSIGNED NULL DEFAULT 0,
+    Brand_Last_Update datetime NULL,
+    Brand_Update_User smallint UNSIGNED NULL DEFAULT 0,
+    PRIMARY KEY (ID),
+    INDEX hbrand_code (Brand_Code),
+    INDEX hbrand_admin1 (Brand_Create_User),
+    INDEX hbrand_admin2 (Brand_Update_User),
+    CONSTRAINT hbrand_admin1 FOREIGN KEY (Brand_Create_User) REFERENCES user_admin(User_ID),
+    CONSTRAINT hbrand_admin2 FOREIGN KEY (Brand_Update_User) REFERENCES user_admin(User_ID))
 ENGINE = InnoDB;
