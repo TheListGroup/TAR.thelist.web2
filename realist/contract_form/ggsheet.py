@@ -39,15 +39,18 @@ except Exception as e:
     print(f'Error: {e}')
 #------------------------------------------------------------------------------------------------------------------------------------------------------
 # function
-def check_null(variable):
+def check_null(variable,i):
     if variable == None:
-        variable = 'NULL'
+        variable = ''
     else:
-        variable = str(variable).strip()
+        if i == 9 or i == 10 or i == 12:
+            variable = int(variable)
+        else:
+            variable = str(variable).strip()
     return variable
 
 def insert_ggsheet(query):
-    column_values = sheet.col_values(12)
+    column_values = sheet.col_values(14)
     column_values = column_values[1:]
     column_values.sort(reverse=True)
     lastest_date = column_values[0]
@@ -59,33 +62,37 @@ def insert_ggsheet(query):
     for row in new_data:
         rows_to_append = []
         for i, data in enumerate(row):
-            if i == 11:
+            if i == 13:
                 data = data.strftime('%Y-%m-%d %H:%M:%S')
-            rows_to_append.append(check_null(data))
+            rows_to_append.append(check_null(data,i))
         #print("Data to append:", rows_to_append)
         sheet.append_rows([rows_to_append])
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 if sql:
     #sheet 1
     sheet = spreadsheet.sheet1
-    query = """SELECT rcf.Contact_Ref_ID
-                , rc.Condo_ENName
-                , cd.Developer_THName
-                , cd.Developer_ENName
-                , rcf.Contact_Name
-                , rcf.Contact_Tel
-                , rcf.Contact_Email
-                , rcf.Contact_Link
-                , rcf.Contact_Room_Status
-                , rcf.Contact_Position
-                , rcf.Contact_Decision_Time
-                , rcf.Contact_Date
-            FROM real_contact_form rcf
-            left join real_condo rc on rcf.Contact_Ref_ID = rc.Condo_Code
-            left join condo_developer cd on rc.Developer_Code = cd.Developer_Code
-            where rcf.Contact_Ref_ID like 'CD%'
-            and rcf.Contact_Date > %s
-            ORDER BY rcf.Contact_Date  ASC"""
+    query = """SELECT rcf.Contact_Ref_ID as Condo_Code
+                    , rc.Condo_ENName
+                    , cd.Developer_ENName
+                    , rcf.Contact_Name
+                    , rcf.Contact_Tel
+                    , rcf.Contact_Email
+                    , rcf.Contact_Room_Status
+                    , rcf.Contact_Position
+                    , rcf.Contact_Decision_Time
+                    , cpc.Condo_Price_Per_Square
+                    , cpc.Condo_Price_Per_Unit
+                    , if(cpc.Condo_Sold_Status_Show_Value<>'RESALE',round(cpc.Condo_Sold_Status_Show_Value * 100),cpc.Condo_Sold_Status_Show_Value) AS Project_Status
+                    , if(cpc.Condo_Built_Text <> 'ปีที่เปิดตัว',cpc.Condo_Built_Date,null) as Condo_Built_Finished
+                    , rcf.Contact_Date
+                    , rcf.Contact_Link
+                FROM real_contact_form rcf
+                left join real_condo rc on rcf.Contact_Ref_ID = rc.Condo_Code
+                left join condo_developer cd on rc.Developer_Code = cd.Developer_Code
+                left join all_condo_price_calculate cpc on rcf.Contact_Ref_ID = cpc.Condo_Code or rc.Condo_Redirect = cpc.Condo_Code
+                where rcf.Contact_Ref_ID like 'CD%'
+                and rcf.Contact_Date > %s
+                ORDER BY rcf.Contact_Date  ASC"""
     insert_ggsheet(query)
     #---------------------------------------------------------------------------------------------------------------------------------------------
     #sheet 2
@@ -94,19 +101,23 @@ if sql:
                 , rcf.Contact_Ref_ID
                 , c.Condo_Code
                 , rc.Condo_ENName
-                , cd.Developer_THName
                 , cd.Developer_ENName
                 , rcf.Contact_Name
                 , rcf.Contact_Tel
                 , rcf.Contact_Email
-                , rcf.Contact_Link
                 , rcf.Contract_Classified_Text
+                , cpc.Condo_Price_Per_Square
+                , cpc.Condo_Price_Per_Unit
+                , if(cpc.Condo_Sold_Status_Show_Value<>'RESALE',round(cpc.Condo_Sold_Status_Show_Value * 100),cpc.Condo_Sold_Status_Show_Value) AS Project_Status
+                , if(cpc.Condo_Built_Text <> 'ปีที่เปิดตัว',cpc.Condo_Built_Date,null) as Condo_Built_Finished
                 , rcf.Contact_Date
+                , rcf.Contact_Link
             FROM real_contact_form rcf
             left join classified c on rcf.Contact_Ref_ID = c.Classified_ID
             left join classified_user cu on c.User_ID = cu.User_ID
             left join real_condo rc on c.Condo_Code = rc.Condo_Code
             left join condo_developer cd on rc.Developer_Code = cd.Developer_Code
+            left join all_condo_price_calculate cpc on c.Condo_Code = cpc.Condo_Code or rc.Condo_Redirect = cpc.Condo_Code
             where rcf.Contact_Ref_ID not like 'CD%'
             and c.Classified_Status <> '2'
             and rcf.Contact_Date > %s
