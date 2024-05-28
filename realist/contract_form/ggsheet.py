@@ -9,7 +9,7 @@ json_file = r"/home/gitprod/ta_python/contact_form/access.json"
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 client = gspread.authorize(creds)
-spreadsheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1RTninS_ZUCl4MLDkI8wYZYEBKzJeZ_ocr2JY_q_6txk/edit#gid=0')
+spreadsheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1mhVZCWvkWZRxvHhdh76NwaRgvoIPhLV09JfH0WB55NI')
 print('Connect to GoogleSheet')
 #----------------------------------------------------------------------------------------------------------------------------------------------------
 
