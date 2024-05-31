@@ -5,6 +5,8 @@
         - function ใส่หน่วยอิง
         - function format
     - full_template_unit_plan_floor_plan_raw_view
+        - table full_template_unit_plan_floor_plan_raw
+        - truncateInsert_full_template_unit_plan_floor_plan_raw
     - full_template_unit_plan_gallery_raw_view
     - full_template_unit_plan_facilities_image_raw_view
     - full_template_unit_plan_image_raw_view
@@ -87,7 +89,12 @@ DELIMITER ;
 
 -- full_template_unit_plan_floor_plan_raw_view (รวบรวม floor_plan)
 create or replace view full_template_unit_plan_floor_plan_raw_view as
-select * from (
+select Condo_Code
+    , Unit_Type_ID
+    , Floor_Displayed_Name
+    , Building_Name
+    , Floor_Plan_ID
+    , Floor_Plan_Image from (
                 select U1.Condo_Code
                     ,   U1.Unit_Type_ID
                     ,   if(U5.Floor_Plan_Image is not null
@@ -189,10 +196,109 @@ select * from (
                 on U1.Condo_Code = U7.Condo_Code
                 where U1.Unit_Type_Status <> 2
                 order by U1.Condo_Code, U1.Unit_Type_ID) unit_floor_plan
-where Floor_Displayed_Name is not null
+where (Floor_Displayed_Name is not null
 or Building_Name is not null
 or Floor_Plan_ID is not null
-or Floor_Plan_Image is not null;
+or Floor_Plan_Image is not null);
+
+-- table full_template_unit_plan_floor_plan_raw
+CREATE TABLE IF NOT EXISTS `full_template_unit_plan_floor_plan_raw` (
+    `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `Condo_Code` varchar(50) NOT NULL,
+    `Unit_Type_ID` INT UNSIGNED NOT NULL,
+    `Floor_Displayed_Name` varchar(20) null,
+    `Building_Name` varchar(100) null,
+    `Floor_Plan_ID` int UNSIGNED null,
+    `Floor_Plan_Image` varchar(100) null,
+    PRIMARY KEY (ID))
+ENGINE = InnoDB;
+
+-- truncateInsert_full_template_unit_plan_floor_plan_raw
+DROP PROCEDURE IF EXISTS truncateInsert_full_template_unit_plan_floor_plan_raw;
+DELIMITER //
+
+CREATE PROCEDURE truncateInsert_full_template_unit_plan_floor_plan_raw ()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    DECLARE total_rows INT DEFAULT 0;
+    DECLARE v_name VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name1 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name2 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name3 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name4 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name5 VARCHAR(250) DEFAULT NULL;
+
+    DECLARE proc_name       VARCHAR(70) DEFAULT 'truncateInsert_full_template_unit_plan_floor_plan_raw';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE rowCount        INTEGER     DEFAULT 0;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+    DECLARE errorcheck      BOOLEAN  DEFAULT 1;
+
+    -- Declare a variable to indicate when there are no more records
+    DECLARE done INT DEFAULT FALSE;
+
+    -- Declare the cursor for the view
+    DECLARE cur CURSOR FOR select Condo_Code, Unit_Type_ID, Floor_Displayed_Name, Building_Name, Floor_Plan_ID, Floor_Plan_Image
+                            FROM full_template_unit_plan_floor_plan_raw_view;
+    -- more columns here as needed
+
+    -- Declare a continue handler to handle errors
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        GET DIAGNOSTICS CONDITION 1
+            code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+            SET msg = CONCAT(msg,' AT ',v_name);
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+        set errorcheck = 0;
+        -- Do nothing and continue with the next record
+    END;
+
+    -- Declare a continue handler to handle when there are no more records
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    TRUNCATE TABLE full_template_unit_plan_floor_plan_raw;
+
+    -- Open the cursor
+    OPEN cur;
+
+    -- Start the loop
+    read_loop: LOOP
+        -- Fetch the next record from the cursor into the variables
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5;
+        -- more variables here as needed
+
+        -- Check if there are no more records
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        INSERT INTO
+            full_template_unit_plan_floor_plan_raw(
+                Condo_Code
+                , Unit_Type_ID
+                , Floor_Displayed_Name
+                , Building_Name
+                , Floor_Plan_ID
+                , Floor_Plan_Image
+                )
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5);
+        -- more columns and variables here as needed
+        GET DIAGNOSTICS nrows = ROW_COUNT;
+        SET total_rows = total_rows + nrows;
+        SET i = i + 1;
+    END LOOP;
+
+    if errorcheck then
+        SET code    = '00000';
+        SET msg     = CONCAT(total_rows,' rows inserted.');
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+    end if;
+
+    -- Close the cursor
+    CLOSE cur;
+END //
+DELIMITER ;
 
 -- full_template_unit_image_view
 create or replace view full_template_unit_plan_gallery_raw_view as
@@ -362,10 +468,10 @@ select  fur.Unit_Type_ID
     ,	fi.Display_Order_in_Element
     ,   ROW_NUMBER() OVER (PARTITION BY fur.Unit_Type_ID ORDER BY fe.Display_Order_in_Section
                                                                 , fi.Display_Order_in_Element) AS myRowNum 
-from full_template_unit_plan_floor_plan_raw_view fur
+from full_template_unit_plan_floor_plan_raw fur
 left join full_template_vector_floor_plan_relationship fv on fur.Floor_Plan_ID = fv.Floor_Plan_ID
 left join full_template_element fe on fv.Ref_ID = fe.Element_ID
-left join full_template_image fi on fi.Element_ID = fe.Element_ID
+left join full_template_image fi on fe.Element_ID = fi.Element_ID
 where fv.Vector_Type = 2
 and fv.Relationship_Status = 1
 and fe.Element_Status = 1
