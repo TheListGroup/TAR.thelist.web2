@@ -35,6 +35,7 @@ creds = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/10lKaZ5jPUqikTOxVFjEHoFSeS6nqaf_ZEWwjvkj2Jsc/edit#gid=0')
 file_id = sheet.id
+sheet = sheet.sheet1
 drive_service = build('drive', 'v3', credentials=creds)
 file_metadata = drive_service.files().get(fileId=file_id, fields='modifiedTime').execute()
 last_modified_time = file_metadata['modifiedTime']
@@ -205,6 +206,7 @@ upd = 0
 insert = 0
 stop_processing = False
 log = False
+row_sheet = 2
 if work:
     try:
         connection = mysql.connector.connect(
@@ -319,6 +321,8 @@ if sql:
                     upd += 1
                     update_stat = True
                     stop_processing = create_folder_and_remove_image_and_save_image()
+                    sheet.update_cell(row_sheet,17,f"https://thelist.group/realist/condo/unit/{classified_id}")
+                    row_sheet += 1
                     if upd % 10 == 0:
                         print(f'Update {upd} Rows')
                     if not stop_processing:
@@ -351,6 +355,8 @@ if sql:
                     if classified_id:
                         classified_id = classified_id[0]
                         stop_processing = create_folder_and_remove_image_and_save_image()
+                        sheet.update_cell(row_sheet,17,f"https://thelist.group/realist/condo/unit/{classified_id}")
+                    row_sheet += 1
                     if insert % 10 == 0:
                         print(f'Insert {insert} Rows')
                     if not stop_processing:
