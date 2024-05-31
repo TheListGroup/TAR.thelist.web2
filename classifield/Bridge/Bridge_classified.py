@@ -336,7 +336,6 @@ if sql:
                         update_stat = True
                         stop_processing = create_folder_and_remove_image_and_save_image()
                         sheet.update_cell(row_sheet,17,f"https://thelist.group/realist/condo/unit/{classified_id}")
-                        row_sheet += 1
                         if upd % 10 == 0:
                             print(f'Update {upd} Rows')
                         if not stop_processing:
@@ -370,7 +369,6 @@ if sql:
                             classified_id = classified_id[0]
                             stop_processing = create_folder_and_remove_image_and_save_image()
                             sheet.update_cell(row_sheet,17,f"https://thelist.group/realist/condo/unit/{classified_id}")
-                        row_sheet += 1
                         if insert % 10 == 0:
                             print(f'Insert {insert} Rows')
                         if not stop_processing:
@@ -381,6 +379,7 @@ if sql:
                         log = False
                         insert_log("BRIDGE_insert_prop_Insert")
                         break
+            row_sheet += 1
         
         if log:
             insert_log("BRIDGE_insert_prop")
