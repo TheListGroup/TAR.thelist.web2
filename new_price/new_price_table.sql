@@ -4,6 +4,7 @@
 -- condo_price_calculate_view
 -- all_condo_price_calculate
 -- classified_price
+-- real_condo_rental
 
 -- Table `price_source`
 CREATE TABLE IF NOT EXISTS `price_source` (
@@ -121,8 +122,20 @@ CREATE TABLE IF NOT EXISTS `classified_price` (
     ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Condo_Code varchar(50) not null,
     Data_Date date NOT NULL,
-    Data_Attribute varchar(100) NULL,
+    Data_Attribute varchar(100) not NULL,
     Data_Value float NOT NULL,
     PRIMARY KEY (`ID`),
     INDEX cp_code (Condo_Code))
+ENGINE = InnoDB;
+
+-- real_condo_rental
+CREATE TABLE IF NOT EXISTS `real_condo_rental` (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Condo_Code varchar(50) not null,
+    Rent_Per_Unit_Date date NULL,
+    Rent_Per_Unit float NULL,
+    Rental_Yield_Percent_Date date NULL,
+    Rental_Yield_Percent float null,
+    PRIMARY KEY (`ID`),
+    INDEX r_code (Condo_Code))
 ENGINE = InnoDB;
