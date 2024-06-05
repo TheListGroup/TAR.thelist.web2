@@ -170,7 +170,7 @@ select cv.Classified_ID
     , nun(format(cv.Price_Sale_Per_Square,0)) as Price_Sale_Per_Square
     , nun(format(cv.Price_Rent,0)) as Price_Rent
     , nun(if(ac.Condo_Built_Text <> 'ปีเปิดตัว' and ac.Condo_Sold_Status_Show_Value is not null
-        , concat('เสร็จ ',ac.Condo_Built_Date,' | ',if(ac.Condo_Sold_Status_Show_Value <> 'RESALE', concat('SOLD ',ac.Condo_Sold_Status_Show_Value*100,' %'), 'RESALE'))
+        , concat('เสร็จ ',ac.Condo_Built_Date,' | ',if(ac.Condo_Sold_Status_Show_Value <> 'RESALE', concat('SOLD ',round(ac.Condo_Sold_Status_Show_Value*100),' %'), 'RESALE'))
         , if(ac.Condo_Built_Text <> 'ปีเปิดตัว'
             , concat('เสร็จ ',ac.Condo_Built_Date)
             , if(ac.Condo_Sold_Status_Show_Value is not null
@@ -218,7 +218,7 @@ left join (SELECT Condo_Code
             group by Condo_Code) gal
 on cv.Condo_Code = gal.Condo_Code
 left join (select Condo_Code
-                , GROUP_CONCAT(CONCAT_WS(' ', Station_Name, result) SEPARATOR '\n') as Station_Surrounding
+                , GROUP_CONCAT(CONCAT_WS('[!]', Station_Name, result) SEPARATOR '\n') as Station_Surrounding
             from (select order_distance.Condo_Code
                         , ms.Station_THName_Display as Station_Name
                         , if(round(order_distance.Distance * 1000,-2) >= 1000
@@ -237,25 +237,25 @@ left join (select Condo_Code
             group by Condo_Code) ss
 on cv.Condo_Code = ss.Condo_Code
 left join (select Condo_Code
-                , GROUP_CONCAT(CONCAT_WS(' ', Place_Name, result) SEPARATOR '\n') as Retail_Surrounding
+                , GROUP_CONCAT(CONCAT_WS('[!]', Place_Name, result) SEPARATOR '\n') as Retail_Surrounding
             from classified_surrounding
             where Surrounding_Type = 'retail'
             group by Condo_Code) rs
 on cv.Condo_Code = rs.Condo_Code
 left join (select Condo_Code
-                , GROUP_CONCAT(CONCAT_WS(' ', Place_Name, result) SEPARATOR '\n') as Hospital_Surrounding
+                , GROUP_CONCAT(CONCAT_WS('[!]', Place_Name, result) SEPARATOR '\n') as Hospital_Surrounding
             from classified_surrounding
             where Surrounding_Type = 'hospital'
             group by Condo_Code) hs
 on cv.Condo_Code = hs.Condo_Code
 left join (select Condo_Code
-                , GROUP_CONCAT(CONCAT_WS(' ', Place_Name, result) SEPARATOR '\n') as Education_Surrounding
+                , GROUP_CONCAT(CONCAT_WS('[!]', Place_Name, result) SEPARATOR '\n') as Education_Surrounding
             from classified_surrounding
             where Surrounding_Type = 'education'
             group by Condo_Code) es
 on cv.Condo_Code = es.Condo_Code
 left join (select Condo_Code
-                , GROUP_CONCAT(CONCAT_WS(' ', Place_Name, result) SEPARATOR '\n') as Express_Way_Surrounding
+                , GROUP_CONCAT(CONCAT_WS('[!]', Place_Name, result) SEPARATOR '\n') as Express_Way_Surrounding
             from classified_surrounding
             where Surrounding_Type = 'express_way'
             group by Condo_Code) exs
