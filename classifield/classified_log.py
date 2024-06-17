@@ -25,7 +25,13 @@ try:
 except Exception as e:
     print(f'Error: {e}')
     
-query = """select * from classified_all_logs"""
+query = """select cl.ID, cl.Insert_Day, cl.Classified_ID, cl.Ref_ID, cl.Project_ID, cl.Title_TH, cl.Title_ENG, cl.Condo_Code, cl.Sale, cl.Sale_with_Tenant, cl.Rent, cl.Price_Sale
+            , cl.Sale_Transfer_Fee, cl.Sale_Deposit, cl.Sale_Mortgage_Costs, cl.Price_Rent, cl.Min_Rental_Contract, cl.Rent_Deposit, cl.Advance_Payment, cl.Room_Type
+            , cl.Unit_Floor_Type, cl.PentHouse, cl.Bedroom, cl.Bathroom, cl.Size, cl.Furnish, cl.Parking, cl.Descriptions_Eng, cl.Descriptions_TH, cu.First_Name
+            , cl.Classified_Status, cl.Created_By , cl.Created_Date, cl.Last_Updated_By , cl.Last_Updated_Date
+            from classified_all_logs cl 
+            join classified_user cu on cl.User_ID = cu.User_ID
+            where cl.Classified_Status = '1'"""
 cursor.execute(query)
 result = cursor.fetchall()
 
@@ -54,7 +60,7 @@ for each_id in unique_list:
                             else:
                                 update = False
                             #print(f"ID {str(base_data[0]) + ',' + str(data[0])} -- {data[2]} -- {column_list[j]} Changed AT {data[1].strftime('%Y-%m-%d %H:%M:%S')} -- {update}")
-                            data_dict = {"Log_ID": str(base_data[0]) + ' AND ' + str(data[0]), "Classified_ID": data[2], "Column_Name": column_list[j], "Insert_Date": data[1].strftime('%Y-%m-%d %H:%M:%S'), "Update_Date": update}
+                            data_dict = {"Log_ID": str(base_data[0]) + ' AND ' + str(data[0]), "Classified_ID": data[2], "Column_Name": column_list[j], "Insert_Date": data[1].strftime('%Y-%m-%d %H:%M:%S'), "Update_Date": update, "User": data[29]}
                             save_list.append(data_dict)
 
 data_df = pd.DataFrame(save_list)
