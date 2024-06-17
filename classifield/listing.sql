@@ -16,6 +16,7 @@ ALTER TABLE `classified_user` ADD `Common_Fee_Average` INT UNSIGNED NULL AFTER `
 ALTER TABLE `classified_user` ADD `Price_Rent_Average` INT UNSIGNED NULL AFTER `Common_Fee_Average`;
 ALTER TABLE `classified_user` ADD `Price_Rent_Sqm_Average` INT UNSIGNED NULL AFTER `Price_Rent_Average`;
 ALTER TABLE `classified_user` ADD `Rental_Contract` INT UNSIGNED NULL AFTER `Price_Rent_Sqm_Average`;
+ALTER TABLE `classified_user` ADD `Description` text NULL AFTER `Rental_Contract`;
 
 
 -- procedure updateClassified_User
