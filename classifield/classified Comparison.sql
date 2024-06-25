@@ -202,8 +202,10 @@ left join (select Condo_Code
                 , group_concat(Category_Name separator '\n') AS `Facility`
             from ( SELECT Condo_Code
                         , Category_Name
+                        , ROW_NUMBER() OVER (PARTITION BY Condo_Code ORDER BY Condo_Code) AS mynum
                     FROM `full_template_facilities_icon_view`
                     group by Condo_Code,Category_Name) c_line
+            where mynum <= 10
             group by Condo_Code) faci
 on cv.Condo_Code = faci.Condo_Code
 left join (SELECT Condo_Code
