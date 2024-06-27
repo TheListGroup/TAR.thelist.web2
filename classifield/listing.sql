@@ -17,7 +17,12 @@ ALTER TABLE `classified_user` ADD `Price_Rent_Average` INT UNSIGNED NULL AFTER `
 ALTER TABLE `classified_user` ADD `Price_Rent_Sqm_Average` INT UNSIGNED NULL AFTER `Price_Rent_Average`;
 ALTER TABLE `classified_user` ADD `Rental_Contract` INT UNSIGNED NULL AFTER `Price_Rent_Sqm_Average`;
 ALTER TABLE `classified_user` ADD `Description` text NULL AFTER `Rental_Contract`;
+ALTER TABLE `classified_user` ADD `User_Cover` BOOLEAN NOT NULL DEFAULT FALSE AFTER `Registration_Date`;
 
+ALTER TABLE `classified_user` ADD `Age_Count` INT UNSIGNED NULL AFTER `Condo_Age`;
+ALTER TABLE `classified_user` ADD `Price_Sale_Count` INT UNSIGNED NULL AFTER `Price_Sale_Sqm_Average`;
+ALTER TABLE `classified_user` ADD `Common_Fee_Count` INT UNSIGNED NULL AFTER `Common_Fee_Average`;
+ALTER TABLE `classified_user` ADD `Price_Rent_Count` INT UNSIGNED NULL AFTER `Price_Rent_Sqm_Average`;
 
 -- procedure updateClassified_User
 DROP PROCEDURE IF EXISTS updateClassified_User;
@@ -41,6 +46,10 @@ BEGIN
 	DECLARE v_name12    VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name13    VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name14    VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name15    VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name16    VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name17    VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name18    VARCHAR(250) DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(50) DEFAULT 'updateClassified_User';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -53,16 +62,20 @@ BEGIN
                                     , active.User_Count as Classified_Now
                                     , all_count.User_Count as Classified_All
                                     , condo_count.condo_count as Condo_Count
-                                    , round(condo_count.condo_age,1) as Condo_Age
+                                    , round(cal_age.condo_age,1) as Condo_Age
+                                    , cal_age.Age_Count as Age_Count
                                     , condo_count.Room_Size as Room_Size
                                     , condo_count.Bedroom as Bedroom
                                     , condo_count.Price_Sale_Min as Price_Sale_Min
                                     , condo_count.Price_Rent_Min as Price_Rent_Min
                                     , price_sale.Price_Sale_Average as Price_Sale_Average
                                     , price_sale.Price_Sale_Sqm_Average as Price_Sale_Sqm_Average
+                                    , count_sale.Price_Sale_Count as Price_Sale_Count
                                     , common_fee.Common_Fee_Average as Common_Fee_Average
+                                    , common_fee.Common_Fee_Count as Common_Fee_Count
                                     , price_rent.Price_Rent_Average as Price_Rent_Average
                                     , price_rent.Price_Rent_Sqm_Average as Price_Rent_Sqm_Average
+                                    , count_rent.Price_Rent_Count as Price_Rent_Count
                                     , price_rent.Rental_Contract as Rental_Contract
                                 FROM classified_user cu
                                 left join (select User_ID, count(*) as User_Count
@@ -76,14 +89,12 @@ BEGIN
                                 on cu.User_ID = all_count.User_ID
                                 left join (select User_ID
                                                 , count(Condo_Code) as condo_count
-                                                , sum(age)/count(Condo_Code) as condo_age
                                                 , concat(round(min(Size_Min)), '-', round(max(Size_Max))) as Room_Size
                                                 , concat(min(Size_Bedroom_Min), '-', max(Size_Bedroom_Max)) as Bedroom
                                                 , min(Price_Sale_Min) as Price_Sale_Min
                                                 , min(Price_Rent_Min) as Price_Rent_Min
                                             from (select c.User_ID
                                                         , c.Condo_Code
-                                                        , year(curdate()) - year(acpc.Condo_Date_Calculate) as age
                                                         , min(c.Size) as Size_Min
                                                         , max(c.Size) as Size_Max
                                                         , min(c.Bedroom) as Size_Bedroom_Min
@@ -93,15 +104,13 @@ BEGIN
                                                         , round(min(c.Price_Sale)/1000000,2) as Price_Sale_Min
                                                         , round(min(c.Price_Rent),-2) as Price_Rent_Min
                                                     from classified c
-                                                    left join all_condo_price_calculate acpc on c.Condo_Code = acpc.Condo_Code
                                                     where c.Classified_Status = '1'
-                                                    group by c.User_ID, c.Condo_Code, acpc.Condo_Date_Calculate) a
+                                                    group by c.User_ID, c.Condo_Code) a
                                             group by User_ID) condo_count
                                 on cu.User_ID = condo_count.User_ID
                                 left join (select User_ID
                                                 , round(sum(cal)/sum(Size),2) as Price_Sale_Average
                                                 , round(SUM(cal2)/SUM(Size),-3) as Price_Sale_Sqm_Average
-                                                , count(*) as Price_Sale_Count
                                             from (Select Classified_ID
                                                         , Condo_Code
                                                         , Price_Sale
@@ -116,6 +125,7 @@ BEGIN
                                 on cu.User_ID = price_sale.User_ID
                                 left join (select User_ID
                                                 , round(sum(cal)/sum(Condo_TotalUnit)) as Common_Fee_Average
+                                                , count(Condo_Code) as Common_Fee_Count
                                             from (SELECT c.User_ID
                                                         , c.Condo_Code 
                                                         , rcp.Condo_Common_Fee
@@ -135,7 +145,6 @@ BEGIN
                                 left join (select User_ID
                                                 , round(sum(cal)/sum(Size),-3) as Price_Rent_Average
                                                 , round(SUM(cal2)/SUM(Size),-1) as Price_Rent_Sqm_Average
-                                                , count(*) as Price_Rent_Count
                                                 , if(min(Min_Rental_Contract)=max(Min_Rental_Contract)
                                                     , min(Min_Rental_Contract)
                                                     , concat(min(Min_Rental_Contract),'-',max(Min_Rental_Contract))) as Rental_Contract
@@ -151,7 +160,38 @@ BEGIN
                                                     where Classified_Status = '1'
                                                     and Rent = 1) a
                                             group by User_ID) price_rent
-                                on cu.User_ID = price_rent.User_ID;
+                                on cu.User_ID = price_rent.User_ID
+                                left join (select User_ID
+                                                , count(Condo_Code) as Age_Count
+                                                , sum(age)/count(Condo_Code) as condo_age
+                                            from (SELECT c.User_ID
+                                                    , c.Condo_Code
+                                                    , year(curdate()) - year(acpc.Condo_Date_Calculate) as age
+                                                FROM `classified` c
+                                                left join all_condo_price_calculate acpc on c.Condo_Code = acpc.Condo_Code
+                                                where c.Classified_Status = '1'
+                                                and acpc.Condo_Date_Calculate is not null
+                                                group by c.User_ID, c.Condo_Code, acpc.Condo_Date_Calculate) avg_age
+                                            group by User_ID) cal_age
+                                on cu.User_ID = cal_age.User_ID
+                                left join (select User_ID, count(Condo_Code) as Price_Sale_Count
+                                            from (Select Condo_Code
+                                                        , User_ID
+                                                    from classified
+                                                    where Classified_Status = '1'
+                                                    and Sale = 1
+                                                    group by Condo_Code, User_ID) cs
+                                            group by User_ID) count_sale
+                                on cu.User_ID = count_sale.User_ID
+                                left join (select User_ID, count(Condo_Code) as Price_Rent_Count
+                                            from (Select Condo_Code
+                                                        , User_ID
+                                                    from classified
+                                                    where Classified_Status = '1'
+                                                    and Rent = 1
+                                                    group by Condo_Code, User_ID) cr
+                                            group by User_ID) count_rent
+                                on cu.User_ID = count_rent.User_ID;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
 
@@ -166,7 +206,7 @@ BEGIN
     OPEN cur_user;
 
 	updateUser: LOOP
-		FETCH cur_user INTO eachuser,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14;
+		FETCH cur_user INTO eachuser,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18;
 		IF finished = 1 THEN 
 			LEAVE updateUser;
 		END IF;
@@ -176,16 +216,20 @@ BEGIN
             Classified_All = v_name2,
             Condo_Count = v_name3,
             Condo_Age = v_name4,
-            Room_Size = v_name5,
-            Bedroom = v_name6,
-            Price_Sale_Min = v_name7,
-            Price_Rent_Min = v_name8,
-            Price_Sale_Average = v_name9,
-            Price_Sale_Sqm_Average = v_name10,
-            Common_Fee_Average = v_name11,
-            Price_Rent_Average = v_name12,
-            Price_Rent_Sqm_Average = v_name13,
-            Rental_Contract = v_name14
+            Age_Count = v_name5,
+            Room_Size = v_name6,
+            Bedroom = v_name7,
+            Price_Sale_Min = v_name8,
+            Price_Rent_Min = v_name9,
+            Price_Sale_Average = v_name10,
+            Price_Sale_Sqm_Average = v_name11,
+            Price_Sale_Count = v_name12,
+            Common_Fee_Average = v_name13,
+            Common_Fee_Count = v_name14,
+            Price_Rent_Average = v_name15,
+            Price_Rent_Sqm_Average = v_name16,
+            Price_Rent_Count = v_name17,
+            Rental_Contract = v_name18
         where User_ID = eachuser;
 
         GET DIAGNOSTICS nrows = ROW_COUNT;
