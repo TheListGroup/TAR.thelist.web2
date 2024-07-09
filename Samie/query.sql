@@ -370,3 +370,67 @@ left join ( SELECT cpc.Condo_Code,
             ORDER BY cpc.Condo_Code) condo_thname
 on cpc.Condo_Code = condo_thname.Condo_Code  
 ORDER BY `cpc`.`Condo_Code` ASC
+
+
+
+
+SELECT h.Housing_Code
+    , h.Housing_TotalUnit
+	, housing_enname.Housing_ENName
+    , housing_thname.Housing_Name
+    , housing_thname.Housing_Name_Line1 as 'Name'
+    , housing_thname.Housing_Name_Line2 as 'Location'
+    , concat('https://thelist.group/realist/condo/proj/',h.Housing_URL_Tag,'-',h.Housing_Code) as URL 
+FROM housing h
+left join ( SELECT h.Housing_Code, 
+                if(Housing_ENName1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Housing_ENName1,'\n',1),' ',SUBSTRING_INDEX(Housing_ENName1,'\n',-1))
+                    , Housing_ENName2) as Housing_ENName,
+                if(Housing_ENName1 is not null
+                    , SUBSTRING_INDEX(Housing_ENName1,'\n',1)
+                    , Housing_ENName2) as Housing_ENName_Line1,
+                SUBSTRING_INDEX(Housing_ENName1,'\n',-1) as Housing_ENName_Line2
+            FROM housing AS h
+            left JOIN ( select Housing_Code as Housing_Code1
+                            ,   Housing_ENName as Housing_ENName1
+                        from housing
+                        where Housing_ENName LIKE '%\n%') housing1
+            on h.Housing_Code = housing1.Housing_Code1
+            left JOIN ( select Housing_Code as Housing_Code2
+                            ,   Housing_ENName as Housing_ENName2
+                        from housing
+                        WHERE Housing_ENName NOT LIKE '%\n%' 
+                        AND Housing_ENName NOT LIKE '%\r%') housing2
+            on h.Housing_Code = housing2.Housing_Code2
+            where h.Housing_Status = '1'
+            ORDER BY h.Housing_Code) housing_enname
+on h.Housing_Code = housing_enname.Housing_Code
+left join ( SELECT h.Housing_Code, 
+                if(Housing_Name1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Housing_Name1,'\n',1),' ',SUBSTRING_INDEX(Housing_Name1,'\n',-1))
+                    , Housing_Name2) as Housing_Name,
+                if(Housing_Name1 is not null
+                    , SUBSTRING_INDEX(Housing_Name1,'\n',-1)
+                    , '') as housing_location,
+                if(Housing_Name1 is not null
+                    , SUBSTRING_INDEX(Housing_Name1,'\n',1)
+                    , Housing_Name2) as Housing_Name_Line1,
+                SUBSTRING_INDEX(Housing_Name1,'\n',-1) as Housing_Name_Line2
+            FROM housing AS h
+            left JOIN ( select Housing_Code as Housing_Code1
+                            ,   Housing_Name as Housing_Name1
+                        from housing
+                        where Housing_Name LIKE '%\n%') housing1
+            on h.Housing_Code = housing1.Housing_Code1
+            left JOIN ( select Housing_Code as Housing_Code2
+                            ,   Housing_Name as Housing_Name2
+                        from housing
+                        WHERE Housing_Name NOT LIKE '%\n%' 
+                        AND Housing_Name NOT LIKE '%\r%') housing2
+            on h.Housing_Code = housing2.Housing_Code2
+            where h.Housing_Status = '1'
+            ORDER BY h.Housing_Code) housing_thname
+on h.Housing_Code = housing_thname.Housing_Code
+where h.Developer_Code like 'DV0319%'
+and h.Housing_Status = '1'
+ORDER BY `h`.`Housing_Code` ASC
