@@ -103,4 +103,4 @@ left join (select rc.Condo_Code as Condo_Code, size1.Size_STU_Min, size1.Size_ST
                         GROUP BY Condo_Code) as size5
             on rc.Condo_Code = size5.Condo_Code) bedsize
 on rc.Condo_Code = bedsize.Condo_Code
-WHERE rc.Condo_Code in ('CD1305','CD1321','CD2180','CD2966','CD3086','CD1820','CD2972','CD1351','CD1497','CD3096','CD2973','CD2955','CD2919','CD2633','CD2583','CD2595','CD2168','CD1831');
+WHERE rc.Condo_Code in ('CD1305','CD1321','CD2180','CD2996','CD3086','CD1820','CD2972','CD1351','CD1497','CD3096','CD2973','CD2955','CD2919','CD2633','CD2583','CD2595','CD2168','CD1831');
