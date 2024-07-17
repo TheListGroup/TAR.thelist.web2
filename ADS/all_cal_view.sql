@@ -99,6 +99,31 @@ select a.Condo_Code
 					THEN avg_dev_survey_sqm.Price_Source
 					ELSE avg_compre_sqm.Price_Source
 				END,ifnull(start_compre_sqm.Price_Source, start_dev_survey_sqm.Price_Source))) as Source_Condo_Price_Per_Square
+	, if(if(b.Condo_Built_Finished is not null
+			, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
+				, 'OLD'
+				, 'NEW')
+			, if(b.Condo_Built_Start is not null
+				, if(a.Condo_HighRise = 1
+					, if((year(curdate()) - (year(b.Condo_Built_Start) + 4)) > 0
+						, 'OLD'
+						, 'NEW')
+					, if((year(curdate()) - (year(b.Condo_Built_Start) + 3)) > 0
+						, 'OLD'
+						, 'NEW'))
+				, 'OLD')) = 'NEW'
+		, ifnull(avg_compre_sqm.Full_Price_Source
+			, ifnull(avg_dev_survey_sqm.Full_Price_Source
+				, ifnull(resale.Full_Price_Source
+					, ifnull(start_compre_sqm.Full_Price_Source
+						, start_dev_survey_sqm.Full_Price_Source))))
+		, ifnull(CASE
+				WHEN COALESCE(resale.Price_Date, '1900-01-01') > GREATEST(COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01'), COALESCE(avg_compre_sqm.Price_Date, '1900-01-01'))
+					THEN resale.Full_Price_Source
+				WHEN COALESCE(avg_dev_survey_sqm.Price_Date, '1900-01-01') > COALESCE(avg_compre_sqm.Price_Date, '1900-01-01')
+					THEN avg_dev_survey_sqm.Full_Price_Source
+					ELSE avg_compre_sqm.Full_Price_Source
+				END,ifnull(start_compre_sqm.Full_Price_Source, start_dev_survey_sqm.Full_Price_Source))) as Full_Source_Condo_Price_Per_Square
 	, if(start_unit.Price is not null
 		, 'ราคาเริ่มต้น'
 		, if(avg_unit.Price is not null
@@ -113,6 +138,8 @@ select a.Condo_Code
 			, null)) as Condo_Price_Per_Unit_Date
 	, ifnull(start_unit.Price_Source
 		, avg_unit.Price_Source) as Source_Condo_Price_Per_Unit
+	, ifnull(start_unit.Full_Price_Source
+		, avg_unit.Full_Price_Source) as Full_Source_Condo_Price_Per_Unit
 	, if(cal_561_mb.Data_Value is not null
 		, if((cal_561_mb.Data_Value/100) <= 0
 			, 'PRESALE'
@@ -133,6 +160,7 @@ select a.Condo_Code
 						, null))
 				, 'RESALE'))) as Condo_Sold_Status_Show_Value
 	, cal_561_mb.Price_Source as Source_Condo_Sold_Status_Show_Value
+	, cal_561_mb.Full_Price_Source as Full_Source_Condo_Sold_Status_Show_Value
 	, cal_561_mb.Data_Date as Condo_Sold_Status_Date
 	, if(b.Condo_Built_Finished is not null
 		, if(b.Condo_Built_Finished > now()
@@ -212,10 +240,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -232,10 +261,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -252,10 +282,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -271,10 +302,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -291,10 +323,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -311,10 +344,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -330,10 +364,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -342,13 +377,14 @@ left join ( select Condo_Code
 					and ap.Start_or_AVG = 'เฉลี่ย') order_avg_unit
 			where Myorder = 1) avg_unit
 on a.Condo_Code = avg_unit.Condo_Code
-left join ( select Condo_Code, Data_Date, Data_Attribute, Data_Value, Data_Note, Price_Source
+left join ( select Condo_Code, Data_Date, Data_Attribute, Data_Value, Data_Note, Price_Source, Full_Price_Source
 			from (	select rc561.Condo_Code
 						, rc561.Data_Date
 						, rc561.Data_Attribute
 						, rc561.Data_Value
 						, rc561.Data_Note
 						, ps.Head as Price_Source
+						, ps.Sub as Full_Price_Source
 						, ROW_NUMBER() OVER (PARTITION BY Condo_Code ORDER BY Data_Date desc) AS Myorder
 					from real_condo_561 rc561
 					cross join (select ID, Head, Sub from price_source where Sub = 'Company Presentation - 56-1') ps
@@ -362,10 +398,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -383,10 +420,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -404,10 +442,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -424,10 +463,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -445,10 +485,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -466,10 +507,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -486,10 +528,11 @@ left join ( select Condo_Code
 				, Condo_Build_Date
 				, Start_or_AVG
 				, Price_Source
+				, Full_Price_Source
 				, Price_Type
 				, Special
 				, Remark
-			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source
+			from ( SELECT ap.Condo_Code, ap.Price, ap.Price_Date, ap.Condo_Build_Date, ap.Start_or_AVG, ps.Head as Price_Source, ps.Sub as Full_Price_Source
 					, ap.Price_Type, ap.Special, ap.Remark
 					, ROW_NUMBER() OVER (PARTITION BY ap.Condo_Code ORDER BY ap.Price_Date desc) AS Myorder
 					FROM all_price_view ap
@@ -1357,6 +1400,9 @@ BEGIN
 	DECLARE v_name17 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name18 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name19 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name20 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name21 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name22 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_all_condo_price_calculate_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -1367,10 +1413,10 @@ BEGIN
     DECLARE done INT DEFAULT FALSE;
 
     DECLARE cur CURSOR FOR SELECT Condo_Code, Old_or_New, Condo_Age_Status_Square_Text, Condo_Price_Per_Square
-                                , Condo_Price_Per_Square_Date, Source_Condo_Price_Per_Square, Condo_Price_Per_Unit_Text
-                                , Condo_Price_Per_Unit, Condo_Price_Per_Unit_Date, Source_Condo_Price_Per_Unit
-                                , Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value, Condo_Sold_Status_Date
-                                , Condo_Built_Text, Condo_Built_Date, Condo_Date_Calculate, Condo_Price_Per_Square_Cal
+                                , Condo_Price_Per_Square_Date, Source_Condo_Price_Per_Square, Full_Source_Condo_Price_Per_Square, Condo_Price_Per_Unit_Text
+                                , Condo_Price_Per_Unit, Condo_Price_Per_Unit_Date, Source_Condo_Price_Per_Unit, Full_Source_Condo_Price_Per_Unit
+                                , Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value, Full_Source_Condo_Sold_Status_Show_Value
+								, Condo_Sold_Status_Date, Condo_Built_Text, Condo_Built_Date, Condo_Date_Calculate, Condo_Price_Per_Square_Cal
                                 , Condo_Price_Per_Unit_Cal, Condo_Price_Per_Square_Sort, Condo_Price_Per_Unit_Sort
                                 FROM all_condo_price_calculate_view;
 	
@@ -1389,7 +1435,7 @@ BEGIN
 	
     OPEN cur;
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22;
         
         IF done THEN
             LEAVE read_loop;
@@ -1403,12 +1449,15 @@ BEGIN
 				Condo_Price_Per_Square,
 				Condo_Price_Per_Square_Date,
                 Source_Condo_Price_Per_Square,
+				Full_Source_Condo_Price_Per_Square,
 				Condo_Price_Per_Unit_Text,
 				Condo_Price_Per_Unit,
 				Condo_Price_Per_Unit_Date,
                 Source_Condo_Price_Per_Unit,
+				Full_Source_Condo_Price_Per_Unit,
 				Condo_Sold_Status_Show_Value,
                 Source_Condo_Sold_Status_Show_Value,
+				Full_Source_Condo_Sold_Status_Show_Value,
 				Condo_Sold_Status_Date,
 				Condo_Built_Text,
 				Condo_Built_Date,
@@ -1418,7 +1467,7 @@ BEGIN
                 Condo_Price_Per_Square_Sort,
 				Condo_Price_Per_Unit_Sort
 			)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22);
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
         SET i = i + 1;

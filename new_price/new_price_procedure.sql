@@ -186,6 +186,9 @@ BEGIN
 	DECLARE v_name17 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name18 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name19 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name20 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name21 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name22 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_condo_price_calculate_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -196,10 +199,10 @@ BEGIN
     DECLARE done INT DEFAULT FALSE;
 
     DECLARE cur CURSOR FOR SELECT Condo_Code, Old_or_New, Condo_Age_Status_Square_Text, Condo_Price_Per_Square
-                                , Condo_Price_Per_Square_Date, Source_Condo_Price_Per_Square, Condo_Price_Per_Unit_Text
-                                , Condo_Price_Per_Unit, Condo_Price_Per_Unit_Date, Source_Condo_Price_Per_Unit
-                                , Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value, Condo_Sold_Status_Date
-                                , Condo_Built_Text, Condo_Built_Date, Condo_Date_Calculate, Condo_Price_Per_Square_Cal
+                                , Condo_Price_Per_Square_Date, Source_Condo_Price_Per_Square, Full_Source_Condo_Price_Per_Square, Condo_Price_Per_Unit_Text
+                                , Condo_Price_Per_Unit, Condo_Price_Per_Unit_Date, Source_Condo_Price_Per_Unit, Full_Source_Condo_Price_Per_Unit
+                                , Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value, Full_Source_Condo_Sold_Status_Show_Value
+                                , Condo_Sold_Status_Date, Condo_Built_Text, Condo_Built_Date, Condo_Date_Calculate, Condo_Price_Per_Square_Cal
                                 , Condo_Price_Per_Unit_Cal, Condo_Price_Per_Square_Sort, Condo_Price_Per_Unit_Sort
                                 FROM source_condo_price_calculate_view;
 	
@@ -218,7 +221,7 @@ BEGIN
 	
     OPEN cur;
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22;
         
         IF done THEN
             LEAVE read_loop;
@@ -232,12 +235,15 @@ BEGIN
 				Condo_Price_Per_Square,
 				Condo_Price_Per_Square_Date,
                 Source_Condo_Price_Per_Square,
+                Full_Source_Condo_Price_Per_Square,
 				Condo_Price_Per_Unit_Text,
 				Condo_Price_Per_Unit,
 				Condo_Price_Per_Unit_Date,
                 Source_Condo_Price_Per_Unit,
+                Full_Source_Condo_Price_Per_Unit,
 				Condo_Sold_Status_Show_Value,
                 Source_Condo_Sold_Status_Show_Value,
+                Full_Source_Condo_Sold_Status_Show_Value,
 				Condo_Sold_Status_Date,
 				Condo_Built_Text,
 				Condo_Built_Date,
@@ -247,7 +253,7 @@ BEGIN
                 Condo_Price_Per_Square_Sort,
 				Condo_Price_Per_Unit_Sort
 			)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22);
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
         SET i = i + 1;
