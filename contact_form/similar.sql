@@ -111,7 +111,7 @@ BEGIN
     SET hl_m = (hl_score_min - hl_score_max) / (hl_min - hl_max);
     SET hl_b = hl_score_min - hl_m * hl_min;
 
-    truncate table condo_similar2;
+    truncate table condo_similar;
 
     OPEN cur;
     similarCondo: LOOP
