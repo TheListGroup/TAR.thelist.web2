@@ -1,4 +1,4 @@
-CREATE TABLE `billboard` (
+CREATE TABLE `banner_condo` (
     ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Title_Text varchar(100) not null,
     Subtitle_Text varchar(100) not null,
