@@ -4,6 +4,7 @@ CREATE TABLE `condo_similar` (
     `Condo_Code2` varchar(50) not NULL,
     `Condo_Sold_Out` BOOLEAN not NULL,
     `Total_point` float UNSIGNED not null,
+    `Similar_Rank` int UNSIGNED not null,
     PRIMARY KEY (`ID`),
     INDEX similar_code21 (Condo_Code),
     INDEX similar_code22 (Condo_Code2)
