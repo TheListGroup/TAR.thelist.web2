@@ -1,0 +1,139 @@
+select rc.Condo_Code
+    , rc.Condo_ENName as Condo_ENName
+    , rc.Condo_ScopeArea AS Condo_ScopeArea
+    , rc.Condo_Latitude AS Condo_Latitude
+    , rc.Condo_Longitude AS Condo_Longitude
+    , ifnull(total_sale.Total_Room_Count_Sale,0) as Room_Count_Sale
+    , total_sale.Price_Sale_Min
+    , if(ifnull(total_sale.Total_Room_Count_Sale,0) = 0
+        , 'N/A'
+        , round(total_sale.Price_Sale_Min/1000000,2)) as Use_Price_Sale_Min
+    , total_sale.Price_Sale_Min / size_at_min_total_sale.Price_Sale_Min_Size as Price_Sale_Sqm
+    , if(ifnull(total_sale.Total_Room_Count_Sale,0) = 0
+        , 'N/A'
+        , format(round(total_sale.Price_Sale_Min / size_at_min_total_sale.Price_Sale_Min_Size,-3),0)) as Use_Price_Sale_Sqm
+    , if(ifnull(total_sale.Total_Room_Count_Sale,0) < 3
+        , null
+        , total_sale.Total_Price_Per_Unit_Sqm_Sale) as AVG_Price_Per_Unit_Sqm_Sale
+    , if(ifnull(total_sale.Total_Room_Count_Sale,0) < 3
+        , null
+        , format(round(total_sale.Total_Price_Per_Unit_Sqm_Sale,-3),0)) as Use_AVG_Per_Unit_Sqm_Sale
+    , ifnull(total_rent.Total_Room_Count_Rent,0) as Room_Count_Rent
+    , total_rent.Price_Rent_Min
+    , if(ifnull(total_rent.Total_Room_Count_Rent,0) = 0
+        , 'N/A'
+        , format(round(total_rent.Price_Rent_Min,-2),0)) as Use_Price_Rent_Min
+    , total_rent.Price_Rent_Min / size_at_min_total_rent.Price_Rent_Min_Size as Price_Rent_Sqm
+    , if(ifnull(total_rent.Total_Room_Count_Rent,0) = 0
+        , 'N/A'
+        , format(round(total_rent.Price_Rent_Min / size_at_min_total_rent.Price_Rent_Min_Size,-1),0)) as Use_Price_Rent_Sqm
+    , if(ifnull(total_rent.Total_Room_Count_Rent,0) < 3
+        , null
+        , total_rent.Total_Price_Per_Unit_Sqm_Rent) as AVG_Price_Per_Unit_Sqm_Rent
+    , if(ifnull(total_rent.Total_Room_Count_Rent,0) < 3
+        , null
+        , format(round(total_rent.Total_Price_Per_Unit_Sqm_Rent,-1),0)) as Use_AVG_Per_Unit_Sqm_Rent
+    , rcp.Condo_Segment
+    , tp.Province_code
+    , rm.District_Code
+    , rs.SubDistrict_Code
+    , cd.Developer_Code
+    , b.Brand_Code
+    , aline.Condo_Around_Line
+    , astation.Condo_Around_Station
+    , rc.Condo_URL_Tag
+    , rc.Condo_Cover
+    , ifnull(rc.No_of_Unit_Point, 0) + ifnull(rc.Finish_Year_Point, 0) + ifnull(rc.HighRise_Point, 0)
+        + ifnull(rc.ListCompany_Point, 0) + ifnull(rc.DistanceFromStation_Point, 0) AS Total_Point
+    , updateday.Last_Updated_Date
+    , updateday.Last_Updated_Date_Sort
+from real_condo rc
+left join real_condo_price rcp on rc.Condo_Code = rcp.Condo_Code
+left join thailand_province tp on rc.Province_ID = tp.province_code
+left join real_yarn_main rm on rc.RealDistrict_Code = rm.District_Code
+left join real_yarn_sub rs on rc.RealSubDistrict_Code = rs.SubDistrict_Code
+left join condo_developer cd on rc.Developer_Code = cd.Developer_Code
+left join brand b on rc.Brand_Code = b.Brand_Code
+left join (select Condo_Code
+                , SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
+                , count(*) as Total_Room_Count_Sale
+                , min(Price_Sale) as Price_Sale_Min
+            from classified
+            where Classified_Status = '1'
+            and Sale = 1
+            and User_ID = 7 -- เปลี่ยน
+            group by Condo_Code) total_sale
+on rc.Condo_Code = total_sale.Condo_Code
+LEFT JOIN ( SELECT c1.Condo_Code,
+                min(c1.Size) AS Price_Sale_Min_Size
+            FROM classified c1
+            JOIN (SELECT Condo_Code,
+                        MIN(Price_Sale) AS Min_Price_Sale
+                FROM classified
+                WHERE Classified_Status = '1'
+                AND Sale = 1
+                and User_ID = 7 -- เปลี่ยน
+                GROUP BY Condo_Code) c2 
+            ON c1.Condo_Code = c2.Condo_Code AND c1.Price_Sale = c2.Min_Price_Sale
+            group by c1.Condo_Code) size_at_min_total_sale
+ON rc.Condo_Code = size_at_min_total_sale.Condo_Code
+left join (select Condo_Code
+                , SUM((Price_Rent/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Rent
+                , count(*) as Total_Room_Count_Rent
+                , min(Price_Rent) as Price_Rent_Min
+            from classified
+            where Classified_Status = '1'
+            and Rent = 1
+            and User_ID = 7 -- เปลี่ยน
+            group by Condo_Code) total_rent
+on rc.Condo_Code = total_rent.Condo_Code
+LEFT JOIN ( SELECT c1.Condo_Code,
+                min(c1.Size) AS Price_Rent_Min_Size
+            FROM classified c1
+            JOIN (SELECT Condo_Code,
+                        MIN(Price_Rent) AS Min_Price_Rent
+                FROM classified
+                WHERE Classified_Status = '1'
+                AND Rent = 1
+                and User_ID = 7 -- เปลี่ยน
+                GROUP BY Condo_Code) c2 
+            ON c1.Condo_Code = c2.Condo_Code AND c1.Price_Rent = c2.Min_Price_Rent
+            group by c1.Condo_Code) size_at_min_total_rent
+ON rc.Condo_Code = size_at_min_total_rent.Condo_Code
+left join (select Condo_Code
+                , JSON_ARRAYAGG( JSON_OBJECT('Line_Code',Line_Code) ) as Condo_Around_Line
+            from ( SELECT Condo_Code
+                        , Line_Code
+                    FROM condo_around_station
+                    group by Condo_Code,Line_Code) c_line
+            group by Condo_Code) aline
+on rc.Condo_Code = aline.Condo_Code
+left join (select Condo_Code
+                , JSON_ARRAYAGG( JSON_OBJECT('Station_Code',Station_Code) ) as Condo_Around_Station
+            from ( SELECT Condo_Code
+                        , Station_Code
+                    FROM condo_around_station
+                    group by Condo_Code,Station_Code) c_station
+            group by Condo_Code) astation
+on rc.Condo_Code = astation.Condo_Code
+left join (SELECT Condo_Code
+                , max(date(Last_Updated_Date)) as Last_Updated_Date_Sort  
+                , concat(if(length(day(max(Last_Updated_Date)))=2
+                            , day(max(Last_Updated_Date))
+                            , concat("0",day(max(Last_Updated_Date)))) ,'/'
+                        ,if(length(month(max(Last_Updated_Date)))=2
+                            , month(max(Last_Updated_Date))
+                            , concat("0",month(max(Last_Updated_Date)))),'/'
+                        ,year(max(Last_Updated_Date))) as Last_Updated_Date
+            FROM classified
+            where Classified_Status = '1'
+            and User_ID = 7 -- เปลี่ยน
+            group by Condo_Code) updateday
+on rc.Condo_Code = updateday.Condo_Code
+inner join (select Condo_Code 
+            from classified 
+            where Classified_Status = '1' 
+            and User_ID = 7 -- เปลี่ยน
+            group by Condo_Code) user_id 
+on rc.Condo_Code = user_id.Condo_Code 
+where rc.Condo_Status = 1;
