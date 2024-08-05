@@ -434,3 +434,91 @@ on h.Housing_Code = housing_thname.Housing_Code
 where h.Developer_Code like 'DV0319%'
 and h.Housing_Status = '1'
 ORDER BY `h`.`Housing_Code` ASC
+
+
+
+SELECT wp.post_date
+    , wp.post_title
+    , concat('https://thelist.group/realist/blog/', wp.post_name) as Link, category_blog.`Category`
+    /*, count_view.post_view*/
+FROM wp_posts wp
+left join (SELECT pm.post_id , CAST(pm.meta_value AS SIGNED) as post_view 
+            FROM wp_postmeta pm
+            WHERE meta_key LIKE '_gapp_post_views') count_view
+on wp.ID = count_view.post_id
+left join (SELECT wp.ID as 'ID' 
+            , group_concat(wt.name separator ', ') AS `Category`
+            from wp_terms wt 
+            left join wp_term_taxonomy wtt on wt.term_id = wtt.term_id 
+            left join wp_term_relationships wpr on wtt.term_taxonomy_id = wpr.term_taxonomy_id 
+            left join wp_posts wp on wpr.object_id = wp.ID 
+            where wp.post_status = 'publish'
+            and wp.post_password = ''
+            and wtt.taxonomy = 'category'
+            group by wp.ID) category_blog
+on wp.ID = category_blog.ID
+WHERE wp.post_status='publish' 
+and wp.post_type='post' 
+and wp.post_password='' OR wp.ID = '185138' OR wp.ID = '185032' 
+ORDER BY wp.post_date DESC;
+
+
+
+SELECT h.Housing_Code
+	, housing_enname.Housing_ENName
+    , housing_thname.Housing_Name
+    , concat(housing_enname.Housing_ENName_Line1, ' ', housing_thname.housing_location) as format_name
+    , housing_thname.housing_location as thai_location
+    , concat('https://thelist.group/realist/housing/proj/',h.Housing_URL_Tag) as URL 
+FROM housing h
+left join ( SELECT h.Housing_Code, 
+                if(Housing_ENName1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Housing_ENName1,'\n',1),' ',SUBSTRING_INDEX(Housing_ENName1,'\n',-1))
+                    , Housing_ENName2) as Housing_ENName,
+                if(Housing_ENName1 is not null
+                    , SUBSTRING_INDEX(Housing_ENName1,'\n',1)
+                    , Housing_ENName2) as Housing_ENName_Line1,
+                SUBSTRING_INDEX(Housing_ENName1,'\n',-1) as Housing_ENName_Line2
+            FROM housing AS h
+            left JOIN ( select Housing_Code as Housing_Code1
+                            ,   Housing_ENName as Housing_ENName1
+                        from housing
+                        where Housing_ENName LIKE '%\n%') housing1
+            on h.Housing_Code = housing1.Housing_Code1
+            left JOIN ( select Housing_Code as Housing_Code2
+                            ,   Housing_ENName as Housing_ENName2
+                        from housing
+                        WHERE Housing_ENName NOT LIKE '%\n%' 
+                        AND Housing_ENName NOT LIKE '%\r%') housing2
+            on h.Housing_Code = housing2.Housing_Code2
+            where h.Housing_Status = '1'
+            ORDER BY h.Housing_Code) housing_enname
+on h.Housing_Code = housing_enname.Housing_Code
+left join ( SELECT h.Housing_Code, 
+                if(Housing_Name1 is not null
+                    , CONCAT(SUBSTRING_INDEX(Housing_Name1,'\n',1),' ',SUBSTRING_INDEX(Housing_Name1,'\n',-1))
+                    , Housing_Name2) as Housing_Name,
+                if(Housing_Name1 is not null
+                    , SUBSTRING_INDEX(Housing_Name1,'\n',-1)
+                    , '') as housing_location,
+                if(Housing_Name1 is not null
+                    , SUBSTRING_INDEX(Housing_Name1,'\n',1)
+                    , Housing_Name2) as Housing_Name_Line1,
+                SUBSTRING_INDEX(Housing_Name1,'\n',-1) as Housing_Name_Line2
+            FROM housing AS h
+            left JOIN ( select Housing_Code as Housing_Code1
+                            ,   Housing_Name as Housing_Name1
+                        from housing
+                        where Housing_Name LIKE '%\n%') housing1
+            on h.Housing_Code = housing1.Housing_Code1
+            left JOIN ( select Housing_Code as Housing_Code2
+                            ,   Housing_Name as Housing_Name2
+                        from housing
+                        WHERE Housing_Name NOT LIKE '%\n%' 
+                        AND Housing_Name NOT LIKE '%\r%') housing2
+            on h.Housing_Code = housing2.Housing_Code2
+            where h.Housing_Status = '1'
+            ORDER BY h.Housing_Code) housing_thname
+on h.Housing_Code = housing_thname.Housing_Code
+where h.Housing_Status = '1'
+ORDER BY `h`.`Housing_Code` ASC
