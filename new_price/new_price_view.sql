@@ -18,7 +18,9 @@ select * from (select total_sale.Condo_Code
 						from classified
 						where Classified_Status = '1'
 						and Sale = 1
-						group by Condo_Code) total_sale) unit_sale
+						group by Condo_Code) total_sale
+				where total_sale.Total_Room_Count_Sale >= 3
+				and total_sale.Total_Price_Per_Unit_Sale is not null) unit_sale
 union all select * from (select total_sale.Condo_Code
 							, CURRENT_DATE as Data_Date
 							, 'price_per_sqm' as Data_Attribute
@@ -32,7 +34,9 @@ union all select * from (select total_sale.Condo_Code
 								from classified
 								where Classified_Status = '1'
 								and Sale = 1
-								group by Condo_Code) total_sale) sqm_sale
+								group by Condo_Code) total_sale
+						where total_sale.Total_Room_Count_Sale >= 3
+						and total_sale.Total_Price_Per_Unit_Sqm_Sale is not null) sqm_sale
 union all select * from (select total_rent.Condo_Code
 							, CURRENT_DATE as Data_Date
 							, 'rental_yield_percent' as Data_Attribute
@@ -55,7 +59,9 @@ union all select * from (select total_rent.Condo_Code
 									and Sale = 1
 									group by Condo_Code
 									HAVING COUNT(*) >= 3) sale
-						on total_rent.Condo_Code = sale.Condo_Code) yield
+						on total_rent.Condo_Code = sale.Condo_Code
+						where total_rent.Total_Room_Count_Rent >= 3
+						and round(((total_rent.Total_Price_Per_Unit_Rent*12)/sale.Total_Price_Per_Unit_Sale) * 100,2) is not null) yield
 union all select * from (select total_rent.Condo_Code
 							, CURRENT_DATE as Data_Date
 							, 'rent_per_unit' as Data_Attribute
@@ -69,7 +75,9 @@ union all select * from (select total_rent.Condo_Code
 								from classified
 								where Classified_Status = '1'
 								and Rent = 1
-								group by Condo_Code) total_rent) unit_rent;
+								group by Condo_Code) total_rent
+						where total_rent.Total_Room_Count_Rent >= 3
+						and total_rent.Total_Price_Per_Unit_Rent is not null) unit_rent;
 
 -- source_all_price_view
 CREATE or replace VIEW `source_all_price_view` AS
