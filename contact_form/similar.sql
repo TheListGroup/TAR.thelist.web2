@@ -23,7 +23,7 @@ BEGIN
     DECLARE finished        INTEGER     DEFAULT 0;
     DECLARE eachcondo       VARCHAR(20) DEFAULT NULL;
 
-    DECLARE price_weight    INTEGER     DEFAULT 30;
+    DECLARE price_weight    INTEGER     DEFAULT 15;
     DECLARE price_min       INTEGER     DEFAULT 100000;
     DECLARE price_max       INTEGER     DEFAULT 0;
     DECLARE price_score_min INTEGER     DEFAULT 0;
@@ -32,8 +32,8 @@ BEGIN
     DECLARE price_m         FLOAT       DEFAULT 0;
     DECLARE price_b         FLOAT       DEFAULT 0;
 
-    DECLARE age_weight    INTEGER     DEFAULT 20;
-    DECLARE age_min       INTEGER     DEFAULT 5;
+    DECLARE age_weight    INTEGER     DEFAULT 15;
+    DECLARE age_min       INTEGER     DEFAULT 10;
     DECLARE age_max       INTEGER     DEFAULT 0;
     DECLARE age_score_min INTEGER     DEFAULT 0;
     DECLARE age_score_max INTEGER     DEFAULT 10;
@@ -41,8 +41,8 @@ BEGIN
     DECLARE age_m         FLOAT       DEFAULT 0;
     DECLARE age_b         FLOAT       DEFAULT 0;
 
-    DECLARE location_weight    INTEGER     DEFAULT 30;
-    DECLARE location_min       INTEGER     DEFAULT 5;
+    DECLARE location_weight    INTEGER     DEFAULT 55;
+    DECLARE location_min       INTEGER     DEFAULT 3;
     DECLARE location_max       INTEGER     DEFAULT 0;
     DECLARE location_score_min INTEGER     DEFAULT 0;
     DECLARE location_score_max INTEGER     DEFAULT 10;
@@ -50,7 +50,7 @@ BEGIN
     DECLARE location_m         FLOAT       DEFAULT 0;
     DECLARE location_b         FLOAT       DEFAULT 0;
 
-    DECLARE station_weight    INTEGER     DEFAULT 10;
+    DECLARE station_weight    INTEGER     DEFAULT 5;
     DECLARE station_min       INTEGER     DEFAULT 1;
     DECLARE station_max       INTEGER     DEFAULT 0;
     DECLARE station_score_min INTEGER     DEFAULT 0;
@@ -59,9 +59,9 @@ BEGIN
     DECLARE station_m         FLOAT       DEFAULT 0;
     DECLARE station_b         FLOAT       DEFAULT 0;
 
-    DECLARE rs_weight    INTEGER     DEFAULT 10;
+    DECLARE rs_weight    INTEGER     DEFAULT 5;
     DECLARE rs_min       INTEGER     DEFAULT 0;
-    DECLARE rs_max       INTEGER     DEFAULT 20;
+    DECLARE rs_max       INTEGER     DEFAULT 10;
     DECLARE rs_score_min INTEGER     DEFAULT 0;
     DECLARE rs_score_max INTEGER     DEFAULT 10;
     DECLARE rs_default   INTEGER     DEFAULT 0;
@@ -125,7 +125,7 @@ BEGIN
         select Condo_Code, Condo_Code2, Condo_Status, price_point + age_point + location_point + station_point + score_point + highrise_point as Total_Point
             , ROW_NUMBER() OVER (PARTITION BY Condo_Code ORDER BY price_point + age_point + location_point + station_point + score_point + highrise_point DESC) AS RowNum
         from (select acpc.Condo_Code, rc.Condo_ENName, acpc2.Condo_Code as Condo_Code2, rc2.Condo_ENName as Condo_ENName2
-                , round(GREATEST(LEAST((ifnull(abs(acpc.Condo_Price_Per_Square_Cal - acpc2.Condo_Price_Per_Square_Cal), price_min) * price_m + price_b) * price_weight, price_weight * price_score_max) ,price_weight * price_score_min), 1) as price_point
+                , round(GREATEST(LEAST((ifnull(abs(acpc.Condo_Price_Per_Square - acpc2.Condo_Price_Per_Square), price_min) * price_m + price_b) * price_weight, price_weight * price_score_max) ,price_weight * price_score_min), 1) as price_point
                 , round(GREATEST(LEAST((ifnull(abs(ifnull(acpc.Condo_Built_Date,ifnull(acpc2.Condo_Built_Date+age_min,age_min)) - ifnull(acpc2.Condo_Built_Date,ifnull(acpc.Condo_Built_Date+age_min,0))), age_min) * age_m + age_b) * age_weight, age_weight * age_score_max) ,age_weight * age_score_min), 1) as age_point
                 , round(GREATEST(LEAST((ifnull(abs((6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(rc.Condo_Latitude - rc2.Condo_Latitude)) / 2), 2)
                                                     + COS(RADIANS(rc2.Condo_Latitude)) * COS(RADIANS(rc.Condo_Latitude)) *
@@ -155,6 +155,7 @@ BEGIN
                 on acpc2.Condo_Code = station2.Condo_Code) aaa
         where Condo_Code = eachcondo
         and Condo_Code2 <> eachcondo
+        and price_point + age_point + location_point + station_point + score_point + highrise_point >= 700
         order by price_point + age_point + location_point + station_point + score_point + highrise_point desc;
 
         insert into condo_similar (Condo_Code, Condo_Code2, Condo_Sold_Out, Total_Point, Similar_Rank)
