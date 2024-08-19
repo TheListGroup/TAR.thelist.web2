@@ -73,3 +73,12 @@ group by ca.Line_Code,ml.Line_Name,ms.Station_THName,ca.Route_Code,mr.Route_Name
         ,condo_thname.Condo_Name,rc.Condo_URL_Tag,cpc.Condo_Code,ca.Station_Code,rcp.Price_Average_56_1_Square
         ,rcp.Price_Average_Resale_Square,rcp.Price_Start_Blogger_Square,rcp.Price_Start_Day1_Square
 ORDER BY ca.Line_Code, ca.Station_Code, cpc.Condo_Code;
+
+
+-- คอนโดยูนิตน้อย
+SELECT a.Condo_Code , b.Condo_Name,b.Condo_TotalUnit, c.Condo_Price_Per_Square, c.Condo_Price_Per_Unit
+FROM `all_condo_spotlight_relationship` a
+left join real_condo b on a.Condo_Code = b.Condo_Code
+left join all_condo_price_calculate c on a.Condo_Code = c.Condo_Code
+WHERE a.`PS019` LIKE 'Y'  
+ORDER BY `b`.`Condo_TotalUnit`  DESC;
