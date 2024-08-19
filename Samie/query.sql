@@ -522,3 +522,60 @@ left join ( SELECT h.Housing_Code,
 on h.Housing_Code = housing_thname.Housing_Code
 where h.Housing_Status = '1'
 ORDER BY `h`.`Housing_Code` ASC
+
+-- housing_spotlight
+select hs.Spotlight_Code
+    , hs.Spotlight_Name
+    , concat("https://thelist.group/realist/housing/list/spotlight/",hs.Spotlight_Name) as 'Link'
+from housing_spotlight hs
+where hs.Spotlight_Inactive = 0
+union all
+select 'SH'
+    , 'บ้านเดี่ยว'
+    , concat("https://thelist.group/realist/housing/single-detached-house") as 'Link'
+union all
+select 'single-detached-house'
+    , replace(hs.Spotlight_Title,"{type}","บ้านเดี่ยว")
+    , concat("https://thelist.group/realist/housing/single-detached-house/list/spotlight/",hs.Spotlight_Name) as 'Link'
+from housing_spotlight hs
+where hs.Spotlight_Inactive = 0
+union all
+select 'DD'
+    , 'บ้านเดี่ยว'
+    , concat("https://thelist.group/realist/housing/semi-detached-house") as 'Link'
+union all
+select 'semi-detached-house'
+    , replace(hs.Spotlight_Title,"{type}","บ้านแฝด")
+    , concat("https://thelist.group/realist/housing/semi-detached-house/list/spotlight/",hs.Spotlight_Name) as 'Link'
+from housing_spotlight hs
+where hs.Spotlight_Inactive = 0
+union all
+select 'TH'
+    , 'ทาวน์โฮม'
+    , concat("https://thelist.group/realist/housing/townhome") as 'Link'
+union all
+select 'townhome'
+    , replace(hs.Spotlight_Title,"{type}","ทาวน์โฮม")
+    , concat("https://thelist.group/realist/housing/townhome/list/spotlight/",hs.Spotlight_Name) as 'Link'
+from housing_spotlight hs
+where hs.Spotlight_Inactive = 0
+union all
+select 'HO'
+    , 'โฮมออฟฟิศ'
+    , concat("https://thelist.group/realist/housing/home-office") as 'Link'
+union all
+select 'home-office'
+    , replace(hs.Spotlight_Title,"{type}","โฮมออฟฟิศ")
+    , concat("https://thelist.group/realist/housing/home-office/list/spotlight/",hs.Spotlight_Name) as 'Link'
+from housing_spotlight hs
+where hs.Spotlight_Inactive = 0
+union all
+select 'SH'
+    , 'อาคารพาณิชย์'
+    , concat("https://thelist.group/realist/housing/shophouse") as 'Link'
+union all
+select 'shophouse'
+    , replace(hs.Spotlight_Title,"{type}","อาคารพาณิชย์")
+    , concat("https://thelist.group/realist/housing/shophouse/list/spotlight/",hs.Spotlight_Name) as 'Link'
+from housing_spotlight hs
+where hs.Spotlight_Inactive = 0;
