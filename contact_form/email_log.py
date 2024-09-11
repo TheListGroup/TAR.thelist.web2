@@ -165,7 +165,7 @@ def border(z):
             y += 1
 
 if sql:
-    sheet = spreadsheet.worksheet("test")
+    sheet = spreadsheet.worksheet("condo_template_all_email")
     old_records = sheet.get_all_records()
     query = """SELECT rcf.Contact_Date 
                 , el.Contact_ID
