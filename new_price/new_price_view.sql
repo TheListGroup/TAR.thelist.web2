@@ -669,7 +669,6 @@ left join ( select Condo_Code
 on a.Condo_Code = avg_unit_cal.Condo_Code
 WHERE a.Condo_Latitude is not null
 AND a.Condo_Longitude is not null
-AND a.Province_ID in (10, 11, 12, 13, 73, 74)
 AND a.Condo_Status = 1
 order by a.Condo_Code;
 

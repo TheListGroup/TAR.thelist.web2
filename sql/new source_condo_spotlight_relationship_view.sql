@@ -318,7 +318,6 @@ left join (select Condo_Code
 on((a.Condo_Code = c40.Condo_Code)))
 WHERE ((`a`.`Condo_Latitude` is not null)
 AND (`a`.`Condo_Longitude` is not null)
-AND (`a`.`Province_ID` in (10, 11, 12, 13, 73, 74))
 AND (`a`.`Condo_Status` = 1))
 ORDER BY `a`.`Condo_Code` ASC;
 
