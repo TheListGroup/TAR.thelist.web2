@@ -54,7 +54,7 @@ and ftc.Category_Status = 1
 and fts.Section_Status = 1
 and fti.Image_Status = 1
 group by fte.Housing_Code,fts.Section_ID,fte.Element_ID,ftc.Category_ID,h360.ID
-ORDER BY fte.Housing_Code,fts.Section_ID,fte.Display_Order_in_Section,fht.Housing_Category,fht.Housing_Area desc,ftc.Category_Order;
+ORDER BY fte.Housing_Code,fts.Section_ID,fte.Display_Order_in_Section,fht.Housing_Category,(ifnull(fht.Housing_Area_Min,0)+ifnull(fht.Housing_Area_Max,0)) desc,ftc.Category_Order;
 
 
 -- -----------------------------------------------------
