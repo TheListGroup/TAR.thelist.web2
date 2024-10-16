@@ -16,13 +16,15 @@ import datetime as dt
 from datetime import datetime
 import time
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\PYTHON\TAR.thelist.web2\analytic\access.json"
+#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\PYTHON\TAR.thelist.web2\analytic\access.json"
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"/home/gitprod/ta_python/analytic/access.json"
 client = BetaAnalyticsDataClient()
 property_id = "286074701"
 print("Access Google Analytic")
 
 def access_ggsheet():
-    json_file = r"C:\PYTHON\TAR.thelist.web2\analytic\access2.json"
+    #json_file = r"C:\PYTHON\TAR.thelist.web2\analytic\access2.json"
+    json_file = r"/home/gitprod/ta_python/analytic/access2.json"
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
     client_gg = gspread.authorize(creds)
@@ -131,7 +133,7 @@ def sample_run_report_traffic(property_id,date,filter_list):
         request = RunReportRequest(
             property=f"properties/{property_id}",
             dimensions=[Dimension(name="sessionSourceMedium"),
-                        Dimension(name="pagePath")],
+                        Dimension(name="landingPagePlusQueryString")],
             metrics=[Metric(name="totalUsers")],
             date_ranges=[DateRange(start_date=date.start_date, end_date=date.end_date)],
             dimension_filter=dimension_filter,
@@ -197,7 +199,7 @@ def filter_landpage(i,page,traffic):
                 expressions=[
                     FilterExpression(
                         filter=Filter(
-                            field_name="pagePath",
+                            field_name="landingPagePlusQueryString",
                             string_filter=Filter.StringFilter(
                                 match_type=Filter.StringFilter.MatchType.EXACT,
                                 value=page))),
@@ -208,7 +210,7 @@ def filter_landpage(i,page,traffic):
                 expressions=[
                     FilterExpression(
                         filter=Filter(
-                            field_name="pagePath",
+                            field_name="landingPagePlusQueryString",
                             string_filter=Filter.StringFilter(
                                 match_type=Filter.StringFilter.MatchType.CONTAINS,
                                 value=page))),
@@ -219,7 +221,7 @@ def filter_landpage(i,page,traffic):
                 expressions=[
                     FilterExpression(
                         filter=Filter(
-                            field_name="pagePath",
+                            field_name="landingPagePlusQueryString",
                             string_filter=Filter.StringFilter(
                                 match_type=Filter.StringFilter.MatchType.PARTIAL_REGEXP,
                                 value=page))),
