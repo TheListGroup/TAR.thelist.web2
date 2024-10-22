@@ -236,7 +236,7 @@ dates = generate_dates()
 spreadsheet = access_ggsheet()
 sheets = spreadsheet.worksheets()
 sheet_count = len(sheets)
-for count in range(sheet_count-1):
+for count in range(sheet_count-2):
     sheet = spreadsheet.get_worksheet(count)
     data_all = sheet.col_values(1)
     try:
