@@ -128,7 +128,7 @@ def filter_page(i,page):
                 value=page)))
     return dimension_filter
 
-def sample_run_report_traffic(property_id,date,filter_list):
+def sample_run_report_traffic(property_id,date,filter_list,traffic):
     def request_and_filter_landpage(dimension_filter,date):
         request = RunReportRequest(
             property=f"properties/{property_id}",
@@ -147,17 +147,14 @@ def sample_run_report_traffic(property_id,date,filter_list):
             append_row.append(0)
         return append_row
     
-    organic_list,cpc_list,other_list = [],[],[]
-    traffic_list = [organic_list,cpc_list,other_list]
-    type_list = ["organic","cpc","(organic|cpc)"]
-    for x, traffic in enumerate(type_list):
-        append_row = []
-        append_row.append(date.start_date)
-        for i, page in enumerate(filter_list):
-            dimension_filter = filter_landpage(i,page,traffic)
-            append_row = request_and_filter_landpage(dimension_filter,date)
-        traffic_list[x].extend(append_row)
-    return organic_list,cpc_list,other_list
+    use_list = []
+    append_row = []
+    append_row.append(date.start_date)
+    for i, page in enumerate(filter_list):
+        dimension_filter = filter_landpage(i,page,traffic)
+        append_row = request_and_filter_landpage(dimension_filter,date)
+    use_list.extend(append_row)
+    return use_list
 
 def create_filter_expression(traffic, exclude_traffic=False):
     if exclude_traffic:
@@ -234,24 +231,33 @@ filter_list = ["The List","/realist/blog/","/realist/blog/","/realist/blog/categ
                 , "/realist/housing/proj/", "/realist/(classified/|condo/unit/)", "/realist/classified/", "/realist/classified/comparison/"
                 , "/realist/classified/bookmark/", "/realist/classified/u/", "/realist/condo/unit/"]
 
-spreadsheet = access_ggsheet()
-sheet = spreadsheet.get_worksheet(0)
-data_all = sheet.col_values(1)
-try:
-    lastest_date = datetime.strptime(data_all[-1], '%Y-%m-%d')
-except:
-    lastest_date = datetime.strptime("2000-01-01", '%Y-%m-%d')
 insert_list,organic_list,cpc_list,other_list = [],[],[],[]
 dates = generate_dates()
-for date in dates:
-    start_date = datetime.strptime(date.start_date, '%Y-%m-%d')
-    if start_date > lastest_date:
-        insert_list.append(sample_run_report(property_id,date,filter_list))
-        organic_values, cpc_values, other_values = sample_run_report_traffic(property_id,date,filter_list)
-        organic_list.append(organic_values)
-        cpc_list.append(cpc_values)
-        other_list.append(other_values)
-    print(date.start_date)
+spreadsheet = access_ggsheet()
+sheets = spreadsheet.worksheets()
+sheet_count = len(sheets)
+for count in range(sheet_count-1):
+    sheet = spreadsheet.get_worksheet(count)
+    data_all = sheet.col_values(1)
+    try:
+        lastest_date = datetime.strptime(data_all[-1], '%Y-%m-%d')
+    except:
+        lastest_date = datetime.strptime("2000-01-01", '%Y-%m-%d')
+    for date in dates:
+        start_date = datetime.strptime(date.start_date, '%Y-%m-%d')
+        if start_date > lastest_date:
+            if count == 0:
+                insert_list.append(sample_run_report(property_id,date,filter_list))
+            elif count == 1:
+                organic_values = sample_run_report_traffic(property_id,date,filter_list,"organic")
+                organic_list.append(organic_values)
+            elif count == 2:
+                cpc_values = sample_run_report_traffic(property_id,date,filter_list,"cpc")
+                cpc_list.append(cpc_values)
+            elif count == 3:
+                other_values = sample_run_report_traffic(property_id,date,filter_list,"(organic|cpc)")
+                other_list.append(other_values)
+            print(f"{sheet.title} Work at {date}")
 print("Data Done")
 
 insert_data_list = []
@@ -283,7 +289,7 @@ insert = [insert_data_list,organic_list,cpc_list,other_list]
 spreadsheet = access_ggsheet()
 for x in range(len(insert)):
     sheet = spreadsheet.get_worksheet(x)
-    print(sheet.title)
+    print(f"{sheet.title} DONE")
     for i in range(len(insert[x])):
         if i % 50 == 0 and i > 0:
             time.sleep(120)
