@@ -254,7 +254,7 @@ left join ( SELECT rc.Condo_Code,
                         WHERE Condo_ENName NOT LIKE '%\n%' 
                         AND Condo_ENName NOT LIKE '%\r%') real_condo2
             on rc.Condo_Code = real_condo2.Condo_Code2
-            where rc.Condo_Status = 1
+            where rc.Condo_Status in (1,3)
             ORDER BY rc.Condo_Code ) namee
 on c.Condo_Code = namee.Condo_Code
 left join (select Classified_ID,JSON_ARRAYAGG( JSON_OBJECT(  'Classified_Image_ID',Classified_Image_ID
