@@ -1,7 +1,7 @@
 -- Table
     -- real_contact_dev_agent
     -- real_contact_condo_send_to_who
-    -- real_contact_condo_send_to_who_log
+    -- real_contact_email_log
 -- real_contact_dev_agent_detail_view
 -- table real_contact_dev_agent_detail
 -- proc real_contact_dev_agent_detail
@@ -44,15 +44,20 @@ CREATE TABLE `real_contact_condo_send_to_who` (
 ) ENGINE=InnoDB;
 
 -- log
-CREATE TABLE `real_contact_condo_send_to_who_log` (
-    `ID` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    `Contact_ID` INT UNSIGNED NOT NULL,
-    `Condo_Code` varchar(50) NOT NULL,
-    `Main_or_Near` ENUM('Main','Near') NOT NULL,
-    `Dev_Agent_Contact_ID` INT UNSIGNED NOT NULL,
-    `Sent` ENUM('Y','N') NOT NULL,
-    `Created_Date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`ID`)
+CREATE TABLE `real_contact_email_log` (
+    `ID` int UNSIGNED NOT NULL AUTO_INCREMENT,
+    `Contact_ID` int NULL,
+    `Condo_Code` varchar(50) NULL,
+    `Contact_Type` enum('Main','Near') NULL,
+    `Dev_Agent_Contact_ID` int NULL,
+    `Dev_or_Agent` varchar(1) NULL,
+    `Company_Name` varchar(250) NULL,
+    `Contact_Name` varchar(250) NULL,
+    `Email` text NULL,
+    `Contact_Sent` enum('Y','N','W','E') NULL,
+    `Error_Reason` text NULL,
+    `Contact_Sent_Date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
 ) ENGINE=InnoDB;
 
 -- view real_contact_dev_agent_detail
