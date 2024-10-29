@@ -15,6 +15,15 @@ from oauth2client.service_account import ServiceAccountCredentials
 import datetime as dt
 from datetime import datetime
 import time
+import mysql.connector
+
+#host = '157.230.242.204'
+#user = 'real-research2'
+#assword = 'DQkuX/vgBL(@zRRa'
+
+host = '127.0.0.1'
+user = 'real-research'
+password = 'shA0Y69X06jkiAgaX&ng'
 
 #os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\PYTHON\TAR.thelist.web2\analytic\access.json"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"/home/gitprod/ta_python/analytic/access.json"
@@ -225,6 +234,13 @@ def filter_landpage(i,page,traffic):
                     create_filter_expression(traffic, exclude_traffic)]))
     return dimension_filter
 
+def create_floorplan_query(condition):
+    merge_query = floorplan_query + "\n" + condition
+    cursor.execute(merge_query)
+    result = cursor.fetchall()
+    count_data = result[0][0]
+    return count_data
+
 filter_list = ["The List","/realist/blog/","/realist/blog/","/realist/blog/category/","/realist/blog/([A-z]|[ก-๙])","/realist/condo|housing|classified/"
                 , "/realist/condo/", "/realist/condo/", "/realist/condo/list/", "/realist/condo/proj/", "/realist/housing/", "/realist/housing/"
                 , "/realist/housing(/list/|/single-detached-house/list/|/semi-detached-house/list/|/townhome/list/|/home-office/list/|/shophouse/list/)"
@@ -284,6 +300,287 @@ for data_set in insert_list:
             data_list[i] = int(data_set[i-y])
             y -= 1
     insert_data_list.append(data_list)
+
+web_data_list = []
+web_data_list.append(dates[-1].start_date)
+sql = False
+try:
+    connection = mysql.connector.connect(
+        host = host,
+        user = user,
+        password = password,
+        database = 'realist2'
+    )
+    if connection.is_connected():
+        print('Connected to MySQL server')
+        cursor = connection.cursor()
+        sql = True
+    
+except Exception as e:
+    print(f'Error: {e}')
+
+if sql:
+    blog = """SELECT count(wp.ID) as Article
+            FROM wp_posts wp
+            where wp.post_status = 'publish'"""
+    
+    client_blog = """select count(*)
+                    from (select wpr.object_id 
+                            from wp_term_relationships wpr
+                            left join wp_term_taxonomy wtt on wpr.term_taxonomy_id = wtt.term_taxonomy_id
+                            left join wp_terms wt on wtt.term_id = wt.term_id
+                            left join wp_posts wp on wpr.object_id = wp.ID
+                            where wtt.term_id <> 461
+                            and wp.post_status = 'publish'
+                            group by wpr.object_id) a"""
+    
+    realist_post = """select count(*)
+                    from (select wpr.object_id 
+                            from wp_term_relationships wpr
+                            left join wp_term_taxonomy wtt on wpr.term_taxonomy_id = wtt.term_taxonomy_id
+                            left join wp_terms wt on wtt.term_id = wt.term_id
+                            left join wp_posts wp on wpr.object_id = wp.ID
+                            where wtt.term_id = 461
+                            and wp.post_status = 'publish'
+                            group by wpr.object_id) a"""
+    
+    all_condo = """select count(*)
+                from real_condo
+                where Condo_Status in (1,3)"""
+    
+    condo_short = """SELECT count(*)
+                    FROM real_condo rc
+                    left join (select Condo_Code
+                            , count(Floor_Plan_ID) as 'Floor_Plan'
+                            from full_template_floor_plan
+                            where Floor_Plan_Status = 1
+                            group by Condo_Code) fp
+                    on rc.Condo_Code = fp.Condo_Code
+                    left join (select Condo_Code
+                                    , sum(Vector) as Vector
+                            from (select fp.Condo_Code
+                                    , fp.Floor_Plan_ID
+                                    , count(vr.Vector_ID) as Vector
+                            from full_template_floor_plan fp
+                            left join full_template_vector_floor_plan_relationship vr on fp.Floor_Plan_ID = vr.Floor_Plan_ID
+                            where fp.Floor_Plan_Status = 1
+                            and vr.Relationship_Status = 1
+                            group by fp.Condo_Code, fp.Floor_Plan_ID) a
+                            group by Condo_Code) v
+                    on rc.Condo_Code = v.Condo_Code
+                    left join (select Condo_Code
+                                    , count(Element_ID) as 'Element'
+                            from full_template_element_image_view
+                            group by Condo_Code) fi
+                    on rc.Condo_Code = fi.Condo_Code
+                    where rc.Condo_Status = 1
+                    and fp.Floor_Plan is null
+                    and v.Vector is null
+                    and fi.Element is null"""
+    
+    floorplan_query = """select count(*)
+                        from (select rc.Condo_Code
+                            , fb.Total_Building
+                            , f.Floors as Total_Floor
+                            , floor_plan.Total_Floor_Plan
+                            , (floor_plan.Total_Floor_Plan * 100)/f.Floors as Floor_Plan_Cal
+                            , rc.Condo_TotalUnit
+                            , ifnull(v.Vectors,0) as Total_Vector
+                            , ifnull((v.Vectors * 100)/ rc.Condo_TotalUnit,0) as Vector_Cal
+                        from real_condo rc
+                        inner join (select Condo_Code
+                                        , count(Building_ID) as Total_Building
+                                    from full_template_building
+                                    where Building_Status = 1
+                                    group by Condo_Code) fb 
+                        on rc.Condo_Code = fb.Condo_Code
+                        left join (select fb.Condo_Code
+                                        , count(ff.Floor_ID) as Floors
+                                    from full_template_floor ff
+                                    left join full_template_building fb on ff.Building_ID = fb.Building_ID
+                                    where ff.Floor_Status = 1
+                                    and fb.Building_Status = 1
+                                    group by fb.Condo_Code) f
+                        on fb.Condo_Code = f.Condo_Code
+                        left join (select Condo_Code
+                                        , count(Floor_Plan_ID) as Total_Floor_Plan
+                                    from (select  fb.Condo_Code
+                                                , ff.Floor_ID
+                                                , ifnull(fp.Floor_Plan_ID,fp2.Floor_Plan_ID) as Floor_Plan_ID
+                                            from full_template_floor ff
+                                            left join full_template_building fb on ff.Building_ID = fb.Building_ID
+                                            left join (select Condo_Code
+                                                            , Floor_Plan_ID
+                                                        from full_template_floor_plan
+                                                        where Floor_Plan_Status = 1) fp
+                                            on ff.Floor_Plan_ID = fp.Floor_Plan_ID
+                                            left join (select Condo_Code
+                                                            , Floor_Plan_ID 
+                                                        from (select Condo_Code
+                                                                    , Floor_Plan_ID
+                                                                    , ROW_NUMBER() OVER (PARTITION BY Condo_Code ORDER BY Floor_Plan_Order) AS RowNum
+                                                                from full_template_floor_plan
+                                                                where Floor_Plan_Status = 1
+                                                                and Master_Plan = 1) a
+                                                        where RowNum = 1) fp2
+                                            on fb.Condo_Code = fp2.Condo_Code
+                                            where ff.Floor_Status = 1
+                                            and fb.Building_Status = 1) a
+                                    group by Condo_Code) floor_plan
+                        on fb.Condo_Code = floor_plan.Condo_Code
+                        left join (select Condo_Code
+                                        , sum(Vectors) as Vectors
+                                    from (SELECT fp.Condo_Code
+                                                , vr.Floor_Plan_ID
+                                                , count(vr.Ref_ID) * ifnull(count_floor.Floor,1) as Vectors
+                                            FROM full_template_vector_floor_plan_relationship vr
+                                            left join full_template_unit_type fu on vr.Ref_ID = fu.Unit_Type_ID and vr.Vector_Type = 1
+                                            left join full_template_floor_plan fp on vr.Floor_Plan_ID = fp.Floor_Plan_ID
+                                            left join (select Floor_Plan_ID
+                                                            , count(Floor_ID) as Floor
+                                                        from full_template_floor
+                                                        where Floor_Status = 1
+                                                        group by Floor_Plan_ID) count_floor
+                                            on vr.Floor_Plan_ID = count_floor.Floor_Plan_ID
+                                            where vr.Relationship_Status = 1
+                                            and vr.Vector_Type = 1  
+                                            and fu.Unit_Type_Status = 1
+                                            and fp.Floor_Plan_Status = 1
+                                            group by fp.Condo_Code, vr.Floor_Plan_ID, count_floor.Floor) a
+                                    group by Condo_Code
+                                    order by Condo_Code) v
+                        on fb.Condo_Code = v.Condo_Code
+                        where rc.Condo_Status = 1
+                        order by rc.Condo_Code) aaaa"""
+    
+    agent = """select count(*)
+            from classified_user
+            where User_Status = '1'
+            and User_Type = 'Agent'"""
+    
+    agent_room = """select count(*)
+                from classified c
+                left join classified_user cu on c.User_ID = cu.User_ID
+                where c.Classified_Status = '1'
+                and cu.User_Status = '1'
+                and cu.User_Type = 'Agent'"""
+    
+    member = """select count(*)
+            from classified_user
+            where User_Status = '1'
+            and User_Type = 'Member'"""
+    
+    member_room = """select count(*)
+                    from classified c
+                    left join classified_user cu on c.User_ID = cu.User_ID
+                    where c.Classified_Status = '1'
+                    and cu.User_Status = '1'
+                    and cu.User_Type = 'Member'"""
+    
+    condo_classified = """select count(Condo_Code)
+                        from (select Condo_Code
+                                from classified
+                                where Classified_Status = '1'
+                                group by Condo_Code) a"""
+    
+    classified_contact_form = """SELECT count(*)
+                                FROM `real_contact_form`
+                                where Contact_Type = 'classified'"""
+    
+    condo_dev_email = """SELECT count(a.Condo_Code)
+                        FROM `real_contact_condo_send_to_who` a
+                        left join real_contact_dev_agent b on a.Dev_Agent_Contact_ID = b.Dev_Agent_Contact_ID
+                        where b.Dev_or_Agent = 'D'"""
+    
+    condo_not_dev_email = """select count(aa.Condo_Code) - (SELECT count(a.Condo_Code) as condo_count
+                                                            FROM `real_contact_condo_send_to_who` a
+                                                            left join real_contact_dev_agent b on a.Dev_Agent_Contact_ID = b.Dev_Agent_Contact_ID
+                                                            where b.Dev_or_Agent = 'D')
+                            from all_condo_price_calculate aa"""
+    
+    condo_contact_form = """SELECT count(*)
+                            FROM `real_contact_form`
+                            where Contact_Type = 'contact'"""
+    
+    condo_from_contact_form = """select sum(Condo_Code)
+                                from (SELECT Contact_ID,Count(Condo_Code) as Condo_Code 
+                                        FROM `real_contact_email_log`
+                                        where Dev_or_Agent = 'D'
+                                        and Contact_Sent_Date BETWEEN %s and %s
+                                        group by Contact_ID) aaa"""
+    
+    agent_email = """SELECT count(*)  
+                    FROM `real_contact_email_log` 
+                    WHERE `Dev_or_Agent` = 'A'
+                    and Contact_Sent_Date BETWEEN %s and %s"""
+    
+    developer_email = """select sum(Condo_Code)
+                        from (SELECT Contact_ID,count(Condo_Code) as Condo_Code
+                                FROM `real_contact_email_log`
+                                where Dev_or_Agent = 'D'
+                                and Contact_Sent_Date BETWEEN %s and %s
+                                group by Contact_ID) aaa"""
+    
+    developer_email_success = """SELECT count(*)  
+                                FROM `real_contact_email_log`
+                                where Dev_or_Agent = 'D'
+                                and Contact_Sent = 'Y'
+                                and Contact_Sent_Date BETWEEN %s and %s"""
+    
+    developer_email_not_success = """SELECT count(*)  
+                                    FROM `real_contact_email_log`
+                                    where Dev_or_Agent = 'D'
+                                    and Contact_Sent <> 'Y'
+                                    and Contact_Sent_Date BETWEEN %s and %s"""
+    
+    query_list = [blog,client_blog,realist_post,all_condo,condo_short,floorplan_query,agent,agent_room,member,member_room,condo_classified
+                ,classified_contact_form,condo_dev_email,condo_not_dev_email]
+    for i, query in enumerate(query_list):
+        if i == 5:
+            web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal >= 80"))
+            web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal < 80 and Floor_Plan_Cal > 0"))
+            web_data_list.append(create_floorplan_query(" where Vector_Cal >= 80"))
+            web_data_list.append(create_floorplan_query(" where Vector_Cal < 80 and Vector_Cal > 0"))
+        else:
+            cursor.execute(query)
+            result = cursor.fetchall()
+            count_data = result[0][0]
+            web_data_list.append(count_data)
+    
+    contact_query_list = [condo_contact_form,condo_from_contact_form,agent_email,developer_email,developer_email_success,developer_email_not_success]
+    for i, query in enumerate(contact_query_list):
+        if i != 0:
+            val = (datetime.strptime(f"{dates[-1].start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{dates[-1].end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
+            cursor.execute(query,val)
+            result = cursor.fetchall()
+        else:
+            cursor.execute(query)
+            result = cursor.fetchall()
+        count_data = int(result[0][0])
+        web_data_list.append(count_data)
+
+    event_list = ["Click-classified","click-classified-bookmark","submitform_classified_appear","submitform_classified_fill","submitform_classified_submit"
+                ,"submitform_condo_appear","submitform_condo_fill","click-to-submitfrom","click-button-atricle","click-to-blog"]
+    request = RunReportRequest(
+        property=f"properties/{property_id}",
+        dimensions=[Dimension(name="eventName")],
+        metrics=[Metric(name="eventCount")],
+        date_ranges=[DateRange(start_date=dates[0].start_date, end_date=dates[-1].end_date)],
+        metric_aggregations=[MetricAggregation.TOTAL],
+    )
+    response = client.run_report(request)
+    for i, event in enumerate(event_list):
+        for x, event_name in enumerate(response.rows):
+            if event == event_name.dimension_values[0].value:
+                web_data_list.append(int(event_name.metric_values[0].value))
+
+    spreadsheet = access_ggsheet()
+    sheet = spreadsheet.get_worksheet(4)
+    sheet.append_rows([web_data_list])
+
+    cursor.close()
+    connection.close()
+    print('Done -- Connection closed')
 
 insert = [insert_data_list,organic_list,cpc_list,other_list]
 spreadsheet = access_ggsheet()
