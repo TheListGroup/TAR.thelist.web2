@@ -12,7 +12,9 @@ password = 'DQkuX/vgBL(@zRRa'
 
 def read_kml(file_path):
     def work(coordinates):
-        coordinates = coordinates.split(",0")
+        coordinates = coordinates.split(",0") 
+        #for i in range(0, len(coordinates), 10):
+        #    coor = coordinates[i]
         for coor in coordinates:
             if coor != '':
                 format_coor = re.sub("\n","",coor).strip()
@@ -72,18 +74,30 @@ def read_kml(file_path):
 
     return placemarks_data
 
-def save(folder,table,column): 
+def save(folder,table,column1):
     update = 1
+    open_json = "["
+    close_json = "]"
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
         placemarks = read_kml(file_path)
         for placemark in placemarks:
+            data_list = []
             code = placemark[0]
-            boundary = placemark[1]
-            query = f"UPDATE {table} SET boundary = %s WHERE {column} = %s"
-            val = (boundary, code)
+            boundary_all = placemark[1]
+            boundarys = placemark[1].split(";")
+            for boundary in boundarys:
+                boundary = '{"Boundary": "' + boundary + '"}'
+                data_list.append(boundary)
+            data_list = open_json + ", ".join(data_list) + close_json
+            query = f"UPDATE {table} SET boundary = %s WHERE {column1} = %s"
+            val = (boundary_all, code)
+            query2 = f"UPDATE {table} SET boundary_json = %s WHERE {column1} = %s"
+            val2 = (data_list, code)
             try:
                 cursor.execute(query,val)
+                connection.commit()
+                cursor.execute(query2,val2)
                 connection.commit()
                 if update % 500 == 0:
                     print(f"Update {table} {update} Rows")
@@ -111,6 +125,6 @@ except Exception as e:
 
 if sql:
     save(district,"thailand_district","district_code")
-    save(subdistrict,"thailand_subdistrict","subdistrict_code")
+    #save(subdistrict,"thailand_subdistrict","subdistrict_code")
 
 print("Done")
