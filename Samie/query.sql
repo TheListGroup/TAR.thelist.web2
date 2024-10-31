@@ -5,6 +5,7 @@
 -- spotlight
 -- Station 07,13
 -- condo status 1
+-- check full_template
 
 select * from (SELECT Housing_Name, count(*) as name_count
 FROM `housing`
@@ -149,15 +150,18 @@ ORDER BY CAST(pm.meta_value AS SIGNED)  DESC;
 
 
 
-
-SELECT ss.Condo_Code
+-- check full_template
+SELECT rc.Condo_Code
     , condo_enname.Condo_ENName
     , condo_thname.Condo_Name
     , if(ff.Condo_Code is not null,'TRUE','FALSE') as Floor_Plan
-    , if(ss.Article_Image is not null,'TRUE','FALSE') as Article
-    , rc.Condo_LastUpdate as Condo_LastUpdate
-FROM full_template_section_shortcut_view ss
-left join real_condo rc on ss.Condo_Code = rc.Condo_Code
+    -- , if(ss.Article_Image is not null,'TRUE','FALSE') as Article
+    , if(ss.Condo_Code is not null,'TRUE','FALSE') as Full_Template
+    -- , rc.Condo_LastUpdate as Condo_LastUpdate
+    , year(cpc.Condo_Date_Calculate) as Built_Start
+    , concat('https://thelist.group/realist/condo/proj/',rc.Condo_URL_Tag,'-',rc.Condo_Code) as URL 
+FROM real_condo rc
+left join full_template_section_shortcut_view ss on rc.Condo_Code = ss.Condo_Code
 left join ( SELECT cpc.Condo_Code, 
                 if(Condo_ENName1 is not null
                     , CONCAT(SUBSTRING_INDEX(Condo_ENName1,'\n',1),' ',SUBSTRING_INDEX(Condo_ENName1,'\n',-1))
@@ -176,7 +180,7 @@ left join ( SELECT cpc.Condo_Code,
             on cpc.Condo_Code = real_condo2.Condo_Code2
             where cpc.Condo_Status = 1
             ORDER BY cpc.Condo_Code) condo_enname
-on ss.Condo_Code = condo_enname.Condo_Code
+on rc.Condo_Code = condo_enname.Condo_Code
 left join ( SELECT cpc.Condo_Code, 
                 if(Condo_Name1 is not null
                     , CONCAT(SUBSTRING_INDEX(Condo_Name1,'\n',1),' ',SUBSTRING_INDEX(Condo_Name1,'\n',-1))
@@ -198,9 +202,10 @@ left join ( SELECT cpc.Condo_Code,
             on cpc.Condo_Code = real_condo2.Condo_Code2
             where cpc.Condo_Status = 1
             ORDER BY cpc.Condo_Code) condo_thname
-on ss.Condo_Code = condo_thname.Condo_Code
-left join (select Condo_Code from full_template_floor_plan_fullscreen_view group by Condo_Code) ff
-on ss.Condo_Code = ff.Condo_Code;
+on rc.Condo_Code = condo_thname.Condo_Code
+left join (select Condo_Code from full_template_floor_plan_fullscreen_view group by Condo_Code) ff on rc.Condo_Code = ff.Condo_Code
+left join all_condo_price_calculate cpc on rc.Condo_Code = cpc.Condo_Code
+where rc.Condo_Status = 1;
 
 -- classified ขาย
 select cpc.Condo_Code
@@ -587,8 +592,10 @@ SELECT
   wp.post_title,
   ifnull(pm.aaa_condo,'') as Condo_Code,
   tag_type.tag_name,
+  d.user_nicename AS User_Name,
   CONCAT('https://thelist.group/realist/blog/', wp.post_name) AS Link
 FROM wp_posts wp
+LEFT JOIN wp_users d ON wp.post_author = d.ID
 left join (select post_id, group_concat(meta_value separator ', ') AS aaa_condo
           from wp_postmeta 
           where meta_key = 'aaa_condo'
