@@ -500,7 +500,8 @@ if sql:
     
     condo_contact_form = """SELECT count(*)
                             FROM `real_contact_form`
-                            where Contact_Type = 'contact'"""
+                            where Contact_Type = 'contact'
+                            and Contact_Date BETWEEN %s and %s"""
     
     condo_from_contact_form = """select sum(Condo_Code)
                                 from (SELECT Contact_ID,Count(Condo_Code) as Condo_Code 
@@ -549,13 +550,9 @@ if sql:
     
     contact_query_list = [condo_contact_form,condo_from_contact_form,agent_email,developer_email,developer_email_success,developer_email_not_success]
     for i, query in enumerate(contact_query_list):
-        if i != 0:
-            val = (datetime.strptime(f"{dates[-1].start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{dates[-1].end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
-            cursor.execute(query,val)
-            result = cursor.fetchall()
-        else:
-            cursor.execute(query)
-            result = cursor.fetchall()
+        val = (datetime.strptime(f"{dates[-1].start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{dates[-1].end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
+        cursor.execute(query,val)
+        result = cursor.fetchall()
         count_data = int(result[0][0])
         web_data_list.append(count_data)
 
