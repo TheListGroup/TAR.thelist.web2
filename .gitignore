@@ -64,4 +64,36 @@ scrap/pic/crop_675
 scrap/pic/crop_240
 scrap/pic/gall_house_image
 scrap/pic/vertical result
-classified/Plus/Plus_PROJECT.json
+classifield/Plus/Plus_PROJECT.json
+classifield/Plus/Plus_PROPERTY.json
+classifield/classified_unit_report.xlsx
+classifield/classified_image
+classifield/Plus/Plus_match.csv
+classifield/backup.sql
+scrap/pic/house_image
+scrap/pic/new 300
+classifield/Bridge/bridge.json
+classifield/ERA/era.json
+classifield/HHR/hhr.json
+classifield/SERVE/serve.json
+realist/contract_form/access.json
+scrap/work.txt
+sql/password.txt
+realist/boundary/subdistrict
+realist/boundary/district
+scrap/format_link.csv
+scrap/new_link.csv
+scrap/new_list_all.csv
+scrap/old link.csv
+classifield/classified_log.xlsx
+Accounting Project/full_quotations
+Accounting Project/access.json
+analytic/access.json
+analytic/access2.json
+contact_form/access.json
+Accounting Project/clean company.xlsx
+Accounting Project/data.xlsx
+Accounting Project/quotations.xlsx
+Accounting Project/summary.xlsx
+classifield/__pycache__
+realist/boundary/tambon lat lon location.xlsx
