@@ -3,6 +3,10 @@ select a.Building_Name, a.Building_Latitude, a.Building_Longitude
     , c.Station_THName_Display as Second_Station, c.Train_Type as Second_Type, c.Distance as Second_Distance
     , d.Station_THName_Display as Third_Station, d.Train_Type as Third_Type, d.Distance as Third_Distance
     , e.Station_THName_Display as Fourth_Station, e.Train_Type as Fourth_Type, e.Distance as Fourth_Distance
+    , ST_Distance_Sphere(point(a.Building_Longitude, a.Building_Latitude),
+                        point(100.5366402, 13.7296375))/1000 AS Silom
+    , ST_Distance_Sphere(point(a.Building_Longitude, a.Building_Latitude),
+                        point(100.5610116, 13.7363986))/1000 AS Asok
 from bangkok_office a
 join (select a.ID, a.Building_Name, a.Building_Latitude, a.Building_Longitude
             , b.Station_THName_Display, b.Train_Type, b.Distance
