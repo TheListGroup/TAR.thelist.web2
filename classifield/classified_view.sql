@@ -348,7 +348,7 @@ CREATE TABLE IF NOT EXISTS `classified_detail_view` (
     `Price_Rent` INT UNSIGNED NULL,
     `Rental_Contract` SMALLINT UNSIGNED NULL,
     `Unit_Size` FLOAT(7,2) NULL,
-    `Bedroom` SMALLINT UNSIGNED NOT NULL,
+    `Bedroom` VARCHAR(4) NOT NULL,
     `Bathroom` SMALLINT UNSIGNED NULL,
     `Furnish` ENUM('Bareshell','Non Furnished','Fully Fitted','Fully Furnished') NULL,
     `Furnish_Status` SMALLINT UNSIGNED NULL,

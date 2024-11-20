@@ -276,7 +276,7 @@ CREATE TABLE IF NOT EXISTS `classified_comparison` (
     Rent boolean not null default 0,
     Location text null,
     Unit_Size float(6,1) null,
-    Bedroom SMALLINT UNSIGNED not null,
+    Bedroom VARCHAR(4) not null,
     Bathroom SMALLINT UNSIGNED null,
     Furnish enum('Bareshell','Non Furnished','Fully Fitted', 'Fully Furnished','-') not null,
     Price_Sale varchar(10) not null,

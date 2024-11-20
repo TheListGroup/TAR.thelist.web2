@@ -91,7 +91,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed1_Total_Sqm_Sale
             from classified
             where Classified_Status = '1'
-            and Bedroom = 1
+            and Bedroom = '1'
             and Sale = 1
             group by Condo_Code) 1bed_sale
 on rc.Condo_Code = 1bed_sale.Condo_Code
@@ -103,7 +103,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed1_Total_Sqm_Rent
             from classified
             where Classified_Status = '1'
-            and Bedroom = 1
+            and Bedroom = '1'
             and Rent = 1
             group by Condo_Code) 1bed_rent
 on rc.Condo_Code = 1bed_rent.Condo_Code
@@ -115,7 +115,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed2_Total_Sqm_Sale
             from classified
             where Classified_Status = '1'
-            and Bedroom = 2
+            and Bedroom = '2'
             and Sale = 1
             group by Condo_Code) 2bed_sale
 on rc.Condo_Code = 2bed_sale.Condo_Code
@@ -127,7 +127,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed2_Total_Sqm_Rent
             from classified
             where Classified_Status = '1'
-            and Bedroom = 2
+            and Bedroom = '2'
             and Rent = 1
             group by Condo_Code) 2bed_rent
 on rc.Condo_Code = 2bed_rent.Condo_Code
@@ -139,7 +139,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed3_Total_Sqm_Sale
             from classified
             where Classified_Status = '1'
-            and Bedroom = 3
+            and Bedroom = '3'
             and Sale = 1
             group by Condo_Code) 3bed_sale
 on rc.Condo_Code = 3bed_sale.Condo_Code
@@ -151,7 +151,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed3_Total_Sqm_Rent
             from classified
             where Classified_Status = '1'
-            and Bedroom = 3
+            and Bedroom = '3'
             and Rent = 1
             group by Condo_Code) 3bed_rent
 on rc.Condo_Code = 3bed_rent.Condo_Code
@@ -163,7 +163,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed4_Total_Sqm_Sale
             from classified
             where Classified_Status = '1'
-            and Bedroom >= 4
+            and (Bedroom = '4' or Bedroom = '4+')
             and Sale = 1
             group by Condo_Code) 4bed_sale
 on rc.Condo_Code = 4bed_sale.Condo_Code
@@ -175,7 +175,7 @@ left join (select Condo_Code
                 , sum(Size) as Bed4_Total_Sqm_Rent
             from classified
             where Classified_Status = '1'
-            and Bedroom >= 4
+            and (Bedroom = '4' or Bedroom = '4+')
             and Rent = 1
             group by Condo_Code) 4bed_rent
 on rc.Condo_Code = 4bed_rent.Condo_Code
