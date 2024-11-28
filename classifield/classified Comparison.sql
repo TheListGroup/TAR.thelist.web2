@@ -183,7 +183,7 @@ select cv.Classified_ID
             , '-')) as Parking_Amount
     , nun(ff.Common_Fee) as Common_Fee
     , nun(faci.Facility) as Facility
-    , ifnull(gal.Facilities_Gallery,'-') as Facilities_Gallery
+    , ifnull(gal.Facilities_Gallery,ifnull(gal2.Gallery,'-')) as Facilities_Gallery
     , nun(ss.Station_Surrounding) as Station_Surrounding
     , nun(rs.Retail_Surrounding) as Retail_Surrounding
     , nun(hs.Hospital_Surrounding) as Hospital_Surrounding
@@ -262,6 +262,16 @@ left join (select Condo_Code
             where Surrounding_Type = 'express_way'
             group by Condo_Code) exs
 on cv.Condo_Code = exs.Condo_Code
+left join (SELECT Condo_Code
+                , JSON_ARRAYAGG(JSON_OBJECT('Image_ID' , CondoGallery_ID 
+                                            , 'Image_URL', CondoGallery_PicName
+                                            , 'Element_Name', CondoGallery_Caption
+                                            , 'Display_Order_in_Element', CondoGallery_OrderName
+                                            , 'Display_Order_in_Section', CondoGallery_Order
+                                            )) AS Gallery
+            FROM condo_gallery
+            group by Condo_Code) gal2
+on cv.Condo_Code = gal2.Condo_Code
 order by cv.Classified_ID;
 
 -- table classified_comparison
