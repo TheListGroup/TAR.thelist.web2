@@ -6,6 +6,8 @@
 -- Procedure truncateInsert_classified_detail_view
 
 ALTER TABLE `classified_list_view` ADD `User_ID` INT UNSIGNED NULL AFTER `Price_Rent_Sort`;
+ALTER TABLE `classified_list_view` ADD `Title_TH` TEXT NULL DEFAULT NULL AFTER `User_ID`
+, ADD `Last_Update_Insert_Date` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER `Title_TH`;
 create or replace view source_classified_list_view as
 select c.Classified_ID
     , concat_ws(' ',ifnull(if(c.Room_Type='Studio','1 Bed',REPLACE(REPLACE(c.Room_Type,'rooms',''),'room','')),concat(c.BedRoom,' Bed')),concat(c.BathRoom,' Bath'),c.Unit_Floor_Type) as Unit_Type
@@ -25,6 +27,8 @@ select c.Classified_ID
     , c.Price_Sale as Price_Sale_Sort
     , c.Price_Rent as Price_Rent_Sort
     , c.User_ID
+    , c.Title_TH
+    , c.Last_Update_Insert_Date
 from classified c
 left join real_condo rc on c.Condo_Code = rc.Condo_Code
 left join (SELECT Classified_ID
@@ -69,6 +73,8 @@ CREATE TABLE IF NOT EXISTS `classified_list_view` (
     `Price_Sale_Sort` INT NULL,
     `Price_Rent_Sort` INT NULL,
     `User_ID` INT UNSIGNED NULL,
+    `Title_TH` TEXT NULL,
+    `Last_Update_Insert_Date` TIMESTAMP NULL,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;
 
@@ -96,6 +102,8 @@ BEGIN
     DECLARE v_name13 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name14 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name15 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name16 TEXT DEFAULT NULL;
+    DECLARE v_name17 VARCHAR(250) DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(70) DEFAULT 'truncateInsert_classified_list_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -108,7 +116,7 @@ BEGIN
 
     DECLARE cur CURSOR FOR SELECT Classified_ID,Unit_Type,Classified_Image,Size,Bedroom,Bathroom,Price_Sale
                             ,Price_Rent,Condo_Code,Condo_Name,Announce_Day,Announce_Date,Size_Sort,Price_Sale_Sort
-                            ,Price_Rent_Sort,User_ID
+                            ,Price_Rent_Sort,User_ID,Title_TH,Last_Update_Insert_Date
                             FROM source_classified_list_view ;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -127,7 +135,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17;
 
         IF done THEN
             LEAVE read_loop;
@@ -150,9 +158,11 @@ BEGIN
                 `Size_Sort`,
                 `Price_Sale_sort`,
                 `Price_Rent_sort`,
-                `User_ID`
+                `User_ID`,
+                `Title_TH`,
+                `Last_Update_Insert_Date`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
