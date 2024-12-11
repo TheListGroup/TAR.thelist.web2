@@ -51,3 +51,6 @@ ALTER TABLE `classified` CHANGE `Furnish` `Furnish` ENUM('Bareshell','Non Furnis
 
 ALTER TABLE `classified_image` CHANGE `Classified_Image_Type` `Classified_Image_Type` SMALLINT UNSIGNED NULL DEFAULT 1;
 update classified_image set Classified_Image_Type = 1;
+
+ALTER TABLE `classified` ADD `Parking_Amount` SMALLINT UNSIGNED NULL AFTER `Parking`;
+ALTER TABLE `classified_all_logs` ADD `Parking_Amount` SMALLINT UNSIGNED NULL AFTER `Descriptions_TH`;
