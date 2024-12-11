@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS `classified_all_logs` (
     `Parking` BOOLEAN NULL,
     `Descriptions_Eng` TEXT NULL,
     `Descriptions_TH` TEXT NULL,
+    `Parking_Amount` SMALLINT UNSIGNED NULL,
     `User_ID` INT UNSIGNED NULL,
     `Classified_Status` ENUM('0','1','2','3') NULL,
     `Created_By` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
