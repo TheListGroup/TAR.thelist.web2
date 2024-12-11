@@ -258,6 +258,7 @@ select c.Classified_ID
     , c.Title_ENG as Title_ENG
     , c.Descriptions_TH as Descriptions_TH
     , c.Descriptions_Eng as Descriptions_Eng
+    , c.Parking_Amount as Parking_Amount
 from classified c
 left join ( SELECT rc.Condo_Code, 
                 if(Condo_ENName1 is not null
@@ -342,6 +343,7 @@ ALTER TABLE classified_detail_view CHANGE Description Title_TH TEXT NULL;
 ALTER TABLE classified_detail_view ADD Title_ENG TEXT NULL AFTER Sale_with_Tenant;
 ALTER TABLE classified_detail_view ADD Descriptions_Eng TEXT NULL AFTER Title_ENG;
 ALTER TABLE classified_detail_view ADD Descriptions_TH TEXT NULL AFTER Descriptions_Eng;
+ALTER TABLE classified_detail_view ADD Parking_Amount SMALLINT UNSIGNED NULL AFTER Descriptions_TH;
 
 -- Table `classified_detail_view`
 CREATE TABLE IF NOT EXISTS `classified_detail_view` (
@@ -400,6 +402,7 @@ CREATE TABLE IF NOT EXISTS `classified_detail_view` (
     `Title_ENG` TEXT NULL,
     `Descriptions_Eng` TEXT NULL,
     `Descriptions_TH` TEXT NULL,
+    `Parking_Amount` SMALLINT UNSIGNED NULL,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;
 
@@ -465,6 +468,7 @@ BEGIN
     DECLARE v_name51 TEXT DEFAULT NULL;
     DECLARE v_name52 TEXT DEFAULT NULL;
     DECLARE v_name53 TEXT DEFAULT NULL;
+    DECLARE v_name54 VARCHAR(250) DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(70) DEFAULT 'truncateInsert_classified_detail_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -482,7 +486,7 @@ BEGIN
                                     ,Sub_Min_Rental_Contract,Rent_Deposit,Sub_Rent_Deposit,Advance_Payment,Sub_Advance_Payment,Mail
                                     ,Classified_Status,Agent_Name,District_Name,SubDistrict_Name,Province_Name,Condo_Latitude
                                     ,Condo_Longitude,Sale,Rent,Classified_Title,Classified_Description,User_ID,Floor,Direction,Move_In
-                                    ,Parking,Unit_Floor_Type,Sale_with_Tenant,Title_ENG,Descriptions_Eng,Descriptions_TH
+                                    ,Parking,Unit_Floor_Type,Sale_with_Tenant,Title_ENG,Descriptions_Eng,Descriptions_TH,Parking_Amount
                             FROM source_classified_detail_view;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -501,7 +505,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46,v_name47,v_name48,v_name49,v_name50,v_name51,v_name52,v_name53;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46,v_name47,v_name48,v_name49,v_name50,v_name51,v_name52,v_name53,v_name54;
 
         IF done THEN
             LEAVE read_loop;
@@ -562,9 +566,10 @@ BEGIN
                 `Sale_with_Tenant`,
                 `Title_ENG`,
                 `Descriptions_Eng`,
-                `Descriptions_TH`
+                `Descriptions_TH`,
+                `Parking_Amount`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46,v_name47,v_name48,v_name49,v_name50,v_name51,v_name52,v_name53);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36,v_name37,v_name38,v_name39,v_name40,v_name41,v_name42,v_name43,v_name44,v_name45,v_name46,v_name47,v_name48,v_name49,v_name50,v_name51,v_name52,v_name53,v_name54);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
