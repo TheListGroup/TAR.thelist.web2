@@ -65,7 +65,7 @@ def database(host,user,password,sql,agent,user_id):
             check_update =f"""SELECT Classified_ID, Ref_ID, Project_ID, Title_TH, Title_ENG, Sale, Sale_with_Tenant, Rent, Price_Sale
                             , Sale_Transfer_Fee, Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract, Rent_Deposit
                             , Advance_Payment, Room_Type, Unit_Floor_Type, PentHouse, Bedroom, Bathroom, Floor, Direction, Move_In, Size
-                            , Furnish, Parking
+                            , Furnish, Parking, Parking_Amount
                             FROM classified WHERE Classified_Status = '1' AND User_ID = {user_id}"""
             cursor.execute(check_update)
             update = {(row[1], row[2]): row for row in cursor.fetchall()}
@@ -290,6 +290,11 @@ def prepare_variable(prop,agent):
             else:   
                 fix_Parking = False
             
+            if prop["Parking_Amount"] == "N/A":
+                parking_amount = None
+            else:   
+                parking_amount = prop["Parking_Amount"]
+            
             last_Updated_Date = prop[last_Updated_Date_ref]
             last_Updated_Date = format_time(last_Updated_Date) 
             last_Updated_Date = datetime.strptime(last_Updated_Date, '%m/%d/%Y %H:%M:%S')
@@ -309,6 +314,12 @@ def prepare_variable(prop,agent):
         else:
             unit_floor_type = None
             fix_Parking = prop["fix_Parking"]
+            
+            if prop["parking_Amount"] == None:
+                parking_amount = None
+            else:   
+                parking_amount = prop["parking_Amount"]
+            
             image_urls = prop["images"]
             
             if prop["bedroom"] == 0:
@@ -333,7 +344,7 @@ def prepare_variable(prop,agent):
             created_Date = date_bc_plus(created_Date)
     else:
         sale_with_Tenant = False
-        min_Rental_Contract,deposit,advance_Payment,fix_Parking = None,None,None,None
+        min_Rental_Contract,deposit,advance_Payment,fix_Parking,parking_amount = None,None,None,None,None
         penthouse = prop["is_penthouse"]
         if description_TH != None:
             description_TH = re.sub(r' Bangkok CitiSmart ', '', description_TH)
@@ -375,10 +386,10 @@ def prepare_variable(prop,agent):
     
     data_api_list = [sale,sale_with_Tenant, rent, price_Sale, sale_transfer_fee, sale_deposit, sale_mongage_cost, price_Rent, min_Rental_Contract
                     , deposit, advance_Payment, room_type, unit_floor_type, penthouse, bedroom, bathroom, floor, direction, move_in, size, furnish
-                    , fix_Parking]
+                    , fix_Parking, parking_amount]
     return idid, title_TH, title_ENG, sale, sale_with_Tenant, rent, price_Sale, sale_transfer_fee, sale_deposit, sale_mongage_cost, price_Rent\
             , min_Rental_Contract, deposit, advance_Payment, room_type, unit_floor_type, penthouse, bedroom, bathroom, floor, direction, move_in\
-            , size, furnish, fix_Parking, description_TH, description_ENG, last_Updated_Date, created_Date, insert_date, update_insert_date\
+            , size, furnish, fix_Parking, parking_amount, description_TH, description_ENG, last_Updated_Date, created_Date, insert_date, update_insert_date\
             , image_urls, data_api_list
 
 def prepare_variable_from_db(data):
@@ -388,16 +399,16 @@ def prepare_variable_from_db(data):
     price_sale_check,sale_transfer_fee_check,sale_deposit_check,sale_mongage_cost_check,price_rent_check = data[8],data[9],data[10],data[11],data[12]
     min_rental_contract_check,rent_deposit,advance_payment_check,room_type_check,unit_floor_type_check = data[13],data[14],data[15],data[16],data[17]
     penthouse_check,bedroom_check,bathroom_check,floor_check,direction_check = data[18],data[19],data[20],data[21],data[22]
-    movein_check,size_check,furnish_check,parking = data[23],str(data[24]),data[25],data[26]
+    movein_check,size_check,furnish_check,parking,parking_amount_check = data[23],str(data[24]),data[25],data[26],data[27]
     variable_check_list = [classified_id,update_id,update_proj_id,sale_check,sale_with_tenant_check,rent_check,price_sale_check
                             ,sale_transfer_fee_check,sale_deposit_check,sale_mongage_cost_check,price_rent_check
                             ,min_rental_contract_check,rent_deposit,advance_payment_check,room_type_check,unit_floor_type_check
                             ,penthouse_check,bedroom_check,bathroom_check,floor_check,direction_check,movein_check,size_check
-                            ,furnish_check,parking]
+                            ,furnish_check,parking,parking_amount_check]
     return classified_id, update_id, update_proj_id, th_title, en_title, sale_check, sale_with_tenant_check, rent_check, price_sale_check\
             , sale_transfer_fee_check, sale_deposit_check, sale_mongage_cost_check, price_rent_check, min_rental_contract_check, rent_deposit\
             , advance_payment_check, room_type_check, unit_floor_type_check, penthouse_check, bedroom_check, bathroom_check, floor_check\
-            , direction_check, movein_check, size_check, furnish_check, parking, variable_check_list
+            , direction_check, movein_check, size_check, furnish_check, parking, parking_amount_check, variable_check_list
 
 def insert_log(location,log,upd,insert,cursor,connection,e):
     if log:
@@ -466,33 +477,33 @@ def create_query(state):
         query = """INSERT INTO classified_all_logs (Type, Classified_ID, Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale
                 , Sale_with_Tenant, Rent, Price_Sale, Sale_Transfer_Fee, Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract
                 , Rent_Deposit, Advance_Payment, Room_Type, Unit_Floor_Type, PentHouse, Bedroom, Bathroom, Floor, Direction, Move_In
-                , Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH, User_ID, Classified_Status, Created_By, Created_Date
+                , Size, Furnish, Parking, Parking_Amount, Descriptions_Eng, Descriptions_TH, User_ID, Classified_Status, Created_By, Created_Date
                 , Last_Updated_By, Last_Updated_Date)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
     elif state == 'data_update':
         query = """UPDATE classified
                 SET Title_TH = %s, Title_ENG = %s, Condo_Code = %s, Sale = %s
                     , Sale_with_Tenant = %s, Rent = %s, Price_Sale = %s, Sale_Transfer_Fee = %s, Sale_Deposit = %s, Sale_Mortgage_Costs = %s
                     , Price_Rent = %s, Min_Rental_Contract = %s, Rent_Deposit = %s, Advance_Payment = %s, Room_Type = %s, Unit_Floor_Type = %s
                     , PentHouse = %s, Bedroom = %s, Bathroom = %s, Floor = %s, Direction = %s, Move_In = %s, Size = %s, Furnish = %s , Parking = %s
-                    , Descriptions_Eng = %s, Descriptions_TH = %s, Last_Updated_Date = %s, Last_Update_Insert_Date = %s
+                    , Parking_Amount = %s, Descriptions_Eng = %s, Descriptions_TH = %s, Last_Updated_Date = %s, Last_Update_Insert_Date = %s
                 WHERE Ref_ID = %s and Project_ID = %s and Classified_Status = '1'"""
     elif state == 'log_insert':
         query = """INSERT INTO classified_all_logs (Type, Classified_ID, Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale
                 , Sale_with_Tenant, Rent, Price_Sale, Sale_Transfer_Fee, Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract
                 , Rent_Deposit, Advance_Payment, Room_Type, Unit_Floor_Type, PentHouse, Bedroom, Bathroom, Floor, Direction, Move_In
-                , Size, Furnish, Parking, Descriptions_Eng, Descriptions_TH, User_ID, Classified_Status, Created_By, Created_Date
+                , Size, Furnish, Parking, Parking_Amount, Descriptions_Eng, Descriptions_TH, User_ID, Classified_Status, Created_By, Created_Date
                 , Last_Updated_By, Last_Updated_Date)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-                , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
     elif state == 'data_insert':
         query = "INSERT INTO classified (Ref_ID, Project_ID, Title_TH, Title_ENG, Condo_Code, Sale, Sale_with_Tenant, Rent, Price_Sale, Sale_Transfer_Fee\
                 , Sale_Deposit, Sale_Mortgage_Costs, Price_Rent, Min_Rental_Contract, Rent_Deposit, Advance_Payment, Room_Type , Unit_Floor_Type, PentHouse\
-                , Bedroom, Bathroom, Floor, Direction, Move_In, Size, Furnish, Parking, Descriptions_ENG, Descriptions_TH, User_ID, Classified_Status\
+                , Bedroom, Bathroom, Floor, Direction, Move_In, Size, Furnish, Parking, Parking_Amount, Descriptions_ENG, Descriptions_TH, User_ID, Classified_Status\
                 , Created_By, Created_Date, Last_Updated_By, Last_Updated_Date, Insert_Date)\
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s\
-                , %s, %s, %s)"
+                , %s, %s, %s, %s)"
     return query
 
 def update_work(agent,cursor,connection,query,val,classified_log,log_val,idid,upd,classified_id,save_folder,image_urls,created_Date,last_Updated_Date,insert,stop_processing):

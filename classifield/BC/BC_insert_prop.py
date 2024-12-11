@@ -23,7 +23,7 @@ def log_values(state):
     log_val = (state, classified_id, idid, project_id, title_TH, title_ENG, condo_code, sale, sale_with_Tenant, rent, price_Sale
                 , sale_transfer_fee, sale_deposit, sale_mongage_cost, price_Rent, min_Rental_Contract, deposit, advance_Payment
                 , room_type, unit_floor_type, penthouse, bedroom, bathroom, floor, direction, move_in, size, furnish, fix_Parking
-                , description_ENG, description_TH, user_id, '1', 32, created_Date, 32, last_Updated_Date)
+                , parking_amount, description_ENG, description_TH, user_id, '1', 32, created_Date, 32, last_Updated_Date)
     return log_val
 
 user_id = 1
@@ -54,7 +54,7 @@ if work:
         if prop_proj_id == project_id:
             idid ,title_TH, title_ENG, sale, sale_with_Tenant, rent, price_Sale, sale_transfer_fee, sale_deposit, sale_mongage_cost, price_Rent\
             , min_Rental_Contract, deposit, advance_Payment, room_type, unit_floor_type, penthouse, bedroom, bathroom, floor, direction, move_in\
-            , size, furnish, fix_Parking, description_TH, description_ENG, last_Updated_Date, created_Date, insert_date, update_insert_date\
+            , size, furnish, fix_Parking, parking_amount, description_TH, description_ENG, last_Updated_Date, created_Date, insert_date, update_insert_date\
             , image_urls, data_api_list = prepare_variable(prop,agent)
             
             found = False
@@ -65,7 +65,7 @@ if work:
                 classified_id, update_id, update_proj_id, th_title, en_title, sale_check, sale_with_tenant_check, rent_check, price_sale_check\
                 , sale_transfer_fee_check, sale_deposit_check, sale_mongage_cost_check, price_rent_check, min_rental_contract_check, rent_deposit\
                 , advance_payment_check, room_type_check, unit_floor_type_check, penthouse_check, bedroom_check, bathroom_check, floor_check\
-                , direction_check, movein_check, size_check, furnish_check, parking, variable_check_list = prepare_variable_from_db(data)
+                , direction_check, movein_check, size_check, furnish_check, parking, parking_amount_check, variable_check_list = prepare_variable_from_db(data)
                 for variable_count, var in enumerate(data_api_list):
                     if variable_check_list[variable_count+3] != var:
                         row_update = True
@@ -76,7 +76,7 @@ if work:
                     query = create_query('data_update')
                     val = (title_TH, title_ENG, condo_code, sale, sale_with_Tenant, rent, price_Sale, sale_transfer_fee, sale_deposit
                         , sale_mongage_cost, price_Rent, min_Rental_Contract, deposit, advance_Payment, room_type, unit_floor_type, penthouse
-                        , bedroom, bathroom, floor, direction, move_in, size, furnish, fix_Parking, description_ENG, description_TH
+                        , bedroom, bathroom, floor, direction, move_in, size, furnish, fix_Parking, parking_amount, description_ENG, description_TH
                         , last_Updated_Date, update_insert_date, idid, project_id)
                     
                     stop_processing, log, upd = update_work(agent,cursor,connection,query,val,classified_log,log_val,idid,upd,classified_id
@@ -87,7 +87,7 @@ if work:
                 query = create_query('data_insert')
                 val = (idid, project_id, title_TH, title_ENG, condo_code, sale, sale_with_Tenant, rent, price_Sale, sale_transfer_fee, sale_deposit
                         , sale_mongage_cost, price_Rent, min_Rental_Contract, deposit, advance_Payment, room_type, unit_floor_type, penthouse
-                        , bedroom, bathroom, floor, direction, move_in, size, furnish, fix_Parking, description_ENG, description_TH, user_id
+                        , bedroom, bathroom, floor, direction, move_in, size, furnish, fix_Parking, parking_amount, description_ENG, description_TH, user_id
                         , '1', 32, created_Date, 32, last_Updated_Date, insert_date)
                 
                 stop_processing, log, insert, classified_id = insert_work(agent,cursor,connection,query,val,idid,project_id,insert,save_folder
