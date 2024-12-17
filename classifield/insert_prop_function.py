@@ -572,13 +572,13 @@ def check_status(cursor,connection,user_id,property_list,stop_processing,agent):
         found_ref = next((item for item in property_list if str(item[ref_ref]) == classified_ref_id), None)
         if found_ref == None:
             try:
-                query = f"""UPDATE classified SET Classified_Status = {status_update} WHERE Classified_ID = %s"""
-                val = (classified_id,)
+                query = "UPDATE classified SET Classified_Status = %s WHERE Classified_ID = %s"
+                val = (status_update, classified_id)
                 cursor.execute(query,val)
                 connection.commit()
-                classified_log = """INSERT INTO classified_all_logs (Type, Classified_ID, Classified_Status, Created_By, Last_Updated_By)
-                                VALUES (%s, %s, %s, %s, %s)"""
-                log_val = ('status', classified_id, status_update, 32, 32)
+                classified_log = """INSERT INTO classified_all_logs (Type, Classified_ID, Classified_Status, Created_By, Last_Updated_By, User_ID)
+                                VALUES (%s, %s, %s, %s, %s, %s)"""
+                log_val = ('status', classified_id, status_update, 32, 32, user_id)
                 cursor.execute(classified_log,log_val)
                 connection.commit()
             except Exception as e:
