@@ -6,8 +6,8 @@ import sys
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/10lKaZ5jPUqikTOxVFjEHoFSeS6nqaf_ZEWwjvkj2Jsc/export?format=csv'
 
 #head_path = r"C:\PYTHON\TAR.thelist.web2\classifield"
-head_path = r"/home/gitdev/ta_python/classifield"
-#head_path = r"/home/gitprod/ta_python/classifield"
+#head_path = r"/home/gitdev/ta_python/classifield"
+head_path = r"/home/gitprod/ta_python/classifield"
 function_file = 'ggsheet_function'
 function_list = ['check_update', 'check_null', 'sale_rent', 'price','insert_log','create_folder_and_remove_image_and_save_image','check_image_url_validity'
                 ,'database', 'read_sheet', 'check', 'log_in_database', 'compare_column', 'update_work', 'destination', 'insert_work']
@@ -43,6 +43,7 @@ if sql:
     data_list = read_sheet(SHEET_URL,data_list)
 
     if len(data_list) > 0:
+        log = True
         #count = 1
         for data in data_list:
             if stop_processing:
@@ -52,7 +53,7 @@ if sql:
             prop_id = data[2]
             query = """SELECT Ref_ID,Condo_Code,Sale,Rent,Price_Sale,Price_Rent,Room_Type,Bedroom,Bathroom,Size 
                     ,Classified_Status,Classified_ID FROM classified WHERE Ref_ID = %s and User_ID = %s Limit 1"""
-            stop_processing, column_check = check(stop_processing, query ,prop_id, user_id, cursor, log, upd, insert, connection, 'HHR')
+            stop_processing, column_check, log = check(stop_processing, query ,prop_id, user_id, cursor, log, upd, insert, connection, 'HHR')
             if stop_processing:
                 break
             
