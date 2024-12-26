@@ -193,6 +193,8 @@ BEGIN
 	DECLARE v_name22 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name23 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name24 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name25 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name26 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_housing_factsheet_view';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -203,10 +205,10 @@ BEGIN
 
     DECLARE done INT DEFAULT FALSE;
 
-    DECLARE cur CURSOR FOR SELECT Housing_Code, Housing_Area, Usable_Area, Bedroom, Price_Date, Price, Express_Way
-                                , RealDistrict, District, Province, Housing_Type, Housing_TotalRai, TotalUnit, Housing_Built_Start
-                                , Housing_Sold_Status_Date, Housing_Sold_Status, Floor, Bedroom_Factsheet, Bathroom, Parking_Amount
-                                , Price_Date_Factsheet, Price_Factsheet, Housing_Area_Factsheet, Usable_Area_Factsheet, Common_Fee
+    DECLARE cur CURSOR FOR SELECT Housing_Code, RealDistrict, District, Province, Express_Way, Station_Name, Housing_Type, Housing_TotalRai
+								, TotalUnit, Housing_Built_Start, Housing_Sold_Status_Date, Housing_Sold_Status, Housing_Type_Count, Floor
+								, Bedroom, Bathroom, Parking_Amount, Top_Facilities, `Pool`, Entrance, Road, Price, Price_Date, Year_Price_Date
+								, Housing_Area, Usable_Area, Common_Fee
                             FROM source_housing_factsheet_view;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -225,7 +227,7 @@ BEGIN
     OPEN cur;
     
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26;
         
         IF done THEN
             LEAVE read_loop;
@@ -234,32 +236,34 @@ BEGIN
 		INSERT INTO
 			housing_factsheet_view(
 				Housing_Code
-                , Housing_Area
-                , Usable_Area
-                , Bedroom
-                , Price_Date
-                , Price
-                , Express_Way                                
-                , RealDistrict
-                , District
-                , Province
-                , Housing_Type
-                , Housing_TotalRai
-                , TotalUnit
-                , Housing_Built_Start
-                , Housing_Sold_Status_Date
-                , Housing_Sold_Status
-                , Floor
-                , Bedroom_Factsheet
-                , Bathroom
-                , Parking_Amount
-                , Price_Date_Factsheet
-                , Price_Factsheet
-                , Housing_Area_Factsheet
-                , Usable_Area_Factsheet
-                , Common_Fee
+				, RealDistrict
+				, District
+				, Province
+				, Express_Way
+				, Station_Name
+				, Housing_Type
+				, Housing_TotalRai
+				, TotalUnit
+				, Housing_Built_Start
+				, Housing_Sold_Status_Date
+				, Housing_Sold_Status
+				, Housing_Type_Count
+				, Floor
+				, Bedroom
+				, Bathroom
+				, Parking_Amount
+				, Top_Facilities
+				, `Pool`
+				, Entrance
+				, Road
+				, Price
+				, Price_Date
+				, Year_Price_Date
+				, Housing_Area
+				, Usable_Area
+				, Common_Fee
 				)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26);
         
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
