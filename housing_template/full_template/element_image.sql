@@ -12,9 +12,9 @@ select
     fts.Section_Status AS Section_Status,
     fte.Element_ID AS Element_ID,
     fte.Element_Name AS Element,
-    fte.Category_Show_Faci as Category_Show_Faci,
+    ftc.Category_Show_Faci as Category_Show_Faci,
     if(fts.Section_ID=2,fte.Housing_Type_ID,null) as Housing_Type_ID,
-	if(fts.Section_ID=1,ftc2.Long_Text,fte.Long_Text) AS Long_Text,
+	if(fts.Section_ID=1,ftc.Long_Text,fte.Long_Text) AS Long_Text,
     fte.Display_Order_in_Section AS Display_Order_in_Section,
     fte.Element_Status AS Element_Status,
     if(fts.Section_ID=1,NULL,ftc.Category_ID) AS Category_ID,
@@ -25,7 +25,6 @@ select
     h360.Project_360_Link
 from housing_full_template_element as fte
 inner join housing_full_template_category AS ftc on fte.Category_ID = ftc.Category_ID
-left join housing_full_template_category AS ftc2 on fte.Category_Show_Faci = ftc2.Category_ID
 inner join housing_full_template_section as fts on ftc.Section_ID = fts.Section_ID
 inner join housing_full_template_image as fti on fte.Element_ID = fti.Element_ID
 left join housing_full_template_housing_type fht on fte.Housing_Type_ID = fht.Housing_Type_ID
