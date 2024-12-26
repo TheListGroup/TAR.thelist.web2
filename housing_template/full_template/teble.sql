@@ -50,8 +50,7 @@ CREATE TABLE IF NOT EXISTS `housing_full_template_category` (
     INDEX h_cate_show_faci (Category_Show_Faci),
     CONSTRAINT h_cate_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
     CONSTRAINT h_cate_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID),
-    CONSTRAINT h_cate_section FOREIGN KEY (Section_ID) REFERENCES housing_full_template_section (Section_ID),
-    CONSTRAINT h_cate_show_faci FOREIGN KEY (Category_Show_Faci) REFERENCES housing_full_template_category(Category_ID))
+    CONSTRAINT h_cate_section FOREIGN KEY (Section_ID) REFERENCES housing_full_template_section (Section_ID))
 ENGINE = InnoDB;
 
 -- -----------------------------------------------------
