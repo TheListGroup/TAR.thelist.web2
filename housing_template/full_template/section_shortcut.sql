@@ -3,6 +3,7 @@
 -- housing_full_template_section_shortcut_view
 -- truncateInsert_housing_full_template_section_shortcut_view
 
+
 -- view ใช้ทำเรื่อง shortcut (ทุก element ที่มีรูป)
 CREATE OR REPLACE VIEW housing_full_template_section_shortcut_raw_view AS
 select fte.Housing_Code
