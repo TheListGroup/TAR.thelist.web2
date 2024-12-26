@@ -73,97 +73,196 @@ where aaa.Distance <= aaa.cal_radians;
 -- view source_housing_factsheet_view
 create or replace view source_housing_factsheet_view as
 select a.Housing_Code
-    , h_nun(if(a.Housing_Area_Min is not null and a.Housing_Area_max is not null
-            , if(format(a.Housing_Area_min,0)=format(a.Housing_Area_max,0)
-                , concat(format(a.Housing_Area_min,0),' ตร.ว.')
-                , concat(format(a.Housing_Area_min,0),' - ',format(a.Housing_Area_max,0),' ตร.ว.'))
-            , concat(format(ifnull(a.Housing_Area_max,a.Housing_Area_min),0),' ตร.ว.'))) as Housing_Area
-    , h_nun(if(a.Housing_Usable_Area_Min is not null and a.Housing_Usable_Area_Max is not null
-            , if(format(a.Housing_Usable_Area_Min,0)=format(a.Housing_Usable_Area_Max,0)
-                , concat(format(a.Housing_Usable_Area_Min,0),' ตร.ม.')
-                , concat(format(a.Housing_Usable_Area_Min,0),' - ',format(a.Housing_Usable_Area_Max,0),' ตร.ม.'))
-            , concat(format(ifnull(a.Housing_Usable_Area_Max,a.Housing_Usable_Area_Min),0),' ตร.ม.'))) as Usable_Area
-    , h_nun(if(a.Bedroom_Min is not null and a.Bedroom_Max is not null
-            , if(a.Bedroom_Min=a.Bedroom_Max
-                , concat(a.Bedroom_Min,' ห้อง')
-                , concat(a.Bedroom_Min,' - ',a.Bedroom_Max,' ห้อง'))
-            , concat(ifnull(a.Bedroom_Max,a.Bedroom_Min),' ห้อง'))) as Bedroom
-    , h_nun(year(a.Housing_Price_Date)) as Price_Date
-    , h_nun(if(a.Housing_Price_Min is not null and a.Housing_Price_Max is not null
-            , if(format(a.Housing_Price_Min/1000000,1)=format(a.Housing_Price_Max/1000000,1)
-                , concat(format(a.Housing_Price_Min/1000000,1),' ลบ.')
-                , concat(format(a.Housing_Price_Min/1000000,1),' - ',format(a.Housing_Price_Max/1000000,1),' ลบ.'))
-            , concat(format(ifnull(a.Housing_Price_Max/1000000,a.Housing_Price_Min/1000000),1),' ลบ.'))) as Price
-    , h_nun(express_way.Express_Way) as Express_Way
-    , h_nun(rd.District_Name) as RealDistrict 
+    , h_nun(rm.District_Name) as RealDistrict
     , h_nun(td.name_th) as District
     , h_nun(tp.name_th) as Province
-    , h_nun(concat_ws(', ',if(a.IS_SD=1,'บ้านเดี่ยว',null),if(a.IS_DD=1,'บ้านแฝด',null),if(a.IS_TH=1,'ทาวน์โฮม',null)
-                        , if(a.IS_HO=1,'โฮมออฟฟิศ',null), if(a.IS_SH=1,'อาคารพาณิชย์',null))) as Housing_Type
+    , h_nun(express_way.Express_Way) as Express_Way
+    , h_nun(station.Station_Name) as Station_Name
+    , h_nun(ifnull(housing_type.Housing_Category
+        , ifnull(concat_ws(', ',if(a.IS_SD=1,'บ้านเดี่ยว',null),if(a.IS_DD=1,'บ้านแฝด',null),if(a.IS_TH=1,'ทาวน์โฮม',null)
+                , if(a.IS_HO=1,'โฮมออฟฟิศ',null), if(a.IS_SH=1,'อาคารพาณิชย์',null))
+            , null))) as Housing_Type
     , h_nun(concat(format(a.Housing_TotalRai,2),' ไร่')) as Housing_TotalRai
-    , h_nun(concat(a.Housing_TotalUnit,' หลัง')) as TotalUnit
+    , h_nun(ifnull(concat(housing_type.Total_Unit,' หลัง')
+                , concat(a.Housing_TotalUnit,' หลัง'))) as TotalUnit
     , h_nun(year(a.Housing_Built_Start)) as Housing_Built_Start
-    , h_nun(year(a.Housing_Sold_Status_Date)) as Housing_Sold_Status_Date
+    , h_nun(concat("(",if(month(a.Housing_Sold_Status_Date)<10
+                        , concat('0',month(a.Housing_Sold_Status_Date),'/',year(a.Housing_Sold_Status_Date))
+                        , concat(month(a.Housing_Sold_Status_Date),'/',year(a.Housing_Sold_Status_Date)))
+            ,")")) as Housing_Sold_Status_Date
     , h_nun(a.Housing_Sold_Status_Raw_Number) as Housing_Sold_Status
-    , h_nun(if(a.Housing_Floor_Min is not null and a.Housing_Floor_Max is not null
-            , if(a.Housing_Floor_Min=a.Housing_Floor_Max
-                , concat(a.Housing_Floor_Min,' ชั้น')
-                , concat(a.Housing_Floor_Min,' - ',a.Housing_Floor_Max,' ชั้น'))
-            , concat(ifnull(a.Housing_Floor_Max,a.Housing_Floor_Min),' ชั้น'))) as Floor
-    , h_nun(if(a.Bedroom_Min is not null and a.Bedroom_Max is not null
-            , if(a.Bedroom_Min=a.Bedroom_Max
-                , concat(a.Bedroom_Min,' ห้อง')
-                , concat(a.Bedroom_Min,' - ',a.Bedroom_Max,' ห้อง'))
-            , concat(ifnull(a.Bedroom_Max,a.Bedroom_Min),' ห้อง'))) as Bedroom_Factsheet
-    , h_nun(if(a.Bathroom_Min is not null and a.Bathroom_Max is not null
-            , if(a.Bathroom_Min=a.Bathroom_Max
-                , concat(a.Bathroom_Min,' ห้อง')
-                , concat(a.Bathroom_Min,' - ',a.Bathroom_Max,' ห้อง'))
-            , concat(ifnull(a.Bathroom_Max,a.Bathroom_Min),' ห้อง'))) as Bathroom
-    , h_nun(if(a.Housing_Parking_Min is not null and a.Housing_Parking_Max is not null
-            , if(a.Housing_Parking_Min=a.Housing_Parking_Max
-                , concat(a.Housing_Parking_Min,' คัน')
-                , concat(a.Housing_Parking_Min,' - ',a.Housing_Parking_Max,' คัน'))
-            , concat(ifnull(a.Housing_Parking_Max,a.Housing_Parking_Min),' คัน'))) as Parking_Amount
-    , h_nun(year(a.Housing_Price_Date)) as Price_Date_Factsheet
-    , h_nun(if(a.Housing_Price_Min is not null and a.Housing_Price_Max is not null
-            , if(format(a.Housing_Price_Min/1000000,1)=format(a.Housing_Price_Max/1000000,1)
-                , concat(format(a.Housing_Price_Min/1000000,1),' ลบ.')
-                , concat(format(a.Housing_Price_Min/1000000,1),' - ',format(a.Housing_Price_Max/1000000,1),' ลบ.'))
-            , concat(format(ifnull(a.Housing_Price_Max/1000000,a.Housing_Price_Min/1000000),1),' ลบ.'))) as Price_Factsheet
-    , h_nun(if(a.Housing_Area_Min is not null and a.Housing_Area_max is not null
-            , if(format(a.Housing_Area_min,0)=format(a.Housing_Area_max,0)
-                , concat(format(a.Housing_Area_min,0),' ตร.ว.')
-                , concat(format(a.Housing_Area_min,0),' - ',format(a.Housing_Area_max,0),' ตร.ว.'))
-            , concat(format(ifnull(a.Housing_Area_max,a.Housing_Area_min),0),' ตร.ว.'))) as Housing_Area_Factsheet
-    , h_nun(if(a.Housing_Usable_Area_Min is not null and a.Housing_Usable_Area_Max is not null
-            , if(format(a.Housing_Usable_Area_Min,0)=format(a.Housing_Usable_Area_Max,0)
-                , concat(format(a.Housing_Usable_Area_Min,0),' ตร.ม.')
-                , concat(format(a.Housing_Usable_Area_Min,0),' - ',format(a.Housing_Usable_Area_Max,0),' ตร.ม.'))
-            , concat(format(ifnull(a.Housing_Usable_Area_Max,a.Housing_Usable_Area_Min),0),' ตร.ม.'))) as Usable_Area_Factsheet
-    , h_nun(if(a.Housing_Common_Fee_Min is not null and a.Housing_Common_Fee_Max is not null
+    , h_nun(concat(housing_type.Housing_Type_Count,' แบบ')) as Housing_Type_Count
+    , h_nun(if(housing_type.Floor is not null
+            , housing_type.Floor
+            , if(a.Housing_Floor_Min is not null and a.Housing_Floor_Max is not null
+                , if(a.Housing_Floor_Min=a.Housing_Floor_Max
+                    , concat(a.Housing_Floor_Min,' ชั้น')
+                    , concat(a.Housing_Floor_Min,' - ',a.Housing_Floor_Max,' ชั้น'))
+                , concat(ifnull(a.Housing_Floor_Max,a.Housing_Floor_Min),' ชั้น')))) as Floor
+    , h_nun(ifnull(housing_type.Bedroom
+            , if(a.Bedroom_Min is not null and a.Bedroom_Max is not null
+                , if(a.Bedroom_Min=a.Bedroom_Max
+                    , concat(a.Bedroom_Min,' ห้อง')
+                    , concat(a.Bedroom_Min,' - ',a.Bedroom_Max,' ห้อง'))
+                , ifnull(concat(ifnull(a.Bedroom_Max,a.Bedroom_Min),' ห้อง'), null)))) as Bedroom
+    , h_nun(ifnull(housing_type.Bathroom
+            , if(a.Bathroom_Min is not null and a.Bathroom_Max is not null
+                , if(a.Bathroom_Min=a.Bathroom_Max
+                    , concat(a.Bathroom_Min,' ห้อง')
+                    , concat(a.Bathroom_Min,' - ',a.Bathroom_Max,' ห้อง'))
+                , ifnull(concat(ifnull(a.Bathroom_Max,a.Bathroom_Min),' ห้อง'), null)))) as Bathroom
+    , h_nun(ifnull(housing_type.Parking
+            , if(a.Housing_Parking_Min is not null and a.Housing_Parking_Max is not null
+                , if(a.Housing_Parking_Min=a.Housing_Parking_Max
+                    , concat(a.Housing_Parking_Min,' คัน')
+                    , concat(a.Housing_Parking_Min,' - ',a.Housing_Parking_Max,' คัน'))
+                , ifnull(concat(ifnull(a.Housing_Parking_Max,a.Housing_Parking_Min),' คัน'), null)))) as Parking_Amount
+    , h_nun(faci.Top_Facilities) as Top_Facilities
+    , h_nun(concat(a.Pool_Width,' x ',a.Pool_Length,' ม.')) as 'Pool'
+    , h_nun(a.Entrance) as Entrance
+    , h_nun(if(a.Main_Road is not null and a.Sub_Road is not null
+            , if(a.Main_Road = a.Sub_Road
+                , concat(a.Main_Road,' ม.')
+                , concat(a.Main_Road,' ม. , ',a.Sub_Road,' ม.'))
+            , ifnull(concat(a.Main_Road,' ม.')
+                , ifnull(concat(a.Sub_Road,' ม.'), null)))) as Road
+    , h_nun(ifnull(housing_type.Price
+            , if(a.Housing_Price_Min is not null and a.Housing_Price_Max is not null
+                , if(format(a.Housing_Price_Min/1000000,1)=format(a.Housing_Price_Max/1000000,1)
+                    , concat(format(a.Housing_Price_Min/1000000,1),' ลบ.')
+                    , concat(format(a.Housing_Price_Min/1000000,1),' - ',format(a.Housing_Price_Max/1000000,1),' ลบ.'))
+                , ifnull(concat(format(ifnull(a.Housing_Price_Max/1000000,a.Housing_Price_Min/1000000),1),' ลบ.'), null)))) as Price
+    , h_nun(ifnull(concat("(",if(month(housing_type.Price_Date)<10
+                                , concat('0',month(housing_type.Price_Date),'/',year(housing_type.Price_Date))
+                                , concat(month(housing_type.Price_Date),'/',year(housing_type.Price_Date))), ")")
+                , ifnull(concat("(",if(month(a.Housing_Price_Date)<10
+                                    , concat('0',month(a.Housing_Price_Date),'/',year(a.Housing_Price_Date))
+                                    , concat(month(a.Housing_Price_Date),'/',year(a.Housing_Price_Date))), ")"), null))) as Price_Date
+    , h_nun(ifnull(concat("(", year(housing_type.Price_Date), ")")
+                , ifnull(concat("(", year(a.Housing_Price_Date), ")"), null))) as Year_Price_Date
+    , h_nun(ifnull(housing_type.Area
+            , if(a.Housing_Area_Min is not null and a.Housing_Area_max is not null
+                , if(format(a.Housing_Area_min,0)=format(a.Housing_Area_max,0)
+                    , concat(format(a.Housing_Area_min,0),' ตร.ว.')
+                    , concat(format(a.Housing_Area_min,0),' - ',format(a.Housing_Area_max,0),' ตร.ว.'))
+                , ifnull(concat(format(ifnull(a.Housing_Area_max,a.Housing_Area_min),0),' ตร.ว.'), null)))) as Housing_Area
+    , h_nun(ifnull(housing_type.Usable_Area
+            , if(a.Housing_Usable_Area_Min is not null and a.Housing_Usable_Area_Max is not null
+                , if(format(a.Housing_Usable_Area_Min,0)=format(a.Housing_Usable_Area_Max,0)
+                    , concat(format(a.Housing_Usable_Area_Min,0),' ตร.ม.')
+                    , concat(format(a.Housing_Usable_Area_Min,0),' - ',format(a.Housing_Usable_Area_Max,0),' ตร.ม.'))
+                , ifnull(concat(format(ifnull(a.Housing_Usable_Area_Max,a.Housing_Usable_Area_Min),0),' ตร.ม.'), null)))) as Usable_Area
+    , concat(h_nun(if(a.Housing_Common_Fee_Min is not null and a.Housing_Common_Fee_Max is not null
             , if(format(a.Housing_Common_Fee_Min,0)=format(a.Housing_Common_Fee_Max,0)
-                , concat(format(a.Housing_Common_Fee_Min,0),' บ./ตร.ว./เดือน')
-                , concat(format(a.Housing_Common_Fee_Min,0),' - ',format(a.Housing_Common_Fee_Max,0),' บ./ตร.ว./เดือน'))
-            , concat(format(ifnull(a.Housing_Common_Fee_Max,a.Housing_Common_Fee_Min),0),' บ./ตร.ว./เดือน'))) as Common_Fee
+                , format(a.Housing_Common_Fee_Min,0)
+                , concat(format(a.Housing_Common_Fee_Min,0),' - ',format(a.Housing_Common_Fee_Max,0)))
+            , format(ifnull(a.Housing_Common_Fee_Max,a.Housing_Common_Fee_Min),0))),' บ./ตร.ว./เดือน') as Common_Fee
 from housing a
-left join realist_district rd on a.RealDistrict_Code = rd.District_Code
 left join thailand_district td on a.District_ID = td.district_code
 left join thailand_province tp on a.Province_ID = tp.province_code
-left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2) as Express_Way
+left join real_yarn_main rm on a.RealDistrict_Code = rm.District_Code
+left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2,' ( ',round(Distance,1),' กม. )') as Express_Way
             from (  select Housing_Code
                             , Place_ID
                             , Place_Attribute_1
                             , Place_Attribute_2
+                            , Distance
                             , ROW_NUMBER() OVER (PARTITION BY Housing_Code ORDER BY Distance) AS RowNum
                     from housing_around_express_way
                     order by Housing_Code) ew
             where ew.RowNum = 1 ) express_way 
 on a.Housing_Code = express_way.Housing_Code
+left join ( select Housing_Code,concat(Station_THName_Display,' ( ',round(Distance,1),' กม. )') as Station_Name
+            from (  select Housing_Code
+                            , Station_Code
+                            , Station_THName_Display
+                            , Distance
+                            , ROW_NUMBER() OVER (PARTITION BY Housing_Code ORDER BY Distance) AS RowNum
+                    from housing_around_station
+                    order by Housing_Code) ew
+            where ew.RowNum = 1 ) station 
+on a.Housing_Code = station.Housing_Code
+left join ( select h.Housing_Code
+                , group_concat(DISTINCT h.Housing_Category separator ',') as Housing_Category
+                , sum(h.Total_Unit) as Total_Unit
+                , count(*) as Housing_Type_Count
+                , if(min(h.Floor)=max(h.Floor)
+                    , concat(min(h.Floor),' ชั้น')
+                    , concat(min(h.Floor),' - ',max(h.Floor),' ชั้น')) as Floor
+                , if(min(h.Bedroom)=max(h.Bedroom)
+                    , concat(min(h.Bedroom),' ห้อง')
+                    , concat(min(h.Bedroom),' - ',max(h.Bedroom),' ห้อง')) as Bedroom
+                , if(min(h.Bathroom)=max(h.Bathroom)
+                    , concat(min(h.Bathroom),' ห้อง')
+                    , concat(min(h.Bathroom),' - ',max(h.Bathroom),' ห้อง')) as Bathroom
+                , if(min(h.Parking)=max(h.Parking)
+                    , concat(min(h.Parking),' คัน')
+                    , concat(min(h.Parking),' - ',max(h.Parking),' คัน')) as Parking
+                , if(a.Min_Price = a.Max_Price
+                    , concat(format(a.Min_Price/1000000,1), ' ลบ.')
+                    , concat(format(a.Min_Price/1000000,1),' - ',format(a.Max_Price/1000000,1),' ลบ.')) as Price
+                , a.Price_Date as Price_Date
+                , if(format(a.Min_Area,0) = format(a.Max_Area,0)
+                    , concat(format(a.Min_Area,0),' ตร.ว.')
+                    , concat(format(a.Min_Area,0),' - ',format(a.Max_Area,0),' ตร.ว.')) as Area
+                , if(min(h.Housing_Usable_Area)=max(h.Housing_Usable_Area)
+                    , concat(round(min(h.Housing_Usable_Area)),' ตร.ม.')
+                    , concat(round(min(h.Housing_Usable_Area)),' - ',round(max(h.Housing_Usable_Area)),' ตร.ม.')) as Usable_Area
+            from housing_full_template_housing_type h
+            left join ( SELECT h.Housing_Code
+                            , MIN(Price) AS Min_Price
+                            , MAX(Price) AS Max_Price
+                            , if((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price)) is not null
+                                and (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price)) is not null
+                                , greatest((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price))
+                                    , (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price)))
+                                , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price))
+                                    , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price))
+                                        , null))) as Price_Date
+                            , MIN(Area) AS Min_Area
+                            , MAX(Area) AS Max_Area
+                        FROM housing_full_template_housing_type h
+                        left join ( SELECT Housing_Code
+                                        , Price_Min AS Price
+                                        , Price_Date
+                                    FROM housing_full_template_housing_type
+                                    WHERE Housing_Type_Status = 1 AND Price_Min IS NOT NULL
+                                    UNION ALL
+                                    SELECT Housing_Code
+                                        , Price_Max AS Price
+                                        , Price_Date
+                                    FROM housing_full_template_housing_type
+                                    WHERE Housing_Type_Status = 1 AND Price_Max IS NOT NULL) AS price_data
+                        on h.Housing_Code = price_data.Housing_Code
+                        left join ( select Housing_Code
+                                        , Housing_Area_Min as Area
+                                    from housing_full_template_housing_type
+                                    WHERE Housing_Type_Status = 1 and Housing_Area_Min is not null
+                                    UNION ALL
+                                    select Housing_Code
+                                        , Housing_Area_Max as Area
+                                    from housing_full_template_housing_type
+                                    WHERE Housing_Type_Status = 1 and Housing_Area_Max is not null) area
+                        on h.Housing_Code = area.Housing_Code
+                        GROUP BY h.Housing_Code) a
+            on h.Housing_Code = a.Housing_Code
+            WHERE h.Housing_Type_Status = 1
+            GROUP BY h.Housing_Code) housing_type
+on a.Housing_Code = housing_type.Housing_Code
+left join (select Housing_Code
+                , concat_ws(', ',(select Element_Name from housing_full_template_facilities_raw_view where Housing_Code = f.Housing_Code and RowNum = 1)
+                        ,(select Element_Name from housing_full_template_facilities_raw_view where Housing_Code = f.Housing_Code and RowNum = 2)) as Top_Facilities
+            from (SELECT Housing_Code
+                        , Element_Name
+                        , RowNum
+                    FROM housing_full_template_facilities_raw_view) f
+            group by Housing_Code) faci
+on a.Housing_Code = faci.Housing_Code
 where a.Housing_Status = '1'
 and a.Housing_Latitude is not null
 AND a.Housing_Longitude is not null
-and a.Housing_ENName is not null;
+and a.Housing_ENName is not null
+order by a.Housing_Code;
 
 
 -- view source_housing_fetch_for_map
