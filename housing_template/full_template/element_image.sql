@@ -14,7 +14,7 @@ select
     fte.Element_Name AS Element,
     ftc.Category_Show_Faci as Category_Show_Faci,
     if(fts.Section_ID=2,fte.Housing_Type_ID,null) as Housing_Type_ID,
-	if(fts.Section_ID=1,ftc.Long_Text,fte.Long_Text) AS Long_Text,
+	fte.Long_Text AS Long_Text,
     fte.Display_Order_in_Section AS Display_Order_in_Section,
     fte.Element_Status AS Element_Status,
     if(fts.Section_ID=1,NULL,ftc.Category_ID) AS Category_ID,
