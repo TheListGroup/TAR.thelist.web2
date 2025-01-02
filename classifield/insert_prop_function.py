@@ -26,20 +26,20 @@ def destination(agent):
     #json_path = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROPERTY.json'
     #json_path2 = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROJECT.json'
     save_folder = rf"/var/www/html/realist/condo/uploads/classified"
-    #json_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    #json_path2 = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
-    json_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    json_path2 = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    json_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    json_path2 = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    #json_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    #json_path2 = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
     return save_folder, json_path, json_path2
 
 def log_in_database():
-    #host = '157.230.242.204'
-    #user = 'real-research2'
-    #password = 'DQkuX/vgBL(@zRRa'
+    host = '157.230.242.204'
+    user = 'real-research2'
+    password = 'DQkuX/vgBL(@zRRa'
     
-    host = '127.0.0.1'
-    user = 'real-research'
-    password = 'shA0Y69X06jkiAgaX&ng'
+    #host = '127.0.0.1'
+    #user = 'real-research'
+    #password = 'shA0Y69X06jkiAgaX&ng'
 
     return host, user, password
 
@@ -189,33 +189,36 @@ def prepare_variable(prop,agent):
     else:
         title_ENG = prop[title_ENG_ref]
     
-    if prop[price_Sale_ref] == None or prop[price_Sale_ref] == "0" or prop[price_Sale_ref] == 0.00 or prop[price_Sale_ref] == 0.0:
+    if prop[price_Sale_ref] == None or prop[price_Sale_ref] == "0" or round(prop[price_Sale_ref]) == 0:
         price_Sale = None
         sale = False
     else:
         price_Sale = int(round(float(prop[price_Sale_ref])))
         sale = True
     
-    if prop[price_Rent_ref] == None or prop[price_Rent_ref] == "0" or prop[price_Rent_ref] == 0.00 or prop[price_Rent_ref] == 0.0:
+    if prop[price_Rent_ref] == None or prop[price_Rent_ref] == "0" or round(prop[price_Rent_ref]) == 0:
         price_Rent = None
         rent = False
     else:
         price_Rent = int(round(float(prop[price_Rent_ref])))
         rent = True
     
-    if prop[size_ref] == None or prop[size_ref] == "0" or prop[size_ref] == 0.00:
+    if prop[size_ref] == None or prop[size_ref] == "0" or round(prop[size_ref]) == 0:
         size = None
     else:
         size = str(float(prop[size_ref]))
     
-    if prop[furnish_ref] == "Un furnished" or prop[furnish_ref] == " No Furnished":
-        furnish = "Non Furnished"
-    elif prop[furnish_ref] == "Partly Furnished" or prop[furnish_ref] == " Partly Furnished" or prop[furnish_ref] == "semi":
-        furnish = "Fully Fitted"
-    elif prop[furnish_ref] == "Fully Furnished" or prop[furnish_ref] == " Fully Furnished" or prop[furnish_ref] == "fully":
-        furnish = "Fully Furnished"
-    else:
+    if agent == 'Serve':
         furnish = None
+    else:
+        if prop[furnish_ref] == "Un furnished" or prop[furnish_ref] == " No Furnished":
+            furnish = "Non Furnished"
+        elif prop[furnish_ref] == "Partly Furnished" or prop[furnish_ref] == " Partly Furnished" or prop[furnish_ref] == "semi":
+            furnish = "Fully Fitted"
+        elif prop[furnish_ref] == "Fully Furnished" or prop[furnish_ref] == " Fully Furnished" or prop[furnish_ref] == "fully":
+            furnish = "Fully Furnished"
+        else:
+            furnish = None
     
     if prop[description_TH_ref] == None or prop[description_TH_ref] == "":
         description_TH = None
@@ -230,7 +233,7 @@ def prepare_variable(prop,agent):
     insert_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     update_insert_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
-    if agent != 'Plus':
+    if agent != 'Plus' and agent != 'Serve':
         room_type, penthouse = None,0
         
         if prop[sale_with_Tenant_ref] == 'True' or prop[sale_with_Tenant_ref] == True:
@@ -345,20 +348,6 @@ def prepare_variable(prop,agent):
     else:
         sale_with_Tenant = False
         min_Rental_Contract,deposit,advance_Payment,fix_Parking,parking_amount = None,None,None,None,None
-        penthouse = prop["is_penthouse"]
-        if description_TH != None:
-            description_TH = re.sub(r' Bangkok CitiSmart ', '', description_TH)
-        image_urls = prop["Images"]
-        
-        if prop["is_studio"] == True:
-            room_type = 'Studio'
-        else:
-            room_type = None
-        
-        if prop["is_duplex"] == True:
-            unit_floor_type = 'Duplex'
-        else:
-            unit_floor_type = None
         
         if prop["Bedroom"] == 0:
             bedroom = '1'
@@ -370,19 +359,41 @@ def prepare_variable(prop,agent):
         else:
             bathroom = int(round(float(prop["Bathroom"])))
         
-        if prop[last_Updated_Date_ref] != None:
-            last_Updated_Date = prop[last_Updated_Date_ref]
-            last_Updated_Date = re.sub('T',' ',last_Updated_Date)
-            if '.' in last_Updated_Date:
-                last_Updated_Date = datetime.strptime(last_Updated_Date, '%Y-%m-%d %H:%M:%S.%f')
-            else:
-                last_Updated_Date = datetime.strptime(last_Updated_Date, '%Y-%m-%d %H:%M:%S')
-            last_Updated_Date = last_Updated_Date.strftime('%Y-%m-%d %H:%M:%S')
-        else:
-            last_Updated_Date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        image_urls = prop["Images"]['image']
         
-        created_Date = prop[created_Date_ref]
-        created_Date = date_bc_plus(created_Date)
+        if agent == 'Serve':
+            room_type,unit_floor_type,penthouse = None,None,None
+            created_Date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            last_Updated_Date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            penthouse = prop["is_penthouse"]
+            if description_TH != None:
+                description_TH = re.sub(r' Bangkok CitiSmart ', '', description_TH)
+            image_urls = prop["Images"]
+            
+            if prop["is_studio"] == True:
+                room_type = 'Studio'
+            else:
+                room_type = None
+            
+            if prop["is_duplex"] == True:
+                unit_floor_type = 'Duplex'
+            else:
+                unit_floor_type = None
+            
+            if prop[last_Updated_Date_ref] != None:
+                last_Updated_Date = prop[last_Updated_Date_ref]
+                last_Updated_Date = re.sub('T',' ',last_Updated_Date)
+                if '.' in last_Updated_Date:
+                    last_Updated_Date = datetime.strptime(last_Updated_Date, '%Y-%m-%d %H:%M:%S.%f')
+                else:
+                    last_Updated_Date = datetime.strptime(last_Updated_Date, '%Y-%m-%d %H:%M:%S')
+                last_Updated_Date = last_Updated_Date.strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                last_Updated_Date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+            created_Date = prop[created_Date_ref]
+            created_Date = date_bc_plus(created_Date)
     
     data_api_list = [sale,sale_with_Tenant, rent, price_Sale, sale_transfer_fee, sale_deposit, sale_mongage_cost, price_Rent, min_Rental_Contract
                     , deposit, advance_Payment, room_type, unit_floor_type, penthouse, bedroom, bathroom, floor, direction, move_in, size, furnish
