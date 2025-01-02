@@ -16,13 +16,13 @@ import math
 import csv
 
 def log_in_database():
-    #host = '157.230.242.204'
-    #user = 'real-research2'
-    #password = 'DQkuX/vgBL(@zRRa'
+    host = '157.230.242.204'
+    user = 'real-research2'
+    password = 'DQkuX/vgBL(@zRRa'
     
-    host = '127.0.0.1'
-    user = 'real-research'
-    password = 'shA0Y69X06jkiAgaX&ng'
+    #host = '127.0.0.1'
+    #user = 'real-research'
+    #password = 'shA0Y69X06jkiAgaX&ng'
 
     return host, user, password
 
@@ -49,12 +49,12 @@ def destination_match(agent):
     #project_path = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROJECT.json'
     #property_path = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROPERTY.json'
     #csv_path = rf"C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_Match.csv"
-    #project_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
-    #property_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    #csv_path = rf"/home/gitdev/ta_python/classifield/{agent}/{agent}_Match.csv"
-    project_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
-    property_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    csv_path = rf"/home/gitprod/ta_python/classifield/{agent}/{agent}_Match.csv"
+    project_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    property_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    csv_path = rf"/home/gitdev/ta_python/classifield/{agent}/{agent}_Match.csv"
+    #project_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    #property_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    #csv_path = rf"/home/gitprod/ta_python/classifield/{agent}/{agent}_Match.csv"
     return project_path, property_path, csv_path
 
 def match_query(cursor):
@@ -94,13 +94,16 @@ def open_proj_json(agent,project_path,project_list):
                 project_list.append(project)
     return project_list
 
-def open_prop_json(property_path,list_prop):
+def open_prop_json(agent,property_path,list_prop):
     with open(property_path, 'r', encoding='utf-8') as json_file:
         property_data = json.load(json_file)
         for prop in property_data:
             prop = tuple(prop.values())
             list_prop.append(prop)
-        prop_list = {row[2]: row for row in list_prop}
+        if agent == 'Plus' or agent == 'Serve':
+            prop_list = {row[1]: row for row in list_prop}
+        else:
+            prop_list = {row[2]: row for row in list_prop}
     return prop_list
 
 def project_have_room(project_list,prop_list):
@@ -122,7 +125,10 @@ def project_have_room(project_list,prop_list):
     return project_list
 
 def table_proj_statge(use_project_list,cursor,connection,agent):
-    if agent != 'Plus':
+    if agent == 'Serve':
+        query = """INSERT INTO classified_project_staging (Project_ID, Name_TH, Name_ENG, Latitude, Longitude) 
+                VALUES (%s, %s, %s, %s, %s)"""
+    elif agent != 'Plus':
         query = """INSERT INTO classified_project_staging (Ref_ID, Project_ID, Name_TH, Name_ENG, Latitude, Longitude, Created_Date, Last_Updated_Date) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
     else:
@@ -347,7 +353,7 @@ def point_match(agent,new_project,result,match_list,csv_path):
                 best_condo_code_5 = k[0]
             
         if ratio < 1:
-            if agent != 'Plus':
+            if agent != 'Plus' and agent != 'Serve':
                 match_data = [idid, project_id, nameTH, nameEN, latitude, longitude, created_date, last_updated_date, name, best_word
                             , best_condo_code, condo_name, best_latitude, best_longitude, best_ratio, best_condo_code_1, best_condo_name_1
                             , best_condo_code_2, best_condo_name_2, best_condo_code_3, best_condo_name_3, best_condo_code_4, best_condo_name_4
@@ -361,7 +367,7 @@ def point_match(agent,new_project,result,match_list,csv_path):
         return insert
     
     def create_csv(agent):
-        if agent != 'Plus':
+        if agent != 'Plus' and agent != 'Serve':
             header = [f'{agent}_ID', f'{agent}_Project_ID', 'nameTH', 'nameEN', 'latitude', 'longitude', 'created_date', 'last_updated_date', 'name_use'
                         , 'real_name_use', 'Condo_Code', 'Condo_Name', 'Condo_Latitude', 'Condo_Longitude', 'best_ratio', 'Condo_Code_1'
                         , 'Condo_Full_Name_1', 'Condo_Code_2', 'Condo_Full_Name_2', 'Condo_Code_3', 'Condo_Full_Name_3', 'Condo_Code_4'
@@ -375,7 +381,7 @@ def point_match(agent,new_project,result,match_list,csv_path):
     
     insert = 0
     new_project_insert = []
-    if agent != 'Plus':
+    if agent != 'Plus' and agent != 'Serve':
         for i in new_project:
             name = i[3].lower().replace(" ","").replace("-","").replace("'","").replace("(","").replace(")","").replace("@","").replace("minium","").replace("condo","").strip()
             project_id = i[1]
