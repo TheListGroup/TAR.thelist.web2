@@ -2,8 +2,8 @@ import importlib
 import sys
 
 #head_path = r"C:\PYTHON\TAR.thelist.web2\classifield"
-#head_path = r"/home/gitdev/ta_python/classifield"
-head_path = r"/home/gitprod/ta_python/classifield"
+head_path = r"/home/gitdev/ta_python/classifield"
+#head_path = r"/home/gitprod/ta_python/classifield"
 function_file = 'match_function'
 function_list = ['database', 'log_in_database', 'destination_match', 'match_query', 'open_proj_json', 'open_prop_json', 'project_have_room', 'table_proj_statge'
                 , 'point_match', 'insert_to_tables', 'truncate_proj_stage']
@@ -33,7 +33,7 @@ if sql:
     result = match_query(cursor)
     try:
         project_list = open_proj_json(agent,project_path,project_list)
-        prop_list = open_prop_json(property_path,list_prop)
+        prop_list = open_prop_json(agent,property_path,list_prop)
         work = True
     except:
         pass
