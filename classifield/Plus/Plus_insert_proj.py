@@ -5,7 +5,7 @@ import mysql.connector
 csv_path = r'/home/gitdev/ta_python/classifield/Plus/Plus_Match.csv'
 #csv_path = r'/home/gitprod/ta_python/classifield/Plus/Plus_Match.csv'
 
-host = '157.230.242.204'
+host = '159.223.76.99'
 user = 'real-research2'
 password = 'DQkuX/vgBL(@zRRa'
 

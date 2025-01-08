@@ -16,18 +16,18 @@ def destination(agent,file):
     #save_folder = rf"C:\PYTHON\TAR.thelist.web2\classifield\{agent}\classified_image"
     #json_file = rf"C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{file}"
     save_folder = "/var/www/html/realist/condo/uploads/classified"
-    #json_file = rf"/home/gitdev/ta_python/classifield/{agent}/{file}"
-    json_file = rf"/home/gitprod/ta_python/classifield/{agent}/{file}"
+    json_file = rf"/home/gitdev/ta_python/classifield/{agent}/{file}"
+    #json_file = rf"/home/gitprod/ta_python/classifield/{agent}/{file}"
     return save_folder, json_file
 
 def log_in_database():
-    #host = '157.230.242.204'
-    #user = 'real-research2'
-    #password = 'DQkuX/vgBL(@zRRa'
+    host = '159.223.76.99'
+    user = 'real-research2'
+    password = 'DQkuX/vgBL(@zRRa'
     
-    host = '127.0.0.1'
-    user = 'real-research'
-    password = 'shA0Y69X06jkiAgaX&ng'
+    #host = '127.0.0.1'
+    #user = 'real-research'
+    #password = 'shA0Y69X06jkiAgaX&ng'
 
     return host, user, password
 

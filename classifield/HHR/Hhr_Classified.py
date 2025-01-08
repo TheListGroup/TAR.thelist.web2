@@ -6,8 +6,8 @@ import sys
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/10lKaZ5jPUqikTOxVFjEHoFSeS6nqaf_ZEWwjvkj2Jsc/export?format=csv'
 
 #head_path = r"C:\PYTHON\TAR.thelist.web2\classifield"
-#head_path = r"/home/gitdev/ta_python/classifield"
-head_path = r"/home/gitprod/ta_python/classifield"
+head_path = r"/home/gitdev/ta_python/classifield"
+#head_path = r"/home/gitprod/ta_python/classifield"
 function_file = 'ggsheet_function'
 function_list = ['check_update', 'check_null', 'sale_rent', 'price','insert_log','create_folder_and_remove_image_and_save_image','check_image_url_validity'
                 ,'database', 'read_sheet', 'check', 'log_in_database', 'compare_column', 'update_work', 'destination', 'insert_work']

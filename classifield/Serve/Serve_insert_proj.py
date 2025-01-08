@@ -1,21 +1,21 @@
 import pandas as pd
 import mysql.connector
 
-#csv_path = 'D:\PYTHON\TAR.thelist.web-1\classifield\BC\BC_Match.csv'
-csv_path = '/home/gitdev/ta_python/classifield/BC/BC_Match.csv'
-#csv_path = '/home/gitprod/ta_python/classifield/BC/BC_Match.csv'
-
-#host = '127.0.0.1'
-#user real-research
-#password = 'shA0Y69X06jkiAgaX&ng'
+#csv_path = r'C:\PYTHON\TAR.thelist.web2\classifield\Serve\Serve_Match.csv'
+csv_path = r'/home/gitdev/ta_python/classifield/Serve/Serve_Match.csv'
+#csv_path = r'/home/gitprod/ta_python/classifield/Serve/Serve_Match.csv'
 
 host = '159.223.76.99'
 user = 'real-research2'
 password = 'DQkuX/vgBL(@zRRa'
 
+#host = '127.0.0.1'
+#user = 'real-research'
+#password = 'shA0Y69X06jkiAgaX&ng'
+
 real = pd.read_csv(csv_path, encoding='utf-8')
 log = False
-agent = 'BC'
+agent = 'Serve'
 try:
     connection = mysql.connector.connect(
         host = host,
@@ -35,18 +35,18 @@ not_match_list = []
 m = 0
 n = 0
 for i in range(real.index.size):
-    proj_id = real.iat[i,1]
-    condo_code = real.iat[i,10]
-    msg = real.iat[i,25]
-    old = real.iat[i,26]
+    proj_id = real.iat[i,0]
+    condo_code = real.iat[i,9]
+    msg = real.iat[i,24]
+    old = real.iat[i,25]
 
-    if pd.notna(real.iat[i,10]):
+    if pd.notna(real.iat[i,9]):
         match_list.append((agent,proj_id,condo_code))
         m += 1
-    elif pd.notna(real.iat[i,25]):
+    elif pd.notna(real.iat[i,24]):
         not_match_list.append((agent,proj_id,msg,0))
         n += 1
-    elif pd.notna(real.iat[i,26]):
+    elif pd.notna(real.iat[i,25]):
         msg = None
         not_match_list.append((agent,proj_id,msg,1))
         n += 1
@@ -76,7 +76,7 @@ if len(not_match_list) > 0:
 if log:
     query = """INSERT INTO realist_log (Type, SQL_State, Message, Location)
             VALUES (%s, %s, %s, %s)"""
-    val = (0, '00000', f'Insert_Match {m} Rows and Insert_Not_Match {n} Rows', 'BC_Insert_Project_After_Manual')
+    val = (0, '00000', f'Insert_Match {m} Rows and Insert_Not_Match {n} Rows', 'Plus_Insert_Project_After_Manual')
     try:
         cursor.execute(query,val)
         connection.commit()

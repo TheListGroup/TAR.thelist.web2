@@ -16,7 +16,7 @@ import math
 import csv
 
 def log_in_database():
-    host = '157.230.242.204'
+    host = '159.223.76.99'
     user = 'real-research2'
     password = 'DQkuX/vgBL(@zRRa'
     

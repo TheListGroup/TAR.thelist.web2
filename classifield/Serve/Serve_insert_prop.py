@@ -26,8 +26,8 @@ def log_values(state):
                 , parking_amount, description_ENG, description_TH, user_id, '1', 32, created_Date, 32, last_Updated_Date)
     return log_val
 
-user_id = 2
-agent = 'AG'
+user_id = 4
+agent = 'Serve'
 save_folder, json_path, json_path2 = destination(agent)
 host, user, password = log_in_database()
 sql = False
@@ -39,7 +39,7 @@ property_list = []
 work = False
 if sql:
     property_list, work = open_proj_json(agent,json_path,property_list,cursor,connection,work)
-
+    
 if work:
     property_list = project_have_room(property_list,result_match,agent)
 
@@ -66,7 +66,6 @@ if work:
                 , sale_transfer_fee_check, sale_deposit_check, sale_mongage_cost_check, price_rent_check, min_rental_contract_check, rent_deposit\
                 , advance_payment_check, room_type_check, unit_floor_type_check, penthouse_check, bedroom_check, bathroom_check, floor_check\
                 , direction_check, movein_check, size_check, furnish_check, parking, parking_amount_check, variable_check_list = prepare_variable_from_db(data)
-                
                 for variable_count, var in enumerate(data_api_list):
                     if variable_check_list[variable_count+3] != var:
                         row_update = True
@@ -102,6 +101,8 @@ if work:
                     print(f'Error: {idid} {e}')
                     log = False
                     insert_log(f"{agent}_insert_prop_Insert",log,upd,insert,cursor,connection,e)
+        if insert == 100:
+            break
 
     if log:
         e = ''
@@ -109,11 +110,11 @@ if work:
 
     if len(property_list) > 0:
         check_status(cursor,connection,user_id,property_list,stop_processing,agent)
-
+    
     print(f'Insert {insert} Rows')
     print(f'Update {upd} Rows')
-    os.remove(json_path)
-    os.remove(json_path2)
+    #os.remove(json_path)
+    #os.remove(json_path2)
 
 if sql:
     cursor.close()

@@ -33,7 +33,7 @@ def destination(agent):
     return save_folder, json_path, json_path2
 
 def log_in_database():
-    host = '157.230.242.204'
+    host = '159.223.76.99'
     user = 'real-research2'
     password = 'DQkuX/vgBL(@zRRa'
     
@@ -189,21 +189,21 @@ def prepare_variable(prop,agent):
     else:
         title_ENG = prop[title_ENG_ref]
     
-    if prop[price_Sale_ref] == None or prop[price_Sale_ref] == "0" or round(prop[price_Sale_ref]) == 0:
+    if prop[price_Sale_ref] == None or prop[price_Sale_ref] == "0" or round(float(prop[price_Sale_ref])) == 0:
         price_Sale = None
         sale = False
     else:
         price_Sale = int(round(float(prop[price_Sale_ref])))
         sale = True
     
-    if prop[price_Rent_ref] == None or prop[price_Rent_ref] == "0" or round(prop[price_Rent_ref]) == 0:
+    if prop[price_Rent_ref] == None or prop[price_Rent_ref] == "0" or round(float(prop[price_Rent_ref])) == 0:
         price_Rent = None
         rent = False
     else:
         price_Rent = int(round(float(prop[price_Rent_ref])))
         rent = True
     
-    if prop[size_ref] == None or prop[size_ref] == "0" or round(prop[size_ref]) == 0:
+    if prop[size_ref] == None or prop[size_ref] == "0" or round(float(prop[size_ref])) == 0:
         size = None
     else:
         size = str(float(prop[size_ref]))
@@ -359,12 +359,11 @@ def prepare_variable(prop,agent):
         else:
             bathroom = int(round(float(prop["Bathroom"])))
         
-        image_urls = prop["Images"]['image']
-        
         if agent == 'Serve':
             room_type,unit_floor_type,penthouse = None,None,None
             created_Date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             last_Updated_Date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            image_urls = prop["Images"]["image"]
         else:
             penthouse = prop["is_penthouse"]
             if description_TH != None:

@@ -3,8 +3,8 @@ import importlib
 import sys
 
 #head_path = r"C:\PYTHON\TAR.thelist.web2\classifield"
-#head_path = r"/home/gitdev/ta_python/classifield"
-head_path = r"/home/gitprod/ta_python/classifield"
+head_path = r"/home/gitdev/ta_python/classifield"
+#head_path = r"/home/gitprod/ta_python/classifield"
 function_file = 'insert_prop_function'
 function_list = ['destination', 'log_in_database', 'database', 'open_proj_json', 'project_have_room', 'check_proj', 'prepare_variable'
                 , 'prepare_variable_from_db', 'insert_log', 'create_folder_and_remove_image_and_save_image', 'create_query', 'update_work'
