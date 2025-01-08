@@ -212,12 +212,12 @@ left join ( select h.Housing_Code
             left join ( SELECT h.Housing_Code
                             , MIN(Price) AS Min_Price
                             , MAX(Price) AS Max_Price
-                            , if((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price)) is not null
-                                and (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price)) is not null
-                                , greatest((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price))
-                                    , (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price)))
-                                , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price))
-                                    , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price))
+                            , if((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price) limit 1) is not null
+                                and (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price) limit 1) is not null
+                                , greatest((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price) limit 1)
+                                    , (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price) limit 1))
+                                , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price) limit 1)
+                                    , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price) limit 1)
                                         , null))) as Price_Date
                             , MIN(Area) AS Min_Area
                             , MAX(Area) AS Max_Area
