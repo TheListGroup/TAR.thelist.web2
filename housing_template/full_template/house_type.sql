@@ -383,9 +383,7 @@ left join ( select vmp.Vector_ID
             and fht.Housing_Type_Status = 1
             and hv.Vector_Status = 1
             order by hv.Master_Plan_ID, fht.Housing_Type_ID ) mre1
-on fv.Master_Plan_ID = mre1.Master_Plan_ID
-and vmp.Ref_ID = mre1.Ref_ID
-and vmp.Ref_Type = mre1.Ref_Type
+on vmp.Vector_ID = mre1.Vector_ID
 left join ( select vmp.Vector_ID  
                 , hv.Master_Plan_ID
                 , vmp.Ref_Type
@@ -401,9 +399,7 @@ left join ( select vmp.Vector_ID
             and fte.Element_Status = 1
             and hv.Vector_Status = 1
             order by hv.Master_Plan_ID, fte.Element_ID ) mre2
-on fv.Master_Plan_ID = mre2.Master_Plan_ID
-and vmp.Ref_ID = mre2.Ref_ID
-and vmp.Ref_Type = mre2.Ref_Type
+on vmp.Vector_ID = mre2.Vector_ID
 where vmp.Relationship_Status = 1
 and fv.Vector_Status = 1;
 
