@@ -187,8 +187,16 @@ left join ( select h.Housing_Code
                 , sum(h.Total_Unit) as Total_Unit
                 , count(*) as Housing_Type_Count
                 , if(min(h.Floor)=max(h.Floor)
-                    , concat(min(h.Floor),' ชั้น')
-                    , concat(min(h.Floor),' - ',max(h.Floor),' ชั้น')) as Floor
+                    , if(round(min(h.Floor),1) = floor(min(h.floor)) + 0.5
+                        , concat(round(min(h.Floor),1),' ชั้น')
+                        , concat(floor(min(h.Floor)),' ชั้น'))
+                    , if((round(min(h.Floor),1) = floor(min(h.floor))+0.5) and (round(max(h.Floor),1) = floor(max(h.floor))+0.5)
+                        , concat(round(min(h.Floor),1),' - ',round(max(h.Floor),1),' ชั้น')
+                        , if((round(min(h.Floor),1) = floor(min(h.floor))+0.5) and (round(max(h.Floor),1) <> floor(max(h.floor))+0.5)
+                            , concat(round(min(h.Floor),1),' - ',floor(max(h.Floor)),' ชั้น')
+                            , if((round(min(h.Floor),1) <> floor(min(h.floor))+0.5) and (round(max(h.Floor),1) = floor(max(h.floor))+0.5)
+                                , concat(floor(min(h.Floor)),' - ',round(max(h.Floor),1),' ชั้น')
+                                , concat(floor(min(h.Floor)),' - ',floor(max(h.Floor)),' ชั้น'))))) as Floor
                 , if(min(h.Bedroom)=max(h.Bedroom)
                     , concat(min(h.Bedroom),' ห้อง')
                     , concat(min(h.Bedroom),' - ',max(h.Bedroom),' ห้อง')) as Bedroom
