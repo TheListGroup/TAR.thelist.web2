@@ -17,9 +17,9 @@ from datetime import datetime
 import time
 import mysql.connector
 
-#host = '157.230.242.204'
+#host = '159.223.76.99'
 #user = 'real-research2'
-#assword = 'DQkuX/vgBL(@zRRa'
+#password = 'DQkuX/vgBL(@zRRa'
 
 host = '127.0.0.1'
 user = 'real-research'
@@ -42,19 +42,23 @@ def access_ggsheet():
     return spreadsheet
 
 def generate_dates():
+    last_year = dt.datetime.now().year - 1
     current_year = dt.datetime.now().year
-    first_day_of_year = dt.datetime(current_year, 1, 1)
-    first_monday = first_day_of_year + dt.timedelta(days=(7 - first_day_of_year.weekday()) % 7)
-
-    dates = []
-    for i in range(52):
-        start_date = first_monday + dt.timedelta(weeks=i)
-        end_date = start_date + dt.timedelta(days=6)
-        
-        if end_date > dt.datetime.now():
-            break
+    year_list = [last_year, current_year]
     
-        dates.append(DateRange(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')))
+    dates = []
+    for year in year_list:
+        first_day_of_year = dt.datetime(year, 1, 1)
+        first_monday = first_day_of_year + dt.timedelta(days=(7 - first_day_of_year.weekday()) % 7)
+
+        for i in range(53):
+            start_date = first_monday + dt.timedelta(weeks=i)
+            end_date = start_date + dt.timedelta(days=6)
+            
+            if end_date > dt.datetime.now():
+                break
+        
+            dates.append(DateRange(start_date=start_date.strftime('%Y-%m-%d'), end_date=end_date.strftime('%Y-%m-%d')))
     return dates
 
 def sample_run_report(property_id,date,filter_list):
@@ -483,6 +487,60 @@ if sql:
                                 where Classified_Status = '1'
                                 group by Condo_Code) a"""
     
+    bc_classified_update = """SELECT count(*)
+                            FROM `classified_all_logs`
+                            where Type = 'update'
+                            and User_ID = 1
+                            and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    bc_classified_insert = """SELECT count(*)
+                            FROM `classified_all_logs`
+                            where Type = 'insert'
+                            and User_ID = 1
+                            and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    bc_classified_sold_or_delete = """SELECT count(*)
+                                    FROM `classified_all_logs`
+                                    where Type = 'status'
+                                    and User_ID = 1
+                                    and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    ag_classified_update = """SELECT count(*)
+                            FROM `classified_all_logs`
+                            where Type = 'update'
+                            and User_ID = 2
+                            and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    ag_classified_insert = """SELECT count(*)
+                            FROM `classified_all_logs`
+                            where Type = 'insert'
+                            and User_ID = 2
+                            and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    ag_classified_sold_or_delete = """SELECT count(*)
+                                    FROM `classified_all_logs`
+                                    where Type = 'status'
+                                    and User_ID = 2
+                                    and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    serve_classified_update = """SELECT count(*)
+                            FROM `classified_all_logs`
+                            where Type = 'update'
+                            and User_ID = 4
+                            and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    serve_classified_insert = """SELECT count(*)
+                            FROM `classified_all_logs`
+                            where Type = 'insert'
+                            and User_ID = 4
+                            and DATE(Insert_Day) BETWEEN %s and %s"""
+    
+    serve_classified_sold_or_delete = """SELECT count(*)
+                                    FROM `classified_all_logs`
+                                    where Type = 'status'
+                                    and User_ID = 4
+                                    and DATE(Insert_Day) BETWEEN %s and %s"""
+    
     classified_contact_form = """SELECT count(*)
                                 FROM `real_contact_form`
                                 where Contact_Type = 'classified'"""
@@ -534,14 +592,22 @@ if sql:
                                     and Contact_Sent <> 'Y'
                                     and Contact_Sent_Date BETWEEN %s and %s"""
     
-    query_list = [blog,client_blog,realist_post,all_condo,condo_short,floorplan_query,agent,agent_room,member,member_room,condo_classified
-                ,classified_contact_form,condo_dev_email,condo_not_dev_email]
+    query_list = [blog, client_blog, realist_post, all_condo, condo_short, floorplan_query, agent, agent_room, member, member_room, condo_classified
+                , bc_classified_update, bc_classified_insert, bc_classified_sold_or_delete, ag_classified_update, ag_classified_insert
+                , ag_classified_sold_or_delete, serve_classified_update, serve_classified_insert, serve_classified_sold_or_delete
+                , classified_contact_form, condo_dev_email, condo_not_dev_email]
     for i, query in enumerate(query_list):
         if i == 5:
             web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal >= 80"))
             web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal < 80 and Floor_Plan_Cal > 0"))
             web_data_list.append(create_floorplan_query(" where Vector_Cal >= 80"))
             web_data_list.append(create_floorplan_query(" where Vector_Cal < 80 and Vector_Cal > 0"))
+        elif i >= 11 and i <= 19:
+            val = (datetime.strptime(f"{dates[-1].start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{dates[-1].end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
+            cursor.execute(query,val)
+            result = cursor.fetchall()
+            count_data = int(result[0][0])
+            web_data_list.append(count_data)
         else:
             cursor.execute(query)
             result = cursor.fetchall()
@@ -567,9 +633,14 @@ if sql:
     )
     response = client.run_report(request)
     for i, event in enumerate(event_list):
+        found = False
         for x, event_name in enumerate(response.rows):
             if event == event_name.dimension_values[0].value:
                 web_data_list.append(int(event_name.metric_values[0].value))
+                found = True
+                break
+        if not found:
+            web_data_list.append(0)
 
     spreadsheet = access_ggsheet()
     sheet = spreadsheet.get_worksheet(4)
