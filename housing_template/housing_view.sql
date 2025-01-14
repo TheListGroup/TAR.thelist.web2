@@ -221,11 +221,11 @@ left join ( select h.Housing_Code
                             , MIN(Price) AS Min_Price
                             , MAX(Price) AS Max_Price
                             , if((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price) limit 1) is not null
-                                and (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price) limit 1) is not null
+                                and (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Max = MAX(Price) limit 1) is not null
                                 , greatest((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price) limit 1)
-                                    , (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price) limit 1))
+                                    , (select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Max = MAX(Price) limit 1))
                                 , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MIN(Price) limit 1)
-                                    , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Min = MAX(Price) limit 1)
+                                    , ifnull((select Price_Date from housing_full_template_housing_type where Housing_Code = Housing_Code and Housing_Type_Status = 1 and Price_Max = MAX(Price) limit 1)
                                         , null))) as Price_Date
                             , MIN(Area) AS Min_Area
                             , MAX(Area) AS Max_Area
@@ -234,23 +234,23 @@ left join ( select h.Housing_Code
                                         , Price_Min AS Price
                                         , Price_Date
                                     FROM housing_full_template_housing_type
-                                    WHERE Housing_Type_Status = 1 AND Price_Min IS NOT NULL
+                                    WHERE Housing_Type_Status = 1 AND Price_Min IS NOT NULL AND Price_Min <> 0
                                     UNION ALL
                                     SELECT Housing_Code
                                         , Price_Max AS Price
                                         , Price_Date
                                     FROM housing_full_template_housing_type
-                                    WHERE Housing_Type_Status = 1 AND Price_Max IS NOT NULL) AS price_data
+                                    WHERE Housing_Type_Status = 1 AND Price_Max IS NOT NULL AND Price_Max <> 0) AS price_data
                         on h.Housing_Code = price_data.Housing_Code
                         left join ( select Housing_Code
                                         , Housing_Area_Min as Area
                                     from housing_full_template_housing_type
-                                    WHERE Housing_Type_Status = 1 and Housing_Area_Min is not null
+                                    WHERE Housing_Type_Status = 1 and Housing_Area_Min is not null AND Housing_Area_Min <> 0
                                     UNION ALL
                                     select Housing_Code
                                         , Housing_Area_Max as Area
                                     from housing_full_template_housing_type
-                                    WHERE Housing_Type_Status = 1 and Housing_Area_Max is not null) area
+                                    WHERE Housing_Type_Status = 1 and Housing_Area_Max is not null AND Housing_Area_Max <> 0) area
                         on h.Housing_Code = area.Housing_Code
                         GROUP BY h.Housing_Code) a
             on h.Housing_Code = a.Housing_Code
