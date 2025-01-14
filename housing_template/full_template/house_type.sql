@@ -362,46 +362,18 @@ select mp.Housing_Code
     , vmp.Vector_ID
     , vmp.Ref_Type
     , vmp.Ref_ID
-    , mre2.Category_ID
-    , ifnull(mre1.Housing_Type_Name,mre2.Element_Name) as Ref_Name
+    , if(vmp.Ref_Type = 2,fte.Category_ID,null) as Category_ID
+    , if(vmp.Ref_Type = 1,fht.Housing_Type_Name,fte.Element_Name) as Ref_Name
     , mp.Master_Plan_Image
     , fv.Polygon
 from housing_full_template_vector_master_plan_relationship vmp
-inner join housing_full_template_vector fv on vmp.Vector_ID = fv.Vector_ID
-inner join housing_full_template_master_plan mp on fv.Master_Plan_ID = mp.Master_Plan_ID
-left join ( select vmp.Vector_ID  
-                , hv.Master_Plan_ID
-                , vmp.Ref_Type
-                , vmp.Ref_ID
-                , fht.Housing_Type_Name
-                , hv.Polygon
-            from housing_full_template_vector_master_plan_relationship vmp
-            left join housing_full_template_housing_type fht on vmp.Ref_ID = fht.Housing_Type_ID
-            left join housing_full_template_vector hv on vmp.Vector_ID = hv.Vector_ID
-            where vmp.Relationship_Status = 1
-            and vmp.Ref_Type = 1
-            and fht.Housing_Type_Status = 1
-            and hv.Vector_Status = 1
-            order by hv.Master_Plan_ID, fht.Housing_Type_ID ) mre1
-on vmp.Vector_ID = mre1.Vector_ID
-left join ( select vmp.Vector_ID  
-                , hv.Master_Plan_ID
-                , vmp.Ref_Type
-                , vmp.Ref_ID
-                , fte.Element_Name
-                , fte.Category_ID
-                , hv.Polygon
-            from housing_full_template_vector_master_plan_relationship vmp
-            left join housing_full_template_element fte on vmp.Ref_ID = fte.Element_ID
-            left join housing_full_template_vector hv on vmp.Vector_ID = hv.Vector_ID
-            where vmp.Relationship_Status = 1
-            and vmp.Ref_Type = 2
-            and fte.Element_Status = 1
-            and hv.Vector_Status = 1
-            order by hv.Master_Plan_ID, fte.Element_ID ) mre2
-on vmp.Vector_ID = mre2.Vector_ID
+left join housing_full_template_vector fv on vmp.Vector_ID = fv.Vector_ID
+left join housing_full_template_master_plan mp on fv.Master_Plan_ID = mp.Master_Plan_ID
+left join housing_full_template_housing_type fht on vmp.Ref_ID = fht.Housing_Type_ID and vmp.Ref_Type = 1 and fht.Housing_Type_Status = 1
+left join housing_full_template_element fte on vmp.Ref_ID = fte.Element_ID and vmp.Ref_Type = 2 and fte.Element_Status = 1
 where vmp.Relationship_Status = 1
-and fv.Vector_Status = 1;
+and fv.Vector_Status = 1
+and mp.Master_Plan_Status = 1;
 
 -- -----------------------------------------------------
 -- Table `housing_full_template_master_plan_vector_view`
