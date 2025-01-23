@@ -10,7 +10,7 @@ ALTER TABLE `classified_list_view` ADD `Title_TH` TEXT NULL DEFAULT NULL AFTER `
 , ADD `Last_Update_Insert_Date` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP AFTER `Title_TH`;
 create or replace view source_classified_list_view as
 select c.Classified_ID
-    , concat_ws(' ',ifnull(if(c.Room_Type='Studio','1 Bed',REPLACE(REPLACE(c.Room_Type,'rooms',''),'room','')),concat(c.BedRoom,' Bed')),concat(c.BathRoom,' Bath'),c.Unit_Floor_Type) as Unit_Type
+    , concat_ws(' ','คอนโด - ',ifnull(if(c.Room_Type='Studio','1 Bed',REPLACE(REPLACE(c.Room_Type,'rooms',''),'room','')),concat(c.BedRoom,' Bed')),concat(c.BathRoom,' Bath'),c.Unit_Floor_Type) as Unit_Type
     , ifnull(ci.Classified_Image_URL,ifnull(fi.Image_URL,ifnull(concat('/realist/condo/uploads/condo/',c.Condo_Code,'/',c.Condo_Code,'-PE-01-Exterior-H-240.webp'),null))) as Classified_Image
     , nun(REPLACE(format(Size, 2),',','')) as Size
     , nun(c.Bedroom) as Bedroom
@@ -180,7 +180,7 @@ DELIMITER ;
 
 create or replace view source_classified_detail_view as
 select c.Classified_ID 
-    , concat_ws(' ',ifnull(if(c.Room_Type='Studio','1 Bed',REPLACE(REPLACE(c.Room_Type,'rooms',''),'room','')),concat(c.BedRoom,' Bed')),concat(c.BathRoom,' Bath'),c.Unit_Floor_Type,concat(format(c.Size,1),' sq.m.')) as Unit_Type
+    , concat_ws(' ','คอนโด - ',ifnull(if(c.Room_Type='Studio','1 Bed',REPLACE(REPLACE(c.Room_Type,'rooms',''),'room','')),concat(c.BedRoom,' Bed')),concat(c.BathRoom,' Bath'),c.Unit_Floor_Type,concat(format(c.Size,1),' sq.m.')) as Unit_Type
     , namee.condo_name as Condo_Name
     , c.Condo_Code as Condo_Code
     , concat(if(length(day(c.Last_Updated_Date))=2,day(c.Last_Updated_Date),concat("0",day(c.Last_Updated_Date))),'/'
