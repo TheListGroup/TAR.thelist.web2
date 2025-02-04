@@ -344,8 +344,44 @@ select a.Housing_ID as Housing_ID
     , a.Bathroom_Max as Bathroom_Max
     , a.Housing_Parking_Min as Parking_Min
     , a.Housing_Parking_Max as Parking_Max
+    , concat_ws(' ', replace(a.Housing_ENName, '\n', ' '), concat('(', replace(a.Housing_Name, '\n', ' '), ')'), '| REAL DATA') as Housing_Title
+    , concat_ws(' ', 'ข้อมูลโครงการ'
+        , CASE 
+            WHEN (LENGTH(b.Housing_Type) - LENGTH(REPLACE(b.Housing_Type, ', ', ''))) < 3
+            THEN REPLACE(b.Housing_Type, ', ', 'และ') 
+            ELSE CONCAT(SUBSTRING_INDEX(b.Housing_Type, ', ', (LENGTH(b.Housing_Type) - LENGTH(REPLACE(b.Housing_Type, ', ', ''))) / 2), 'และ', 
+            SUBSTRING_INDEX(b.Housing_Type, ', ', -1))
+            END
+        , if(a.Province_ID = 10
+            , concat('ย่าน', rm.District_Name)
+            , concat('เขต', td.name_th, ' ในจังหวด', tp.name_th))
+        , concat('จำนวน ', a.Housing_TotalUnit, ' หลัง')
+        , concat('ราคาเริ่มต้น ', replace(replace(b.Price, ' ลบ.', ''), ' ', ''), ' ลบ.')
+        , concat('พื้นที่ใช้สอย ', replace(replace(b.Usable_Area, ' ตร.ม.', ''), ' ', ''), ' ตร.ม.')
+        , ifnull(concat('ใกล้ทางด่วน', express_way2.Express_Way)
+            , concat('มี '
+                , if(a.Bedroom_Min is not null and a.Bedroom_Max is not null
+                    , concat(a.Bedroom_Min, '-', a.Bedroom_Max)
+                    , a.Bedroom_Min), ' ห้องนอน '
+                , if(a.Bathroom_Min is not null and a.Bathroom_Max is not null
+                    , concat(a.Bathroom_Min, '-', a.Bathroom_Max)
+                    , a.Bathroom_Min), ' ห้องน้ำ'))) as Housing_Description
 from housing a 
 left join housing_factsheet_view b on a.Housing_Code = b.Housing_Code
+left join thailand_district td on a.District_ID = td.district_code
+left join real_yarn_main rm on a.RealDistrict_Code = rm.District_Code
+left join thailand_province tp on a.Province_ID = tp.province_code
+left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2) as Express_Way
+            from (  select Housing_Code
+                            , Place_ID
+                            , Place_Attribute_1
+                            , Place_Attribute_2
+                            , Distance
+                            , ROW_NUMBER() OVER (PARTITION BY Housing_Code ORDER BY Distance) AS RowNum
+                    from housing_around_express_way
+                    order by Housing_Code) ew
+            where ew.RowNum = 1 ) express_way2
+on a.Housing_Code = express_way2.Housing_Code
 left join (select housing_around_station.Housing_Code AS Housing_Code,
                 group_concat(
                     '[',
@@ -395,7 +431,8 @@ on b.Housing_Code = housing_spotlight_manual.Housing_Code
 where a.Housing_Status = '1'
 and a.Housing_ENName is not null
 and a.Housing_Latitude is not null
-AND a.Housing_Longitude is not null;
+AND a.Housing_Longitude is not null
+order by a.Housing_ID;
 
 -- view source_article_housing_fetch_for_map
 create or replace view source_article_housing_fetch_for_map as

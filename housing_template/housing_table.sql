@@ -272,6 +272,8 @@ CREATE TABLE IF NOT EXISTS housing_fetch_for_map (
     Bathroom_Max INT NULL,
     Parking_Min INT NULL,
     Parking_Max INT NULL,
+    Housing_Title Text NULL,
+    Housing_Description Text NULL,
     PRIMARY KEY (ID),
     INDEX hfmcode (Housing_Code),
     INDEX hfmlat (Housing_Latitude),
