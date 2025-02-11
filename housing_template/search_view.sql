@@ -50,7 +50,7 @@ select h.Housing_Code
     , null as Brand_Name_TH
     , concat_ws(', ',if(h.IS_SD=1,'บ้านเดี่ยว',null),if(h.IS_DD=1,'บ้านแฝด',null),if(h.IS_TH=1,'ทาวน์โฮม',null)
                         , if(h.IS_HO=1,'โฮมออฟฟิศ',null), if(h.IS_SH=1,'อาคารพาณิชย์',null)) as Housing_Type_TH
-    , concat_ws(', ',if(h.IS_SD=1,'Single Detached House',null),if(h.IS_DD=1,'Double Detached House',null)
+    , concat_ws(', ',if(h.IS_SD=1,'Single-Detached House',null),if(h.IS_DD=1,'Semi-Detached House',null)
                         ,if(h.IS_TH=1,'Townhome',null), if(h.IS_HO=1,'Home Office',null)
                         , if(h.IS_SH=1,'Shophouse',null)) as Housing_Type_EN
 from housing h
