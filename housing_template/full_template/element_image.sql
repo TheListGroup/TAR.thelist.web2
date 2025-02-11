@@ -44,6 +44,7 @@ left join ( select fte.Element_ID
             and fts.Section_Status = 1
             and fts.Section_ID = 1
             and fti.Image_Status = 1
+            and ft360.Housing_Type_ID is null
             order by fte.Element_ID
             limit 1) h360
 on fte.Element_ID = h360.Element_ID
