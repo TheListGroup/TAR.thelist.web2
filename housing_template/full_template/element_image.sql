@@ -13,6 +13,7 @@ select
     fte.Element_ID AS Element_ID,
     fte.Element_Name AS Element,
     ftc.Category_Show_Faci as Category_Show_Faci,
+    ftc.Show_Faci_order as Show_Faci_order,
     if(fts.Section_ID=2,fte.Housing_Type_ID,null) as Housing_Type_ID,
 	fte.Long_Text AS Long_Text,
     fte.Display_Order_in_Section AS Display_Order_in_Section,
@@ -20,7 +21,9 @@ select
     ftc.Category_ID AS Category_ID,
     ftc.Category_Name AS Category,
     ftc.Category_Status AS Category_Status,
-    JSON_ARRAYAGG(JSON_OBJECT('Image_ID', fti.Image_ID, 'Image_Caption', fti.Image_Caption, 'Image_URL',fti.Image_URL ,'Date_Taken',fti.Date_Taken, 'Display_Order_in_Element', fti.Display_Order_in_Element, 'Element_ID',fti.Element_ID, 'Image_Type_ID',fti.Image_Type_ID)) AS Image,
+    JSON_ARRAYAGG(JSON_OBJECT('Image_ID', fti.Image_ID, 'Image_Caption', fti.Image_Caption, 'Image_URL',fti.Image_URL ,'Date_Taken', fti.Date_Taken
+        , 'Display_Order_in_Element', fti.Display_Order_in_Element, 'Element_ID',fti.Element_ID, 'Image_Type_ID',fti.Image_Type_ID
+        , 'Show_Faci',ftc.Show_Faci_order, 'Type_Category',fht.Housing_Category)) AS Image,
     h360.Project_360_Name,
     h360.Project_360_Link
 from housing_full_template_element as fte
@@ -68,6 +71,7 @@ CREATE TABLE IF NOT EXISTS `housing_full_template_element_image_view` (
     `Element_ID` INT UNSIGNED NOT NULL,
     `Element` VARCHAR(100) NOT NULL,
     `Category_Show_Faci` SMALLINT UNSIGNED NULL,
+    `Show_Faci_order` INT UNSIGNED NULL,
     `Housing_Type_ID` INT UNSIGNED NULL,
     `Long_Text` Text NULL,
     `Display_Order_in_Section` SMALLINT UNSIGNED NOT NULL,
@@ -104,15 +108,16 @@ BEGIN
     DECLARE v_name5 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name6 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name7 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name8 TEXT DEFAULT NULL;
-    DECLARE v_name9 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name8 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name9 TEXT DEFAULT NULL;
     DECLARE v_name10 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name11 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name12 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name13 VARCHAR(250) DEFAULT NULL;
-    DECLARE v_name14 JSON DEFAULT NULL;
-    DECLARE v_name15 TEXT DEFAULT NULL;
+    DECLARE v_name14 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name15 JSON DEFAULT NULL;
     DECLARE v_name16 TEXT DEFAULT NULL;
+    DECLARE v_name17 TEXT DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(80) DEFAULT 'truncateInsert_housing_full_template_element_image_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -122,9 +127,9 @@ BEGIN
 
     DECLARE done INT DEFAULT FALSE;
 
-    DECLARE cur CURSOR FOR SELECT Housing_Code, Section_ID, Section, Section_Status, Element_ID, Element, Category_Show_Faci, Housing_Type_ID, Long_Text
-                                , Display_Order_in_Section, Element_Status, Category_ID, Category, Category_Status, Image, Project_360_Name
-                                , Project_360_Link
+    DECLARE cur CURSOR FOR SELECT Housing_Code, Section_ID, Section, Section_Status, Element_ID, Element, Category_Show_Faci, Show_Faci_order
+                                , Housing_Type_ID, Long_Text, Display_Order_in_Section, Element_Status, Category_ID, Category, Category_Status
+                                , Image, Project_360_Name, Project_360_Link
                             FROM source_housing_full_template_element_image_view;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -143,7 +148,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17;
 
         IF done THEN
             LEAVE read_loop;
@@ -158,6 +163,7 @@ BEGIN
                 `Element_ID`,
                 `Element`,
                 `Category_Show_Faci`,
+                `Show_Faci_order`,
                 `Housing_Type_ID`,
                 `Long_Text`,
                 `Display_Order_in_Section`,
@@ -169,7 +175,7 @@ BEGIN
                 `Project_360_Name`,
                 `Project_360_Link`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
