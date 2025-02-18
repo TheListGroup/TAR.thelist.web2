@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS `housing_full_template_category` (
     `Category_Show_Faci` SMALLINT UNSIGNED NULL,
     `Category_Icon` VARCHAR(250) NULL,
     `Category_Order` SMALLINT UNSIGNED NULL,
+    `Show_Faci_order` INT UNSIGNED NULL,
     `Long_Text` TEXT NULL,
     `Category_Status` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `Created_By` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
@@ -47,7 +48,6 @@ CREATE TABLE IF NOT EXISTS `housing_full_template_category` (
     INDEX `Section_idx` (`Section_ID`),
     INDEX h_cate_admin1 (Created_By),
     INDEX h_cate_admin2 (Last_Updated_By),
-    INDEX h_cate_show_faci (Category_Show_Faci),
     CONSTRAINT h_cate_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
     CONSTRAINT h_cate_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID),
     CONSTRAINT h_cate_section FOREIGN KEY (Section_ID) REFERENCES housing_full_template_section (Section_ID))
