@@ -319,12 +319,12 @@ BEGIN
 
     WHILE x <= 4 DO
         SET each_listing = SUBSTRING_INDEX(SUBSTRING_INDEX(listing_group, ',', x), ',', -1);
-        UPDATE housing_spotlight SET Housing_Count = (SELECT COUNT(DISTINCT(Housing_Code)) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing) WHERE Spotlight_Code = each_listing;
-        UPDATE housing_spotlight SET Housing_Count_SD = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'SD') WHERE Spotlight_Code = each_listing;
-        UPDATE housing_spotlight SET Housing_Count_DD = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'DD') WHERE Spotlight_Code = each_listing;
-        UPDATE housing_spotlight SET Housing_Count_TH = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'TH') WHERE Spotlight_Code = each_listing;
-        UPDATE housing_spotlight SET Housing_Count_HO = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'HO') WHERE Spotlight_Code = each_listing;
-        UPDATE housing_spotlight SET Housing_Count_SH = (SELECT COUNT(1) FROM  housing_spotlight_relationship_manual where Spotlight_Code = each_listing and Housing_Type = 'SH') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count = (SELECT COUNT(DISTINCT(a.Housing_Code)) FROM housing_spotlight_relationship_manual a join housing b on a.Housing_Code = b.Housing_Code where a.Spotlight_Code = each_listing and b.Housing_Status = '1') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_SD = (SELECT COUNT(DISTINCT(a.Housing_Code)) FROM housing_spotlight_relationship_manual a join housing b on a.Housing_Code = b.Housing_Code where a.Spotlight_Code = each_listing and b.Housing_Status = '1' and a.Housing_Type = 'SD') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_DD = (SELECT COUNT(DISTINCT(a.Housing_Code)) FROM housing_spotlight_relationship_manual a join housing b on a.Housing_Code = b.Housing_Code where a.Spotlight_Code = each_listing and b.Housing_Status = '1' and a.Housing_Type = 'DD') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_TH = (SELECT COUNT(DISTINCT(a.Housing_Code)) FROM housing_spotlight_relationship_manual a join housing b on a.Housing_Code = b.Housing_Code where a.Spotlight_Code = each_listing and b.Housing_Status = '1' and a.Housing_Type = 'TH') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_HO = (SELECT COUNT(DISTINCT(a.Housing_Code)) FROM housing_spotlight_relationship_manual a join housing b on a.Housing_Code = b.Housing_Code where a.Spotlight_Code = each_listing and b.Housing_Status = '1' and a.Housing_Type = 'HO') WHERE Spotlight_Code = each_listing;
+        UPDATE housing_spotlight SET Housing_Count_SH = (SELECT COUNT(DISTINCT(a.Housing_Code)) FROM housing_spotlight_relationship_manual a join housing b on a.Housing_Code = b.Housing_Code where a.Spotlight_Code = each_listing and b.Housing_Status = '1' and a.Housing_Type = 'SH') WHERE Spotlight_Code = each_listing;
         SET x = x + 1;
     END WHILE;
 
