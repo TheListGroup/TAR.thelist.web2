@@ -25,14 +25,14 @@ host = '127.0.0.1'
 user = 'real-research'
 password = 'shA0Y69X06jkiAgaX&ng'
 
-#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\PYTHON\TAR.thelist.web2\analytic\access.json"
+#os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\analytic\access.json"
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = r"/home/gitprod/ta_python/analytic/access.json"
 client = BetaAnalyticsDataClient()
 property_id = "286074701"
 print("Access Google Analytic")
 
 def access_ggsheet():
-    #json_file = r"C:\PYTHON\TAR.thelist.web2\analytic\access2.json"
+    #json_file = r"C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\analytic\access2.json"
     json_file = r"/home/gitprod/ta_python/analytic/access2.json"
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name(json_file, scope)
@@ -305,8 +305,6 @@ for data_set in insert_list:
             y -= 1
     insert_data_list.append(data_list)
 
-web_data_list = []
-web_data_list.append(dates[-1].start_date)
 sql = False
 try:
     connection = mysql.connector.connect(
@@ -543,7 +541,8 @@ if sql:
     
     classified_contact_form = """SELECT count(*)
                                 FROM `real_contact_form`
-                                where Contact_Type = 'classified'"""
+                                where Contact_Type = 'classified'
+                                and Contact_Date BETWEEN %s and %s"""
     
     condo_dev_email = """SELECT count(a.Condo_Code)
                         FROM `real_contact_condo_send_to_who` a
@@ -592,59 +591,72 @@ if sql:
                                     and Contact_Sent <> 'Y'
                                     and Contact_Sent_Date BETWEEN %s and %s"""
     
+    spreadsheet = access_ggsheet()
+    sheet = spreadsheet.get_worksheet(4)
+    data_all = sheet.col_values(1)
     query_list = [blog, client_blog, realist_post, all_condo, condo_short, floorplan_query, agent, agent_room, member, member_room, condo_classified
                 , bc_classified_update, bc_classified_insert, bc_classified_sold_or_delete, ag_classified_update, ag_classified_insert
                 , ag_classified_sold_or_delete, serve_classified_update, serve_classified_insert, serve_classified_sold_or_delete
-                , classified_contact_form, condo_dev_email, condo_not_dev_email]
-    for i, query in enumerate(query_list):
-        if i == 5:
-            web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal >= 80"))
-            web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal < 80 and Floor_Plan_Cal > 0"))
-            web_data_list.append(create_floorplan_query(" where Vector_Cal >= 80"))
-            web_data_list.append(create_floorplan_query(" where Vector_Cal < 80 and Vector_Cal > 0"))
-        elif i >= 11 and i <= 19:
-            val = (datetime.strptime(f"{dates[-1].start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{dates[-1].end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
-            cursor.execute(query,val)
-            result = cursor.fetchall()
-            count_data = int(result[0][0])
-            web_data_list.append(count_data)
-        else:
-            cursor.execute(query)
-            result = cursor.fetchall()
-            count_data = result[0][0]
-            web_data_list.append(count_data)
-    
-    contact_query_list = [condo_contact_form,condo_from_contact_form,agent_email,developer_email,developer_email_success,developer_email_not_success]
-    for i, query in enumerate(contact_query_list):
-        val = (datetime.strptime(f"{dates[-1].start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{dates[-1].end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
-        cursor.execute(query,val)
-        result = cursor.fetchall()
-        count_data = int(result[0][0])
-        web_data_list.append(count_data)
-
+                , condo_dev_email, condo_not_dev_email]
+    contact_query_list = [classified_contact_form, condo_contact_form,condo_from_contact_form,agent_email,developer_email,developer_email_success,developer_email_not_success]
     event_list = ["Click-classified","click-classified-bookmark","submitform_classified_appear","submitform_classified_fill","submitform_classified_submit"
-                ,"submitform_condo_appear","submitform_condo_fill","click-to-submitfrom","click-button-atricle","click-to-blog"]
-    request = RunReportRequest(
-        property=f"properties/{property_id}",
-        dimensions=[Dimension(name="eventName")],
-        metrics=[Metric(name="eventCount")],
-        date_ranges=[DateRange(start_date=dates[0].start_date, end_date=dates[-1].end_date)],
-        metric_aggregations=[MetricAggregation.TOTAL],
-    )
-    response = client.run_report(request)
-    for i, event in enumerate(event_list):
-        found = False
-        for x, event_name in enumerate(response.rows):
-            if event == event_name.dimension_values[0].value:
-                web_data_list.append(int(event_name.metric_values[0].value))
-                found = True
-                break
-        if not found:
-            web_data_list.append(0)
+                    ,"submitform_condo_appear","submitform_condo_fill","click-to-submitfrom","click-button-atricle","click-to-blog"]
+    try:
+        lastest_date = datetime.strptime(data_all[-1], '%Y-%m-%d')
+    except:
+        lastest_date = datetime.strptime("2000-01-01", '%Y-%m-%d')
+    for date in dates:
+        start_date = datetime.strptime(date.start_date, '%Y-%m-%d')
+        if start_date > lastest_date:
+            web_data_list = []
+            web_data_list.append(date.start_date)
+            for i, query in enumerate(query_list):
+                if i == 5:
+                    web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal >= 80",date))
+                    web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal < 80 and Floor_Plan_Cal > 0",date))
+                    web_data_list.append(create_floorplan_query(" where Vector_Cal >= 80",date))
+                    web_data_list.append(create_floorplan_query(" where Vector_Cal < 80 and Vector_Cal > 0",date))
+                elif i >= 11 and i <= 19:
+                    val = (datetime.strptime(f"{date.start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{date.end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
+                    cursor.execute(query,val)
+                    result = cursor.fetchall()
+                    count_data = int(result[0][0])
+                    web_data_list.append(count_data)
+                else:
+                    cursor.execute(query)
+                    result = cursor.fetchall()
+                    count_data = result[0][0]
+                    web_data_list.append(count_data)
+            
+            for i, query in enumerate(contact_query_list):
+                val = (datetime.strptime(f"{date.start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{date.end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
+                cursor.execute(query,val)
+                result = cursor.fetchall()
+                try:
+                    count_data = int(result[0][0])
+                except:
+                    count_data = 0
+                web_data_list.append(count_data)
 
-    spreadsheet = access_ggsheet()
-    sheet = spreadsheet.get_worksheet(4)
-    sheet.append_rows([web_data_list])
+            request = RunReportRequest(
+                property=f"properties/{property_id}",
+                dimensions=[Dimension(name="eventName")],
+                metrics=[Metric(name="eventCount")],
+                date_ranges=[DateRange(start_date=date.start_date, end_date=date.end_date)],
+                metric_aggregations=[MetricAggregation.TOTAL],
+            )
+            response = client.run_report(request)
+            for i, event in enumerate(event_list):
+                found = False
+                for x, event_name in enumerate(response.rows):
+                    if event == event_name.dimension_values[0].value:
+                        web_data_list.append(int(event_name.metric_values[0].value))
+                        found = True
+                        break
+                if not found:
+                    web_data_list.append(0)
+            print(f"Database Data Work at {date}")
+            sheet.append_rows([web_data_list])
 
     cursor.close()
     connection.close()
