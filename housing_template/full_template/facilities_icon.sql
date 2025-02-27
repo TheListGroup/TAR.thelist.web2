@@ -11,6 +11,7 @@ select fte.Housing_Code
 	,    ftc.Category_ID
 	,    ftc.Category_Name
 	,    ftc.Category_Icon
+    ,    ftc.Show_Faci_order
 	,	fte.Display_Order_in_Section
 	,	fte.Element_ID
 	,	fte.Element_Name
@@ -21,7 +22,7 @@ select fte.Housing_Code
     ,   fti.Date_Taken
     ,   fti.Image_Type_ID
 	,   fti.Image_Status
-    ,   ROW_NUMBER() OVER (PARTITION BY fte.Housing_Code ORDER BY fte.Display_Order_in_Section,fti.Display_Order_in_Element) AS RowNum
+    ,   ROW_NUMBER() OVER (PARTITION BY fte.Housing_Code ORDER BY ftc.Show_Faci_order,fte.Display_Order_in_Section,fti.Display_Order_in_Element) AS RowNum
 	from housing_full_template_element AS fte
 		inner join housing_full_template_category AS ftc on fte.Category_ID = ftc.Category_ID
 		inner join housing_full_template_section as fts on ftc.Section_ID = fts.Section_ID
@@ -29,7 +30,7 @@ select fte.Housing_Code
 	where fts.Section_ID = 1
 	and fte.Element_Status = 1
 	and ftc.Category_Status = 1
-	ORDER BY fte.Housing_Code, ftc.Category_Order, fte.Display_Order_in_Section, fti.Display_Order_in_Element;
+	ORDER BY fte.Housing_Code, ftc.Show_Faci_order, fte.Display_Order_in_Section, fti.Display_Order_in_Element;
 
 
 -- source_housing_full_template_facilities_icon_view
