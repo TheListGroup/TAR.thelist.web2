@@ -257,10 +257,15 @@ left join ( select h.Housing_Code
             WHERE h.Housing_Type_Status = 1
             GROUP BY h.Housing_Code) housing_type
 on a.Housing_Code = housing_type.Housing_Code
-left join (SELECT Housing_Code 
-                , SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT Element_Name ORDER BY RowNum SEPARATOR ', '), ', ', 2) AS Top_Facilities
-            FROM housing_full_template_facilities_raw_view
-            GROUP BY Housing_Code) faci
+left join (SELECT a.Housing_Code
+                , SUBSTRING_INDEX(GROUP_CONCAT(Element_Name SEPARATOR ', '), ', ', 2) AS Top_Facilities
+            FROM housing_full_template_facilities_raw_view a
+            inner join (SELECT Housing_Code, Show_Faci_order, MIN(RowNum) as RowNum
+                        FROM housing_full_template_facilities_raw_view
+                        WHERE Show_Faci_order > 1
+                        GROUP BY Housing_Code, Show_Faci_order) b
+            on a.Housing_Code = b.Housing_Code and a.Show_Faci_order = b.Show_Faci_order and a.RowNum = b.RowNum
+            group by a.Housing_Code) faci
 on a.Housing_Code = faci.Housing_Code
 where a.Housing_Status = '1'
 and a.Housing_Latitude is not null
