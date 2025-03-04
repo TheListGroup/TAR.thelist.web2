@@ -14,7 +14,7 @@
 -- truncateInsert_search_housing_category_spotlight
 
 -- source_search_housing_detail_view
-CREATE OR REPLACE VIEW source_search_housing_detail_view as 
+/* CREATE OR REPLACE VIEW source_search_housing_detail_view as 
 select h.Housing_Code
     , housing_thname.Housing_Name
     , housing_enname.Housing_ENName
@@ -456,8 +456,9 @@ BEGIN
 
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ; */
 
+ALTER TABLE search_housing_category_spotlight ADD Housing_Count INT UNSIGNED NULL AFTER Spotlight_URL;
 
 -- source_search_housing_category_spotlight
 CREATE OR REPLACE VIEW source_search_housing_category_spotlight as
@@ -467,10 +468,11 @@ select Spotlight_Code
     , Keyword_TH
     , Keyword_ENG
     , concat('/realist/housing/list/spotlight/',REGEXP_REPLACE(Spotlight_Name,' ','-'),'/') as Spotlight_URL
+    , Housing_Count
 from housing_spotlight
-where Housing_Count > 0;
+where Spotlight_Inactive = 0;
 
--- Table `search_housing_category_spotlight`
+/*-- Table `search_housing_category_spotlight`
 CREATE TABLE IF NOT EXISTS `search_housing_category_spotlight` (
     ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Spotlight_Code VARCHAR(20) NOT NULL,
@@ -479,9 +481,10 @@ CREATE TABLE IF NOT EXISTS `search_housing_category_spotlight` (
     Keyword_TH TEXT NULL,
     Keyword_ENG TEXT NULL,
     Spotlight_URL TEXT NOT NULL,
+    Housing_Count INT UNSIGNED NULL,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`ID`))
-ENGINE = InnoDB;
+ENGINE = InnoDB;*/
 
 -- truncateInsert_search_housing_category_spotlight
 DROP PROCEDURE IF EXISTS truncateInsert_search_housing_category_spotlight;
@@ -497,17 +500,17 @@ BEGIN
     DECLARE v_name3 TEXT DEFAULT NULL;
     DECLARE v_name4 TEXT DEFAULT NULL;
     DECLARE v_name5 TEXT DEFAULT NULL;
+    DECLARE v_name6 TEXT DEFAULT NULL;
     
     DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_search_housing_category_spotlight';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
     DECLARE msg             TEXT;
-    DECLARE rowCount        INTEGER     DEFAULT 0;
     DECLARE nrows           INTEGER     DEFAULT 0;
     DECLARE errorcheck      BOOLEAN  DEFAULT 1;
 
     DECLARE done INT DEFAULT FALSE;
 
-    DECLARE cur CURSOR FOR SELECT Spotlight_Code,Spotlight_Name,Spotlight_Name_Search,Keyword_TH,Keyword_ENG,Spotlight_URL
+    DECLARE cur CURSOR FOR SELECT Spotlight_Code,Spotlight_Name,Spotlight_Name_Search,Keyword_TH,Keyword_ENG,Spotlight_URL,Housing_Count
                             FROM source_search_housing_category_spotlight;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -526,7 +529,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6;
 
         IF done THEN
             LEAVE read_loop;
@@ -539,9 +542,10 @@ BEGIN
                 `Spotlight_Name_Search`,
                 `Keyword_TH`,
                 `Keyword_ENG`, 
-                `Spotlight_URL`
+                `Spotlight_URL`,
+                `Housing_Count`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6);
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
         SET i = i + 1;
@@ -556,3 +560,144 @@ BEGIN
     CLOSE cur;
 END //
 DELIMITER ;
+
+
+-- source_search_housing_type
+/* CREATE OR REPLACE VIEW source_search_housing_type as
+select * from (select 'บ้านเดี่ยว' as Type_Name
+                    , 'บ้านเดี่ยว' as Type_Name_Search
+                    , 'singledetachedhouse' as Type_Name_Eng_Search
+                    , '/realist/housing/single-detached-house/' as Type_URL
+                    , count(*) as Housing_Count
+                from housing
+                where Housing_Status = '1'
+                and IS_SD = 1
+                and Housing_ENName is not null
+                and Housing_Latitude is not null
+                AND Housing_Longitude is not null) sd
+union all select * from (select 'บ้านแฝด' as Type_Name
+                    , 'บ้านแฝด' as Type_Name_Search
+                    , 'semidetachedhouse' as Type_Name_Eng_Search
+                    , '/realist/housing/semi-detached-house/' as Type_URL
+                    , count(*) as Housing_Count
+                from housing
+                where Housing_Status = '1'
+                and IS_DD = 1
+                and Housing_ENName is not null
+                and Housing_Latitude is not null
+                AND Housing_Longitude is not null) dd
+union all select * from (select 'ทาวน์โฮม' as Type_Name
+                    , 'ทาวน์โฮม' as Type_Name_Search
+                    , 'townhome' as Type_Name_Eng_Search
+                    , '/realist/housing/townhome/' as Type_URL
+                    , count(*) as Housing_Count
+                from housing
+                where Housing_Status = '1'
+                and IS_TH = 1
+                and Housing_ENName is not null
+                and Housing_Latitude is not null
+                AND Housing_Longitude is not null) th
+                union all select * from (select 'โฮมออฟฟิศ' as Type_Name
+                    , 'โฮมออฟฟิศ' as Type_Name_Search
+                    , 'homeoffice' as Type_Name_Eng_Search
+                    , '/realist/housing/home-office/' as Type_URL
+                    , count(*) as Housing_Count
+                from housing
+                where Housing_Status = '1'
+                and IS_HO = 1
+                and Housing_ENName is not null
+                and Housing_Latitude is not null
+                AND Housing_Longitude is not null) ho
+union all select * from (select 'อาคารพาณิชย์' as Type_Name
+                    , 'อาคารพาณิชย์' as Type_Name_Search
+                    , 'shophouse' as Type_Name_Eng_Search
+                    , '/realist/housing/shophouse/' as Type_URL
+                    , count(*) as Housing_Count
+                from housing
+                where Housing_Status = '1'
+                and IS_SH = 1
+                and Housing_ENName is not null
+                and Housing_Latitude is not null
+                AND Housing_Longitude is not null) sh;
+
+-- Table `search_housing_type`
+CREATE TABLE IF NOT EXISTS `search_housing_type` (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Type_Name VARCHAR(50) NOT NULL,
+    Type_Name_Search VARCHAR(150) NOT NULL,
+    Type_Name_Eng_Search VARCHAR(150) NOT NULL,
+    Type_URL TEXT NOT NULL,
+    Housing_Count INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`ID`))
+ENGINE = InnoDB;
+
+-- truncateInsert_search_housing_type
+DROP PROCEDURE IF EXISTS truncateInsert_search_housing_type;
+DELIMITER //
+
+CREATE PROCEDURE truncateInsert_search_housing_type ()
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    DECLARE total_rows INT DEFAULT 0;
+    DECLARE v_name VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name1 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name2 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name3 TEXT DEFAULT NULL;
+    DECLARE v_name4 VARCHAR(250) DEFAULT NULL;
+    
+    DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_search_housing_type';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+    DECLARE errorcheck      BOOLEAN  DEFAULT 1;
+
+    DECLARE done INT DEFAULT FALSE;
+
+    DECLARE cur CURSOR FOR SELECT Type_Name,Type_Name_Search,Type_Name_Eng_Search,Type_URL,Housing_Count
+                            FROM source_search_housing_type;
+
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        GET DIAGNOSTICS CONDITION 1
+            code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+            SET msg = CONCAT(msg,' AT ',v_name);
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(1, code, msg, proc_name);
+        set errorcheck = 0;
+    END;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    TRUNCATE TABLE search_housing_type;
+
+    OPEN cur;
+
+    read_loop: LOOP
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4;
+
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        INSERT INTO
+            search_housing_type(
+                `Type_Name`,
+                `Type_Name_Search`,
+                `Type_Name_Eng_Search`,
+                `Type_URL`,
+                `Housing_Count`
+                )
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4);
+        GET DIAGNOSTICS nrows = ROW_COUNT;
+        SET total_rows = total_rows + nrows;
+        SET i = i + 1;
+    END LOOP; 
+
+    if errorcheck then
+        SET code    = '00000';
+        SET msg     = CONCAT(total_rows,' rows inserted.');
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) VALUES(0,code , msg, proc_name);
+    end if;
+
+    CLOSE cur;
+END //
+DELIMITER ; */
