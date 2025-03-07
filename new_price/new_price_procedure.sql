@@ -158,11 +158,11 @@ END //
 DELIMITER ;
 
 
--- truncateInsert_condo_price_calculate_view
-DROP PROCEDURE IF EXISTS truncateInsert_condo_price_calculate_view;
+-- truncateInsert_all_condo_price_calculate_view
+DROP PROCEDURE IF EXISTS truncateInsert_all_condo_price_calculate_view;
 DELIMITER //
 
-CREATE PROCEDURE truncateInsert_condo_price_calculate_view ()
+CREATE PROCEDURE truncateInsert_all_condo_price_calculate_view ()
 BEGIN
     DECLARE i INT DEFAULT 0;
 	DECLARE total_rows INT DEFAULT 0;
@@ -190,7 +190,7 @@ BEGIN
     DECLARE v_name21 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name22 VARCHAR(250) DEFAULT NULL;
 
-	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_condo_price_calculate_view';
+	DECLARE proc_name       VARCHAR(60) DEFAULT 'truncateInsert_all_condo_price_calculate_view';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
     DECLARE msg             TEXT;
     DECLARE rowCount        INTEGER     DEFAULT 0;
@@ -204,7 +204,7 @@ BEGIN
                                 , Condo_Sold_Status_Show_Value, Source_Condo_Sold_Status_Show_Value, Full_Source_Condo_Sold_Status_Show_Value
                                 , Condo_Sold_Status_Date, Condo_Built_Text, Condo_Built_Date, Condo_Date_Calculate, Condo_Price_Per_Square_Cal
                                 , Condo_Price_Per_Unit_Cal, Condo_Price_Per_Square_Sort, Condo_Price_Per_Unit_Sort
-                                FROM source_condo_price_calculate_view;
+                                FROM source_all_condo_price_calculate_view;
 	
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -217,7 +217,7 @@ BEGIN
     
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-	TRUNCATE TABLE condo_price_calculate_view;
+	TRUNCATE TABLE all_condo_price_calculate;
 	
     OPEN cur;
     read_loop: LOOP
@@ -228,7 +228,7 @@ BEGIN
         END IF;
 
 		INSERT INTO
-			condo_price_calculate_view (
+			all_condo_price_calculate (
 				Condo_Code,
 				Old_or_New,
 				Condo_Age_Status_Square_Text,
