@@ -1,42 +1,61 @@
+-- all_classified_view
 -- source_classified_price
 -- source_all_price_view
--- source_condo_price_calculate_view
+-- source_all_condo_price_calculate_view
 -- source_real_condo_rental_view
+
+INSERT INTO `price_source` (`ID`, `Head`, `Sub`) VALUES (NULL, 'Online Survey', 'Online Survey - Homebuyer');
+INSERT INTO `price_source` (`ID`, `Head`, `Sub`) VALUES (NULL, 'Online Survey', 'Online Survey - PropertyHub');
+
+-- all_classified_view
+create or replace view all_classified_view as
+select * from (select c.Condo_Code, c.Price_Sale, c.Price_Rent, c.Size, c.Sale, c.Rent
+                from classified c
+                where c.Classified_Status = '1'
+				and c.Size is not null
+				and c.Size > 0
+				and (c.Price_Sale is not null or c.Price_Rent is not null)
+				and (c.Price_Sale > 0 or c.Price_Rent > 0)
+                order by c.Condo_Code) classified
+union all select * from (select cpo.Condo_Code, co.Price_Sale, co.Price_Rent, co.Size, co.Sale, co.Rent
+                        from classified_other_web co
+                        left join condo_price_other_web cpo on co.Project_ID = cpo.Project_ID and co.User_ID = cpo.User_ID
+                        where co.Classified_Status = '1'
+                        and cpo.Project_Status = '1'
+                        and co.Size is not null) other_web;
 
 -- source_classified_price
 create or replace view source_classified_price as
 select * from (select total_sale.Condo_Code
-					, CURRENT_DATE as Data_Date
-					, 'price_per_unit' as Data_Attribute
-					, round(total_sale.Total_Price_Per_Unit_Sale,-4) as Data_Value
-				from (select Condo_Code
-							, SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
-							, SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
-							, count(*) as Total_Room_Count_Sale
-							, AVG(Size) as Total_Average_Sqm_Sale
-							, sum(Size) as Total_Total_Sqm_Sale
-						from classified
-						where Classified_Status = '1'
-						and Sale = 1
-						group by Condo_Code) total_sale
-				where total_sale.Total_Room_Count_Sale >= 3
-				and total_sale.Total_Price_Per_Unit_Sale is not null) unit_sale
+                    , CURRENT_DATE as Data_Date
+                    , 'price_per_unit' as Data_Attribute
+                    , round(total_sale.Total_Price_Per_Unit_Sale,-4) as Data_Value
+                from (select Condo_Code
+                            , SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
+                            , SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
+                            , count(*) as Total_Room_Count_Sale
+                            , AVG(Size) as Total_Average_Sqm_Sale
+                            , sum(Size) as Total_Total_Sqm_Sale
+                        from all_classified_view
+                        where Sale = 1
+                        group by Condo_Code) total_sale
+                where total_sale.Total_Room_Count_Sale >= 3
+                and total_sale.Total_Price_Per_Unit_Sale is not null) unit_sale
 union all select * from (select total_sale.Condo_Code
-							, CURRENT_DATE as Data_Date
-							, 'price_per_sqm' as Data_Attribute
-							, round(total_sale.Total_Price_Per_Unit_Sqm_Sale) as Data_Value
-						from (select Condo_Code
-									, SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
-									, SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
-									, count(*) as Total_Room_Count_Sale
-									, AVG(Size) as Total_Average_Sqm_Sale
-									, sum(Size) as Total_Total_Sqm_Sale
-								from classified
-								where Classified_Status = '1'
-								and Sale = 1
-								group by Condo_Code) total_sale
-						where total_sale.Total_Room_Count_Sale >= 3
-						and total_sale.Total_Price_Per_Unit_Sqm_Sale is not null) sqm_sale
+                            , CURRENT_DATE as Data_Date
+                            , 'price_per_sqm' as Data_Attribute
+                            , round(total_sale.Total_Price_Per_Unit_Sqm_Sale) as Data_Value
+                        from (select Condo_Code
+                                    , SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
+                                    , SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
+                                    , count(*) as Total_Room_Count_Sale
+                                    , AVG(Size) as Total_Average_Sqm_Sale
+                                    , sum(Size) as Total_Total_Sqm_Sale
+                                from all_classified_view
+                                where Sale = 1
+                                group by Condo_Code) total_sale
+                        where total_sale.Total_Room_Count_Sale >= 3
+                        and total_sale.Total_Price_Per_Unit_Sqm_Sale is not null) sqm_sale
 union all select * from (select total_rent.Condo_Code
 							, CURRENT_DATE as Data_Date
 							, 'rental_yield_percent' as Data_Attribute
@@ -47,16 +66,14 @@ union all select * from (select total_rent.Condo_Code
 									, count(*) as Total_Room_Count_Rent
 									, AVG(Size) as Total_Average_Sqm_Rent
 									, sum(Size) as Total_Total_Sqm_Rent
-								from classified
-								where Classified_Status = '1'
-								and Rent = 1
+								from all_classified_view
+								where Rent = 1
 								group by Condo_Code) total_rent
 						left join (select Condo_Code
 										, SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
 										, count(*) as Total_Room_Count_Sale
-									from classified
-									where Classified_Status = '1'
-									and Sale = 1
+									from all_classified_view
+									where Sale = 1
 									group by Condo_Code
 									HAVING COUNT(*) >= 3) sale
 						on total_rent.Condo_Code = sale.Condo_Code
@@ -72,12 +89,53 @@ union all select * from (select total_rent.Condo_Code
 									, count(*) as Total_Room_Count_Rent
 									, AVG(Size) as Total_Average_Sqm_Rent
 									, sum(Size) as Total_Total_Sqm_Rent
-								from classified
-								where Classified_Status = '1'
-								and Rent = 1
+								from all_classified_view
+								where Rent = 1
 								group by Condo_Code) total_rent
 						where total_rent.Total_Room_Count_Rent >= 3
 						and total_rent.Total_Price_Per_Unit_Rent is not null) unit_rent;
+
+-- source_real_condo_rental_view
+create or replace view source_real_condo_rental_view as
+select cpc.Condo_Code
+	, rp.Data_Date as Rent_Per_Unit_Date
+	, rp.Data_Value as Rent_Per_Unit
+	, ry.Data_Date as Rental_Yield_Percent_Date
+	, ry.Data_Value as Rental_Yield_Percent
+from all_condo_price_calculate_view cpc
+left join (select Condo_Code
+				, Data_Date
+				, Data_Value
+			from classified_price
+			where Data_Attribute = 'rent_per_unit') rp on cpc.Condo_Code = rp.Condo_Code
+left join (select Condo_Code
+				, Data_Date
+				, Data_Value
+			from (select Condo_Code
+					, Data_Date
+					, Data_Value
+					, ROW_NUMBER() OVER (PARTITION BY Condo_Code ORDER BY Data_Date desc) AS Myorder
+				from (select * from (SELECT rc.Condo_Code,
+										rc.Data_Date,
+										rc.Data_Value
+									FROM real_condo_hipflat rc
+									JOIN (SELECT Condo_Code, 
+												MAX(Data_Date) AS Max_Data_Date
+										FROM real_condo_hipflat
+										WHERE Data_Attribute = 'rental_yield_percent'
+										GROUP BY Condo_Code) sub
+									ON rc.Condo_Code = sub.Condo_Code 
+									AND rc.Data_Date = sub.Max_Data_Date
+									WHERE rc.Data_Attribute = 'rental_yield_percent') hip
+					union all select * from (select classified.Condo_Code
+												, classified.Data_Date
+												, classified.Data_Value
+											from classified_price classified
+											where classified.Data_Attribute = 'rental_yield_percent') classified) sub) all_web
+			where Myorder = 1) ry
+on cpc.Condo_Code = ry.Condo_Code
+where (rp.Data_Value is not null or ry.Data_Value is not null);
+
 
 -- source_all_price_view
 CREATE or replace VIEW `source_all_price_view` AS
@@ -120,10 +178,23 @@ union all select * from (select Condo_Code
 							, '0' as Special
 							, null as Remark
 						from classified_price
-						where (Data_Attribute = 'price_per_sqm' or Data_Attribute = 'price_per_unit')) classified;
+						where (Data_Attribute = 'price_per_sqm' or Data_Attribute = 'price_per_unit')) classified
+union all select * from (select Condo_Code
+							, round(Price_Start) as Price
+							, Lastest_Update as Price_Date
+							, '0' as Condo_Build_Date
+							, 'เริ่มต้น' as Start_or_Average
+							, '0' as Resale
+							, 16 as Price_Source
+							, 'บ/ยูนิต' as Price_Type
+							, '0' as Special
+							, null as Remark
+						from condo_price_other_web
+						where Project_Status = '1'
+						and User_ID = 1) webhome;
 
--- source_condo_price_calculate_view
-create or replace view source_condo_price_calculate_view as
+-- source_all_condo_price_calculate_view
+create or replace view source_all_condo_price_calculate_view as
 select a.Condo_Code
 	, if(b.Condo_Built_Finished is not null
 		, if((year(curdate()) - (year(b.Condo_Built_Finished) + 1)) > 0
@@ -671,28 +742,3 @@ WHERE a.Condo_Latitude is not null
 AND a.Condo_Longitude is not null
 AND a.Condo_Status = 1
 order by a.Condo_Code;
-
--- source_real_condo_rental_view
-create or replace view source_real_condo_rental_view as
-select cpc.Condo_Code
-	, ru.Data_Date as Rent_Per_Unit_Date
-	, ru.Data_Value as Rent_Per_Unit
-	, ifnull(ry.Data_Date,ifnull(rch.Data_Date,null)) as Rental_Yield_Percent_Date
-	, ifnull(ry.Data_Value,ifnull(rch.Data_Value,null)) as Rental_Yield_Percent
-from condo_price_calculate_view cpc
-left join classified_price ru on cpc.Condo_Code = ru.Condo_Code and ru.Data_Attribute = 'rent_per_unit'
-left join classified_price ry on cpc.Condo_Code = ry.Condo_Code and ry.Data_Attribute = 'rental_yield_percent'
-left join (SELECT rc.Condo_Code,
-				rc.Data_Date,
-				rc.Data_Value
-			FROM real_condo_hipflat rc
-			JOIN (SELECT Condo_Code, 
-						MAX(Data_Date) AS Max_Data_Date
-				FROM real_condo_hipflat
-				WHERE Data_Attribute = 'rental_yield_percent'
-				GROUP BY Condo_Code) sub
-			ON rc.Condo_Code = sub.Condo_Code 
-			AND rc.Data_Date = sub.Max_Data_Date
-			WHERE rc.Data_Attribute = 'rental_yield_percent') rch 
-on cpc.Condo_Code = rch.Condo_Code
-where (ru.Data_Value is not null or ry.Data_Value is not null);
