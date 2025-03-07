@@ -52,7 +52,11 @@ left join (SELECT Condo_Code
                 where Section_ID <> 4) sub
             WHERE RowNum = 1) fi 
 on c.Condo_Code = fi.Condo_Code
-where c.Classified_Status = '1';
+where c.Classified_Status = '1'
+and c.Size is not null
+and c.Size > 0
+and (c.Price_Sale is not null or c.Price_Rent is not null)
+and (c.Price_Sale > 0 or c.Price_Rent > 0);
 
 -- Table `classified_list_view`
 CREATE TABLE IF NOT EXISTS `classified_list_view` (
@@ -319,8 +323,11 @@ left join ( select Condo_Code,Station_THName_Display as Station
                     order by cv.Condo_Code) a
             where a.RowNum = 1) as sub_station
 on rc.Condo_Code = sub_station.Condo_Code
-where c.Classified_Status = '1'
-or c.Classified_Status = '3'
+where (c.Classified_Status = '1' or c.Classified_Status = '3')
+and c.Size is not null
+and c.Size > 0
+and (c.Price_Sale is not null or c.Price_Rent is not null)
+and (c.Price_Sale > 0 or c.Price_Rent > 0)
 order by c.Classified_ID;
 
 ALTER TABLE classified_detail_view ADD District_Name VARCHAR(150) NULL AFTER Agent_Name;
