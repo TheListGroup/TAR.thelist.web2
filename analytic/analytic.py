@@ -256,7 +256,7 @@ dates = generate_dates()
 spreadsheet = access_ggsheet()
 sheets = spreadsheet.worksheets()
 sheet_count = len(sheets)
-for count in range(sheet_count-2):
+for count in range(sheet_count-5):
     sheet = spreadsheet.get_worksheet(count)
     data_all = sheet.col_values(1)
     try:
@@ -612,10 +612,10 @@ if sql:
             web_data_list.append(date.start_date)
             for i, query in enumerate(query_list):
                 if i == 5:
-                    web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal >= 80",date))
-                    web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal < 80 and Floor_Plan_Cal > 0",date))
-                    web_data_list.append(create_floorplan_query(" where Vector_Cal >= 80",date))
-                    web_data_list.append(create_floorplan_query(" where Vector_Cal < 80 and Vector_Cal > 0",date))
+                    web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal >= 80"))
+                    web_data_list.append(create_floorplan_query(" where Floor_Plan_Cal < 80 and Floor_Plan_Cal > 0"))
+                    web_data_list.append(create_floorplan_query(" where Vector_Cal >= 80"))
+                    web_data_list.append(create_floorplan_query(" where Vector_Cal < 80 and Vector_Cal > 0"))
                 elif i >= 11 and i <= 19:
                     val = (datetime.strptime(f"{date.start_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'), datetime.strptime(f"{date.end_date} {'00:10:00'}", '%Y-%m-%d %H:%M:%S'))
                     cursor.execute(query,val)
