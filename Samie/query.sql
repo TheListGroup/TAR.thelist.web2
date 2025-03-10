@@ -613,3 +613,21 @@ WHERE wp.post_status = 'publish'
 AND wp.post_password = ''
 and tag_type.tag_name is not null
 ORDER BY wp.ID DESC;
+
+select ml.Line_Code
+	, ml.Line_Name
+    , ml.Line_Name_Eng
+    , ml.Line_Order
+    , mr.Route_Code
+    , mr.Route_Name
+    , mr.Route_Order
+    , ms.Station_Code
+    , ms.Station_THName_Display
+    , ms.Station_ENName_Display
+    , mtsm.Station_Order
+    , mr.Route_Timeline
+from mass_transit_station_match_route mtsm
+left join mass_transit_route mr on mtsm.Route_Code = mr.Route_Code
+left join mass_transit_line ml on mr.Line_Code = ml.Line_Code
+left join mass_transit_station ms on mtsm.Station_Code = ms.Station_Code
+order by ml.Line_Order, mr.Route_Order, mtsm.Station_Order;
