@@ -10,6 +10,12 @@ update classified set Sale = 1 where Price_Sale is not null and classified_statu
 update classified set Rent = 1 where Price_Rent is not null and classified_status = '1';
 update classified set Sale_with_Tenant = 0 where Price_Sale is null and classified_status = '1';*/
 
+ALTER TABLE `classified_condo_fetch_for_map` ADD `Condo_TotalUnit` INT NULL AFTER `Spotlight_List`
+, ADD `AVG_Price_Per_Unit_Sale` FLOAT NULL AFTER `Condo_TotalUnit`
+, ADD `Use_AVG_Per_Unit_Sale` VARCHAR(20) NULL AFTER `AVG_Price_Per_Unit_Sale` 
+, ADD `AVG_Price_Per_Unit_Rent` FLOAT NULL AFTER `Use_AVG_Per_Unit_Sale`
+, ADD `Use_AVG_Per_Unit_Rent` VARCHAR(20) NULL AFTER `AVG_Price_Per_Unit_Rent`;
+
 -- table classified_condo_fetch_for_map
 CREATE TABLE IF NOT EXISTS classified_condo_fetch_for_map (
     ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -46,6 +52,11 @@ CREATE TABLE IF NOT EXISTS classified_condo_fetch_for_map (
     Last_Updated_Date varchar(20) null,
     Last_Updated_Date_Sort date null,
     Spotlight_List json DEFAULT NULL,
+    Condo_TotalUnit int null,
+    AVG_Price_Per_Unit_Sale float null,
+    Use_AVG_Per_Unit_Sale varchar(20) null,
+    AVG_Price_Per_Unit_Rent float null,
+    Use_AVG_Per_Unit_Rent varchar(20) null,
     PRIMARY KEY (ID),
     INDEX cfcode (Condo_Code),
     INDEX cfsegment (Condo_Segment),
@@ -109,6 +120,19 @@ select rc.Condo_Code
         + ifnull(rc.ListCompany_Point, 0) + ifnull(rc.DistanceFromStation_Point, 0) AS Total_Point
     , updateday.Last_Updated_Date
     , updateday.Last_Updated_Date_Sort
+    , rc.Condo_TotalUnit
+    , if(ifnull(total_sale.Total_Room_Count_Sale,0) < 3
+        , null
+        , total_sale.Total_Price_Per_Unit_Sale) as AVG_Price_Per_Unit_Sale
+    , if(ifnull(total_sale.Total_Room_Count_Sale,0) < 3
+        , null
+        , format(round((total_sale.Total_Price_Per_Unit_Sale/1000000),2),1)) as Use_AVG_Per_Unit_Sale
+    , if(ifnull(total_rent.Total_Room_Count_Rent,0) < 3
+        , null
+        , total_rent.Total_Price_Per_Unit_Rent) as AVG_Price_Per_Unit_Rent
+    , if(ifnull(total_rent.Total_Room_Count_Rent,0) < 3
+        , null
+        , format(round(total_rent.Total_Price_Per_Unit_Rent),0)) as Use_AVG_Per_Unit_Rent
 from real_condo rc
 left join real_condo_price rcp on rc.Condo_Code = rcp.Condo_Code
 left join thailand_province tp on rc.Province_ID = tp.province_code
@@ -118,11 +142,16 @@ left join condo_developer cd on rc.Developer_Code = cd.Developer_Code
 left join brand b on rc.Brand_Code = b.Brand_Code
 left join (select Condo_Code
                 , SUM((Price_Sale/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Sale
+                , SUM(Price_Sale*Size)/SUM(Size) as Total_Price_Per_Unit_Sale
                 , count(*) as Total_Room_Count_Sale
                 , min(Price_Sale) as Price_Sale_Min
             from classified
             where Classified_Status = '1'
             and Sale = 1
+            and Size is not null
+            and Size > 0
+            and Price_Sale is not null
+            and Price_Sale > 0
             group by Condo_Code) total_sale
 on rc.Condo_Code = total_sale.Condo_Code
 LEFT JOIN ( SELECT c1.Condo_Code,
@@ -133,17 +162,26 @@ LEFT JOIN ( SELECT c1.Condo_Code,
                 FROM classified
                 WHERE Classified_Status = '1'
                 AND Sale = 1
+                and Size is not null
+                and Size > 0
+                and Price_Sale is not null
+                and Price_Sale > 0
                 GROUP BY Condo_Code) c2 
             ON c1.Condo_Code = c2.Condo_Code AND c1.Price_Sale = c2.Min_Price_Sale
             group by c1.Condo_Code) size_at_min_total_sale
 ON rc.Condo_Code = size_at_min_total_sale.Condo_Code
 left join (select Condo_Code
                 , SUM((Price_Rent/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Rent
+                , SUM(Price_Rent*Size)/SUM(Size) as Total_Price_Per_Unit_Rent
                 , count(*) as Total_Room_Count_Rent
                 , min(Price_Rent) as Price_Rent_Min
             from classified
             where Classified_Status = '1'
             and Rent = 1
+            and Size is not null
+            and Size > 0
+            and Price_Rent is not null
+            and Price_Rent > 0
             group by Condo_Code) total_rent
 on rc.Condo_Code = total_rent.Condo_Code
 LEFT JOIN ( SELECT c1.Condo_Code,
@@ -154,6 +192,10 @@ LEFT JOIN ( SELECT c1.Condo_Code,
                 FROM classified
                 WHERE Classified_Status = '1'
                 AND Rent = 1
+                and Size is not null
+                and Size > 0
+                and Price_Rent is not null
+                and Price_Rent > 0
                 GROUP BY Condo_Code) c2 
             ON c1.Condo_Code = c2.Condo_Code AND c1.Price_Rent = c2.Min_Price_Rent
             group by c1.Condo_Code) size_at_min_total_rent
@@ -230,6 +272,11 @@ BEGIN
     DECLARE v_name29 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name30 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name31 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name32 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name33 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name34 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name35 VARCHAR(250) DEFAULT NULL;
+    DECLARE v_name36 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_classified_condo_fetch_for_map';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -244,7 +291,8 @@ BEGIN
                                 Price_Sale_Sqm, Use_Price_Sale_Sqm, AVG_Price_Per_Unit_Sqm_Sale, Use_AVG_Per_Unit_Sqm_Sale, Room_Count_Rent, Price_Rent_Min,
                                 Use_Price_Rent_Min, Price_Rent_Sqm, Use_Price_Rent_Sqm, AVG_Price_Per_Unit_Sqm_Rent, Use_AVG_Per_Unit_Sqm_Rent, Condo_Segment,
                                 Province_code, District_Code, SubDistrict_Code, Developer_Code, Brand_Code, Condo_Around_Line, Condo_Around_Station, Condo_URL_Tag,
-                                Condo_Cover, Total_Point, Last_Updated_Date, Last_Updated_Date_Sort
+                                Condo_Cover, Total_Point, Last_Updated_Date, Last_Updated_Date_Sort, Condo_TotalUnit, AVG_Price_Per_Unit_Sale, Use_AVG_Per_Unit_Sale,
+                                AVG_Price_Per_Unit_Rent, Use_AVG_Per_Unit_Rent
                             FROM source_classified_condo_fetch_for_map;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -263,7 +311,7 @@ BEGIN
     OPEN cur;
     
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36;
         
         IF done THEN
             LEAVE read_loop;
@@ -302,8 +350,13 @@ BEGIN
                 , Condo_Cover
                 , Total_Point
                 , Last_Updated_Date
-                , Last_Updated_Date_Sort)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31);
+                , Last_Updated_Date_Sort
+                , Condo_TotalUnit
+                , AVG_Price_Per_Unit_Sale
+                , Use_AVG_Per_Unit_Sale
+                , AVG_Price_Per_Unit_Rent
+                , Use_AVG_Per_Unit_Rent)
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27,v_name28,v_name29,v_name30,v_name31,v_name32,v_name33,v_name34,v_name35,v_name36);
         
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
