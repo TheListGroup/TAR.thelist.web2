@@ -61,7 +61,7 @@ ADD `Keyword_TH` TEXT NULL AFTER `Spotlight_Description`
 
 -- ALTER TABLE `real_condo_spotlight` ADD `Classified_Unit_Count` INT NOT NULL AFTER `Condo_Count`;
 
-/* CREATE OR REPLACE VIEW source_search_condo_detail_view as 
+CREATE OR REPLACE VIEW source_search_condo_detail_view as 
 select rc.Condo_Code
     , condo_thname.Condo_Name
     , condo_enname.Condo_ENName
@@ -127,7 +127,7 @@ left join ( select Condo_Code
             , group_concat(Station_THName_Display SEPARATOR ',') as Condo_Around_Station
             from (select ct.Condo_Code,ms.Station_THName_Display
                     from condo_around_station ct
-                    left join mass_transit_station_view ms on ct.Station_Code = ms.Station_Code
+                    left join mass_transit_station ms on ct.Station_Code = ms.Station_Code
                     group by ct.Condo_Code,ms.Station_THName_Display) station_name
             group by Condo_Code) AS station
 on rc.Condo_Code = station.Condo_Code
@@ -184,7 +184,7 @@ left join (SELECT Condo_Code, count(*) as Classified_Condo_Count
             group by Condo_Code) ccc
 on rc.Condo_Code = ccc.Condo_Code
 where rc.Condo_Status = 1
-order by rc.Condo_Code; */
+order by rc.Condo_Code;
 
 -- Table `search_condo_detail_view`
 /* CREATE TABLE IF NOT EXISTS `search_condo_detail_view` (
