@@ -746,13 +746,13 @@ if len(final_list) > 0:
     for i, classified_list in enumerate(final_list):
         for j, classified in enumerate(classified_list):
             if j == 0:
-                cell_notation = gspread.utils.rowcol_to_a1(1, time_list[i]+3)
+                cell_notation = gspread.utils.rowcol_to_a1(1, time_list[i]+7)
                 column_letter = ''.join(c for c in cell_notation if c.isalpha())
                 next_col_letter = f"{column_letter}1"
                 sheet.update(range_name=next_col_letter, values=[[classified]])
                 x += 1
             else:
-                cell_notation = gspread.utils.rowcol_to_a1(1, time_list[i]+3)
+                cell_notation = gspread.utils.rowcol_to_a1(1, time_list[i]+7)
                 column_letter = ''.join(c for c in cell_notation if c.isalpha())
                 next_col_letter = f"{column_letter}{condo_all.index(classified[0]) + 2}"
                 sheet.update(range_name=next_col_letter, values=[[classified[1]]])
