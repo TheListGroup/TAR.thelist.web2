@@ -120,11 +120,11 @@ SELECT a.Condo_ID
         if((c.CUS041 = 'Y'), '[CUS041]', ''),
         if((c.CUS042 = 'Y'), '[CUS042]', '')) AS Spotlight_List
     , if(d.Condo_Built_Finished is not null
-        , (year(curdate()) - year(d.Condo_Built_Finished))
+        , greatest((year(curdate()) - year(d.Condo_Built_Finished)),0)
         , if(d.Condo_Built_Start is not null
             , if(a.Condo_HighRise = 1
-                , (year(curdate()) - (year(d.Condo_Built_Start) + 4))
-                , (year(curdate()) - (year(d.Condo_Built_Start) + 3)))
+                , greatest((year(curdate()) - (year(d.Condo_Built_Start) + 4)),0)
+                , greatest((year(curdate()) - (year(d.Condo_Built_Start) + 3)),0))
             , NULL)) AS Condo_Age
     , round(rs.Realist_Score,2) as Realist_Score
     , if(a.Condo_HighRise = 1
