@@ -70,7 +70,7 @@ def insert_ggsheet(query):
 #--------------------------------------------------------------------------------------------------------------------------------------------------
 if sql:
     #sheet 1
-    sheet = spreadsheet.sheet1
+    sheet = spreadsheet.worksheet('condo_template')
     query = """SELECT rcf.Contact_Ref_ID as Condo_Code
                     , rc.Condo_ENName
                     , cd.Developer_ENName
@@ -96,7 +96,7 @@ if sql:
     insert_ggsheet(query)
     #---------------------------------------------------------------------------------------------------------------------------------------------
     #sheet 2
-    sheet = spreadsheet.get_worksheet(1)
+    sheet = spreadsheet.worksheet('classified')
     query = """SELECT cu.First_Name
                 , rcf.Contact_Ref_ID
                 , c.Condo_Code
