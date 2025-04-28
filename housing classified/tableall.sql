@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS `housing_classified` (
     `Min_Rental_Contract` ENUM('3','6','12','1','2','4','5','7','8','9','10','11') NULL,
     `Rent_Deposit` ENUM('0','1','2','3','4','5','6','7','8','9','10','11','12') NULL,
     `Advance_Payment` ENUM('0','1','2','3','4','5','6','7','8','9','10','11','12') NULL,
-    `Housing_TotalRai` FLOAT(10,5) NOT NULL,
+    `Housing_TotalRai` FLOAT(10,5) NULL,
     `Housing_Usable_Area` FLOAT(10,5) NOT NULL,
     `Floor` ENUM('1','2','2.5','3','3.5','4','4.5','5','6+') NULL,
     `Bedroom` ENUM('1','2','3','4','5+') NOT NULL,

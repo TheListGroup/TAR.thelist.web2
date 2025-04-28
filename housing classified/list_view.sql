@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS `housing_classified_list_view` (
     `Classified_ID` INT UNSIGNED NOT NULL,
     `Unit_Type` VARCHAR(250) NOT NULL,
     `Classified_Image` TEXT NULL,
-    `Area` VARCHAR(10) NOT NULL,
+    `Area` VARCHAR(10) NULL,
     `Usable_Area` VARCHAR(10) NOT NULL,
     `Bedroom` VARCHAR(10) NOT NULL,
     `Bathroom` VARCHAR(10) NOT NULL,

@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS `housing_classified_detail_view` (
     `Price_Sale_Per_Square` VARCHAR(10) NULL,
     `Price_Rent` INT UNSIGNED NULL,
     `Rental_Contract` SMALLINT UNSIGNED NULL,
-    `Area` FLOAT(7,2) NOT NULL,
+    `Area` FLOAT(7,2) NULL,
     `Usable_Area` FLOAT(7,2) NOT NULL,
     `Bedroom` VARCHAR(10) NOT NULL,
     `BathRoom` VARCHAR(10) NULL,
