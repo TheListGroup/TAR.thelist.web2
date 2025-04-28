@@ -26,20 +26,20 @@ def destination(agent):
     #json_path = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROPERTY.json'
     #json_path2 = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROJECT.json'
     save_folder = rf"/var/www/html/realist/condo/uploads/classified"
-    json_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    json_path2 = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
-    #json_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    #json_path2 = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    #json_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    #json_path2 = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    json_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    json_path2 = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
     return save_folder, json_path, json_path2
 
 def log_in_database():
-    host = '159.223.76.99'
-    user = 'real-research2'
-    password = 'DQkuX/vgBL(@zRRa'
+    #host = '159.223.76.99'
+    #user = 'real-research2'
+    #password = 'DQkuX/vgBL(@zRRa'
     
-    #host = '127.0.0.1'
-    #user = 'real-research'
-    #password = 'shA0Y69X06jkiAgaX&ng'
+    host = '127.0.0.1'
+    user = 'real-research'
+    password = 'shA0Y69X06jkiAgaX&ng'
 
     return host, user, password
 
@@ -559,7 +559,10 @@ def insert_work(agent,cursor,connection,query,val,idid,project_id,insert,save_fo
 
 def check_status(cursor,connection,user_id,property_list,stop_processing,agent):
     try:
-        query = f"""SELECT Classified_ID, Ref_ID FROM classified WHERE Classified_Status = '1' AND User_ID = {user_id}"""
+        if user_id != 3:
+            query = f"""SELECT Classified_ID, Ref_ID FROM classified WHERE Classified_Status = '1' AND User_ID = {user_id}"""
+        else:
+            query = f"""SELECT Classified_ID, Ref_ID FROM classified WHERE Classified_Status = '1' AND User_ID = {user_id} AND Classified_ID BETWEEN 43585 AND 43709"""
         cursor.execute(query)
         classified =  cursor.fetchall()
     except Exception as e:
