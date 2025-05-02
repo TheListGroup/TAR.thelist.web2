@@ -86,11 +86,11 @@ select a.Housing_Code
     , h_nun(ifnull(concat(housing_type.Total_Unit,' หลัง')
                 , concat(a.Housing_TotalUnit,' หลัง'))) as TotalUnit
     , h_nun(year(a.Housing_Built_Start)) as Housing_Built_Start
-    , h_nun(concat("(",if(month(a.Housing_Sold_Status_Date)<10
-                        , concat('0',month(a.Housing_Sold_Status_Date),'/',year(a.Housing_Sold_Status_Date))
-                        , concat(month(a.Housing_Sold_Status_Date),'/',year(a.Housing_Sold_Status_Date)))
+    , h_nun(concat("(",if(month(sold_status.Data_Date)<10
+                        , concat('0',month(sold_status.Data_Date),'/',year(sold_status.Data_Date))
+                        , concat(month(sold_status.Data_Date),'/',year(sold_status.Data_Date)))
             ,")")) as Housing_Sold_Status_Date
-    , h_nun(a.Housing_Sold_Status_Raw_Number) as Housing_Sold_Status
+    , h_nun(format(sold_status.Data_Value,0)) as Housing_Sold_Status
     , h_nun(concat(housing_type.Housing_Type_Count,' แบบ')) as Housing_Type_Count
     , h_nun(if(housing_type.Floor is not null
             , housing_type.Floor
@@ -267,6 +267,38 @@ left join (SELECT a.Housing_Code
             on a.Housing_Code = b.Housing_Code and a.Show_Faci_order = b.Show_Faci_order and a.RowNum = b.RowNum
             group by a.Housing_Code) faci
 on a.Housing_Code = faci.Housing_Code
+left join (SELECT Housing_Code, Data_Date, Data_Attribute, Data_Value, Data_Note, Price_Source, Full_Price_Source
+            from (select Housing_Code
+                    , Data_Date
+                    , Data_Attribute
+                    , Data_Value
+                    , Data_Note
+                    , Price_Source
+                    , Full_Price_Source
+                    , ROW_NUMBER() OVER (PARTITION BY Housing_Code ORDER BY Data_Date desc) AS Myorder
+                    from (	select * from (	select rc561.Condo_Code as Housing_Code
+                                                , rc561.Data_Date
+                                                , rc561.Data_Attribute
+                                                , rc561.Data_Value
+                                                , rc561.Data_Note
+                                                , ps.Head as Price_Source
+                                                , ps.Sub as Full_Price_Source
+                                            from real_condo_561 rc561
+                                            cross join (select ID, Head, Sub from price_source where Sub = 'Company Presentation - 56-1') ps
+                                            where rc561.Data_Status = 1
+                                            and rc561.Data_Attribute = 'sold_percent'
+                                            and rc561.Condo_Code LIKE 'HP%') order_561_mb
+                            union all select * from (select Housing_Code
+                                                    , Housing_Sold_Status_Date as Data_Date
+                                                    , 'sold_percent' as Data_Attribute
+                                                    , Housing_Sold_Status_Raw_Number as Data_Value
+                                                    , '' as Data_Note
+                                                    , '' as Price_Source
+                                                    , '' as Full_Price_Source
+                                                    from housing
+                                                    where Housing_Sold_Status_Date is not null) sold_status_housing) all_sold) sold
+            where Myorder = 1) sold_status
+on a.Housing_Code = sold_status.Housing_Code
 where a.Housing_Status = '1'
 and a.Housing_Latitude is not null
 AND a.Housing_Longitude is not null
