@@ -22,9 +22,9 @@ import json
 from PIL import Image
 
 def destination(agent):
-    #save_folder = rf"C:\PYTHON\TAR.thelist.web2\classifield\classified_image"
-    #json_path = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROPERTY.json'
-    #json_path2 = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROJECT.json'
+    #save_folder = rf"C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\classified_image"
+    #json_path = rf'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\{agent}\{agent}_PROPERTY.json'
+    #json_path2 = rf'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\{agent}\{agent}_PROJECT.json'
     save_folder = rf"/var/www/html/realist/condo/uploads/classified"
     #json_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
     #json_path2 = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
@@ -211,11 +211,11 @@ def prepare_variable(prop,agent):
     if agent == 'Serve':
         furnish = None
     else:
-        if prop[furnish_ref] == "Un furnished" or prop[furnish_ref] == " No Furnished":
+        if prop[furnish_ref] == "Un furnished" or prop[furnish_ref] == " No Furnished" or prop[furnish_ref] == "Unfurnished":
             furnish = "Non Furnished"
-        elif prop[furnish_ref] == "Partly Furnished" or prop[furnish_ref] == " Partly Furnished" or prop[furnish_ref] == "semi":
+        elif prop[furnish_ref] == "Partly Furnished" or prop[furnish_ref] == " Partly Furnished" or prop[furnish_ref] == "semi" or prop[furnish_ref] == "Partially":
             furnish = "Fully Fitted"
-        elif prop[furnish_ref] == "Fully Furnished" or prop[furnish_ref] == " Fully Furnished" or prop[furnish_ref] == "fully":
+        elif prop[furnish_ref] == "Fully Furnished" or prop[furnish_ref] == " Fully Furnished" or prop[furnish_ref] == "fully" or prop[furnish_ref] == "Fully":
             furnish = "Fully Furnished"
         else:
             furnish = None
@@ -236,7 +236,7 @@ def prepare_variable(prop,agent):
     if agent != 'Plus' and agent != 'Serve':
         room_type, penthouse = None,0
         
-        if prop[sale_with_Tenant_ref] == 'True' or prop[sale_with_Tenant_ref] == True:
+        if prop[sale_with_Tenant_ref] == 'True' or prop[sale_with_Tenant_ref] == True or prop[sale_with_Tenant_ref] == "1":
             if sale == True:
                 sale_with_Tenant = True
             else:
@@ -244,7 +244,7 @@ def prepare_variable(prop,agent):
         else:
             sale_with_Tenant = False
         
-        if prop[min_Rental_Contract_ref] == None:
+        if prop[min_Rental_Contract_ref] == None or prop[min_Rental_Contract_ref] == "0" or round(float(prop[min_Rental_Contract_ref])) == 0:
             min_Rental_Contract = None
         else:
             min_Rental_Contract = str(prop[min_Rental_Contract_ref])
@@ -262,58 +262,81 @@ def prepare_variable(prop,agent):
         if agent != 'BC':
             description_TH = re.sub(f' - {idid}', '', description_TH)
             description_ENG = re.sub(f' - {idid}', '', description_ENG)
+            last_Updated_Date = prop[last_Updated_Date_ref]
+            created_Date = prop[created_Date_ref]
             
-            if prop["bedtype"] == None:
-                unit_floor_type = None
-            elif 'Loft' in prop["bedtype"]:
-                unit_floor_type = "Loft"
-            elif 'Simplex' in prop["bedtype"]:
-                unit_floor_type = "Simplex"
-            elif 'Duplex' in prop["bedtype"]:
-                unit_floor_type = "Duplex"
-            elif 'Triplex' in prop["bedtype"]:
-                unit_floor_type = "Triplex"
+            unit_floor_type = None
+            if agent != 'Bangkok_Residence':
+                if prop["bedtype"] == None:
+                    unit_floor_type = None
+                elif 'Loft' in prop["bedtype"]:
+                    unit_floor_type = "Loft"
+                elif 'Simplex' in prop["bedtype"]:
+                    unit_floor_type = "Simplex"
+                elif 'Duplex' in prop["bedtype"]:
+                    unit_floor_type = "Duplex"
+                elif 'Triplex' in prop["bedtype"]:
+                    unit_floor_type = "Triplex"
+                else:
+                    unit_floor_type = None
+                
+                bedroom_ref = "bedrooms"
+                bathroom_ref = "bathrooms"
+                
+                last_Updated_Date = format_time(last_Updated_Date)
+                last_Updated_Date = datetime.strptime(last_Updated_Date, '%m/%d/%Y %H:%M:%S')
+                last_Updated_Date = last_Updated_Date.strftime('%Y-%m-%d %H:%M:%S')
+                created_Date = format_time(created_Date)
+                created_Date = datetime.strptime(created_Date, '%m/%d/%Y %H:%M:%S')
+                created_Date = created_Date.strftime('%Y-%m-%d %H:%M:%S')
+                
+                images_ref = "images"
+                imageurl_ref = "imageurl"
             else:
-                unit_floor_type = None
+                bedroom_ref = "Bedroom"
+                bathroom_ref = "Bathroom"
+                if prop["Floor"] == None or prop["Floor"] == "0":
+                    floor = None
+                else:
+                    try:
+                        floor = int(prop["Floor"])
+                    except:
+                        floor = None
+                last_Updated_Date = datetime.strptime(last_Updated_Date, '%Y-%m-%d %H:%M:%S.%f')
+                last_Updated_Date = last_Updated_Date.strftime('%Y-%m-%d %H:%M:%S')
+                created_Date = datetime.strptime(created_Date, '%Y-%m-%d %H:%M:%S.%f')
+                created_Date = created_Date.strftime('%Y-%m-%d %H:%M:%S')
+                images_ref = "Images"
             
-            if prop["bedrooms"] == None or prop["bedrooms"] == "0":
+            if prop[bedroom_ref] == None or prop[bedroom_ref] == "0":
                 bedroom = '1'
             else:
-                bedroom = str(round(float(prop["bedrooms"])))
+                bedroom = str(round(float(prop[bedroom_ref])))
             
-            if prop["bathrooms"] == None or prop["bathrooms"] == "0":
+            if prop[bathroom_ref] == None or prop[bathroom_ref] == "0":
                 bathroom = 1
             else:
-                bathroom = int(round(float(prop["bathrooms"])))
+                bathroom = int(round(float(prop[bathroom_ref])))
             
-            if prop["Fix_Parking"] == "N/A":
+            if prop["Fix_Parking"] == "N/A" or prop["Fix_Parking"] == None:
                 fix_Parking = None
-            elif prop["Fix_Parking"] == "True":   
+            elif prop["Fix_Parking"] == "True" or prop["Fix_Parking"] == True or prop["Fix_Parking"] == "1":   
                 fix_Parking = True
             else:   
                 fix_Parking = False
             
-            if prop["Parking_Amount"] == "N/A":
+            if prop["Parking_Amount"] == "N/A" or prop["Parking_Amount"] == None:
                 parking_amount = None
             else:   
-                parking_amount = prop["Parking_Amount"]
+                parking_amount = int(prop["Parking_Amount"])
             
-            last_Updated_Date = prop[last_Updated_Date_ref]
-            last_Updated_Date = format_time(last_Updated_Date) 
-            last_Updated_Date = datetime.strptime(last_Updated_Date, '%m/%d/%Y %H:%M:%S')
-            last_Updated_Date = last_Updated_Date.strftime('%Y-%m-%d %H:%M:%S')
-            
-            created_Date = prop[created_Date_ref]
-            created_Date = format_time(created_Date) 
-            created_Date = datetime.strptime(created_Date, '%m/%d/%Y %H:%M:%S')
-            created_Date = created_Date.strftime('%Y-%m-%d %H:%M:%S')
             if created_Date[:4] == '1900':
                 created_Date = last_Updated_Date
             
             try:
-                image_urls = prop["images"]["imageurl"]
+                image_urls = prop[images_ref][imageurl_ref]
             except:
-                image_urls = prop["images"]
+                image_urls = prop[images_ref]
         else:
             unit_floor_type = None
             fix_Parking = prop["fix_Parking"]
@@ -576,7 +599,7 @@ def check_status(cursor,connection,user_id,property_list,stop_processing,agent):
             ref_ref  = 'Ref_ID'
         else:
             ref_ref  = 'id'
-        if agent == 'BC':
+        if agent == 'BC' or agent == 'Bangkok_Residence':
             status_update = '3'
         else:
             status_update = '2'

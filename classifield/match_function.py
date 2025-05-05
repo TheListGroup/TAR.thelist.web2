@@ -16,13 +16,13 @@ import math
 import csv
 
 def log_in_database():
-    host = '159.223.76.99'
-    user = 'real-research2'
-    password = 'DQkuX/vgBL(@zRRa'
+    #host = '159.223.76.99'
+    #user = 'real-research2'
+    #password = 'DQkuX/vgBL(@zRRa'
     
-    #host = '127.0.0.1'
-    #user = 'real-research'
-    #password = 'shA0Y69X06jkiAgaX&ng'
+    host = '127.0.0.1'
+    user = 'real-research'
+    password = 'shA0Y69X06jkiAgaX&ng'
 
     return host, user, password
 
@@ -46,15 +46,15 @@ def database(host,user,password,sql):
     return connection,cursor,sql
 
 def destination_match(agent):
-    #project_path = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROJECT.json'
-    #property_path = rf'C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_PROPERTY.json'
-    #csv_path = rf"C:\PYTHON\TAR.thelist.web2\classifield\{agent}\{agent}_Match.csv"
-    project_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
-    property_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    csv_path = rf"/home/gitdev/ta_python/classifield/{agent}/{agent}_Match.csv"
-    #project_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
-    #property_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
-    #csv_path = rf"/home/gitprod/ta_python/classifield/{agent}/{agent}_Match.csv"
+    #project_path = rf'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\{agent}\{agent}_PROJECT.json'
+    #property_path = rf'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\{agent}\{agent}_PROPERTY.json'
+    #csv_path = rf"C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\{agent}\{agent}_Match.csv"
+    #project_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    #property_path = rf'/home/gitdev/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    #csv_path = rf"/home/gitdev/ta_python/classifield/{agent}/{agent}_Match.csv"
+    project_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROJECT.json'
+    property_path = rf'/home/gitprod/ta_python/classifield/{agent}/{agent}_PROPERTY.json'
+    csv_path = rf"/home/gitprod/ta_python/classifield/{agent}/{agent}_Match.csv"
     return project_path, property_path, csv_path
 
 def match_query(cursor):
@@ -100,7 +100,7 @@ def open_prop_json(agent,property_path,list_prop):
         for prop in property_data:
             prop = tuple(prop.values())
             list_prop.append(prop)
-        if agent == 'Plus' or agent == 'Serve':
+        if agent == 'Plus' or agent == 'Serve' or agent == 'Bangkok_Residence':
             prop_list = {row[1]: row for row in list_prop}
         else:
             prop_list = {row[2]: row for row in list_prop}
@@ -128,7 +128,7 @@ def table_proj_statge(use_project_list,cursor,connection,agent):
     if agent == 'Serve':
         query = """INSERT INTO classified_project_staging (Project_ID, Name_TH, Name_ENG, Latitude, Longitude) 
                 VALUES (%s, %s, %s, %s, %s)"""
-    elif agent != 'Plus':
+    elif agent != 'Plus' and agent != 'Bangkok_Residence':
         query = """INSERT INTO classified_project_staging (Ref_ID, Project_ID, Name_TH, Name_ENG, Latitude, Longitude, Created_Date, Last_Updated_Date) 
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
     else:
@@ -141,7 +141,7 @@ def table_proj_statge(use_project_list,cursor,connection,agent):
     except Exception as e:
         print(f'Error: {e} at classified_project_staging')
     
-    query = """select Ref_ID
+    query = f"""select Ref_ID
                     , Project_ID
                     , Name_TH
                     , Name_ENG
@@ -160,8 +160,8 @@ def table_proj_statge(use_project_list,cursor,connection,agent):
                             , m.Project_ID as proj_match
                             , n.Project_ID as proj_not_match
                         from classified_project_staging cp
-                        left join (select Project_ID from classified_match) m on cp.Project_ID = m.Project_ID
-                        left join (select Project_ID from classified_not_match) n on cp.Project_ID = n.Project_ID) c
+                        left join (select Project_ID from classified_match where Agent = '{agent}') m on cp.Project_ID = m.Project_ID
+                        left join (select Project_ID from classified_not_match where Agent = '{agent}') n on cp.Project_ID = n.Project_ID) c
                 where proj_match is null
                 and proj_not_match is null"""
     try:
@@ -353,7 +353,7 @@ def point_match(agent,new_project,result,match_list,csv_path):
                 best_condo_code_5 = k[0]
             
         if ratio < 1:
-            if agent != 'Plus' and agent != 'Serve':
+            if agent != 'Plus' and agent != 'Serve' and agent != 'Bangkok_Residence':
                 match_data = [idid, project_id, nameTH, nameEN, latitude, longitude, created_date, last_updated_date, name, best_word
                             , best_condo_code, condo_name, best_latitude, best_longitude, best_ratio, best_condo_code_1, best_condo_name_1
                             , best_condo_code_2, best_condo_name_2, best_condo_code_3, best_condo_name_3, best_condo_code_4, best_condo_name_4
@@ -367,7 +367,7 @@ def point_match(agent,new_project,result,match_list,csv_path):
         return insert
     
     def create_csv(agent):
-        if agent != 'Plus' and agent != 'Serve':
+        if agent != 'Plus' and agent != 'Serve' and agent != 'Bangkok_Residence':
             header = [f'{agent}_ID', f'{agent}_Project_ID', 'nameTH', 'nameEN', 'latitude', 'longitude', 'created_date', 'last_updated_date', 'name_use'
                         , 'real_name_use', 'Condo_Code', 'Condo_Name', 'Condo_Latitude', 'Condo_Longitude', 'best_ratio', 'Condo_Code_1'
                         , 'Condo_Full_Name_1', 'Condo_Code_2', 'Condo_Full_Name_2', 'Condo_Code_3', 'Condo_Full_Name_3', 'Condo_Code_4'
@@ -381,7 +381,7 @@ def point_match(agent,new_project,result,match_list,csv_path):
     
     insert = 0
     new_project_insert = []
-    if agent != 'Plus' and agent != 'Serve':
+    if agent != 'Plus' and agent != 'Serve' and agent != 'Bangkok_Residence':
         for i in new_project:
             name = i[3].lower().replace(" ","").replace("-","").replace("'","").replace("(","").replace(")","").replace("@","").replace("minium","").replace("condo","").strip()
             project_id = i[1]
