@@ -1,17 +1,17 @@
 import pandas as pd
 import mysql.connector
 
-csv_path = r'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\Bangkok_Residence\Bangkok_Residence_housing_Match.csv'
-#csv_path = r'/home/gitdev/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_housing_Match.csv'
-#csv_path = r'/home/gitprod/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_housing_Match.csv'
+#csv_path = r'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\Bangkok_Residence\Bangkok_Residence_Match.csv'
+#csv_path = r'/home/gitdev/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_Match.csv'
+csv_path = r'/home/gitprod/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_Match.csv'
 
-host = '159.223.76.99'
-user = 'real-research2'
-password = 'DQkuX/vgBL(@zRRa'
+#host = '159.223.76.99'
+#user = 'real-research2'
+#password = 'DQkuX/vgBL(@zRRa'
 
-#host = '127.0.0.1'
-#user = 'real-research'
-#password = 'shA0Y69X06jkiAgaX&ng'
+host = '127.0.0.1'
+user = 'real-research'
+password = 'shA0Y69X06jkiAgaX&ng'
 
 real = pd.read_csv(csv_path, encoding='utf-8')
 log = False
@@ -36,12 +36,12 @@ m = 0
 n = 0
 for i in range(real.index.size):
     proj_id = real.iat[i,0]
-    housing_code = real.iat[i,9]
+    condo_code = real.iat[i,9]
     msg = real.iat[i,24]
     old = real.iat[i,25]
 
     if pd.notna(real.iat[i,9]):
-        match_list.append((agent,int(proj_id),housing_code))
+        match_list.append((agent,int(proj_id),condo_code))
         m += 1
     elif pd.notna(real.iat[i,24]):
         not_match_list.append((agent,int(proj_id),msg,0))
