@@ -417,6 +417,9 @@ def prepare_variable(prop,agent):
             created_Date = prop[created_Date_ref]
             created_Date = date_bc_plus(created_Date)
     
+    if rent == False:
+        min_Rental_Contract,deposit,advance_Payment = None,None,None
+    
     data_api_list = [sale,sale_with_Tenant, rent, price_Sale, sale_transfer_fee, sale_deposit, sale_mongage_cost, price_Rent, min_Rental_Contract
                     , deposit, advance_Payment, room_type, unit_floor_type, penthouse, bedroom, bathroom, floor, direction, move_in, size, furnish
                     , fix_Parking, parking_amount]
