@@ -67,14 +67,14 @@ CREATE TABLE IF NOT EXISTS `housing_classified_list_view` (
     `Housing_Name` VARCHAR(250) NOT NULL,
     `Announce_Day` VARCHAR(20) NOT NULL,
     `Announce_Date` DATE NOT NULL,
-    `Area_Sort` FLOAT(10,5) NOT NULL,
-    `Usable_Area_Sort` FLOAT(10,5) NOT NULL,
+    `Area_Sort` FLOAT(10,5) NULL,
+    `Usable_Area_Sort` FLOAT(10,5) NULL,
     `Price_Sale_Sort` INT NULL,
     `Price_Rent_Sort` INT NULL,
     `User_ID` INT UNSIGNED NULL,
     `Title_TH` TEXT NULL,
     `Last_Update_Insert_Date` TIMESTAMP NULL,
-    `Housing_Type` ENUM('บ้านเดี่ยว','บ้านแฝด','ทาวน์โฮม,','โฮมออฟฟิศ','อาคารพาณิชย์') NOT NULL,
+    `Housing_Type` ENUM('บ้านเดี่ยว','บ้านแฝด','ทาวน์โฮม','โฮมออฟฟิศ','อาคารพาณิชย์') NOT NULL,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;
 
