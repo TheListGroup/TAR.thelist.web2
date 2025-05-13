@@ -73,7 +73,7 @@ where aaa.Distance <= aaa.cal_radians;
 -- view source_housing_factsheet_view
 create or replace view source_housing_factsheet_view as
 select a.Housing_Code
-    , h_nun(rm.District_Name) as RealDistrict
+    , h_nun(rs.SubDistrict_Name) as RealDistrict
     , h_nun(td.name_th) as District
     , h_nun(tp.name_th) as Province
     , h_nun(express_way.Express_Way) as Express_Way
@@ -118,7 +118,9 @@ select a.Housing_Code
                     , concat(a.Housing_Parking_Min,' - ',a.Housing_Parking_Max,' คัน'))
                 , ifnull(concat(ifnull(a.Housing_Parking_Max,a.Housing_Parking_Min),' คัน'), null)))) as Parking_Amount
     , h_nun(faci.Top_Facilities) as Top_Facilities
-    , h_nun(concat(a.Pool_Width,' x ',a.Pool_Length,' ม.')) as 'Pool'
+    , if(a.Pool = 3
+            , "-"
+            , h_nun(concat(a.Pool_Width,' x ',a.Pool_Length,' ม.'))) as 'Pool'
     , h_nun(a.Entrance) as Entrance
     , h_nun(if(a.Main_Road is not null and a.Sub_Road is not null
             , if(a.Main_Road = a.Sub_Road
@@ -161,7 +163,8 @@ from housing a
 left join thailand_district td on a.District_ID = td.district_code
 left join thailand_province tp on a.Province_ID = tp.province_code
 left join real_yarn_main rm on a.RealDistrict_Code = rm.District_Code
-left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2,' ( ',round(Distance,1),' กม. )') as Express_Way
+left join real_yarn_sub rs on a.RealSubDistrict_Code = rs.SubDistrict_Code
+left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2) as Express_Way
             from (  select Housing_Code
                             , Place_ID
                             , Place_Attribute_1
@@ -172,7 +175,7 @@ left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2,'
                     order by Housing_Code) ew
             where ew.RowNum = 1 ) express_way 
 on a.Housing_Code = express_way.Housing_Code
-left join ( select Housing_Code,concat(Station_THName_Display,' ( ',round(Distance,1),' กม. )') as Station_Name
+left join ( select Housing_Code,Station_THName_Display as Station_Name
             from (  select Housing_Code
                             , Station_Code
                             , Station_THName_Display
