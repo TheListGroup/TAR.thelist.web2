@@ -90,7 +90,7 @@ select a.Housing_Code
                         , concat('0',month(sold_status.Data_Date),'/',year(sold_status.Data_Date))
                         , concat(month(sold_status.Data_Date),'/',year(sold_status.Data_Date)))
             ,")")) as Housing_Sold_Status_Date
-    , h_nun(format(sold_status.Data_Value,0)) as Housing_Sold_Status
+    , h_nun(concat(format(sold_status.Data_Value,0),'% SOLD')) as Housing_Sold_Status
     , h_nun(concat(housing_type.Housing_Type_Count,' แบบ')) as Housing_Type_Count
     , h_nun(if(housing_type.Floor is not null
             , housing_type.Floor
