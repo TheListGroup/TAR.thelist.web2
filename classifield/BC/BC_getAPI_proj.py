@@ -1,9 +1,9 @@
 import requests
 import json
 
-#project_file_path = r'C:\PYTHON\TAR.thelist.web2\classifield/BC/BC_PROJECT.json'
-project_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROJECT.json'
-#project_file_path = '/home/gitprod/ta_python/classifield/BC/BC_PROJECT.json'
+#project_file_path = r'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\BC\BC_PROJECT.json'
+#project_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROJECT.json'
+project_file_path = '/home/gitprod/ta_python/classifield/BC/BC_PROJECT.json'
 
 api_url = 'https://crm-interface-api.bkkcitismart.com/api/ext/bc/v1/auth'
 response = requests.get(api_url)
@@ -21,7 +21,7 @@ else:
     print(f"Error: {response.status_code}")
 
 
-project_url = 'https://crm-interface-api.bkkcitismart.com/master/v1/project-feed'
+project_url = 'https://crm-interface-api.bkkcitismart.com/master/v1/project-feed?PropertyType=C'
 project_response = requests.get(project_url)
 project_headers = {
         'Authorization': f'Bearer {token}'

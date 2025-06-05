@@ -1,9 +1,9 @@
 import requests
 import json
 
-#property_file_path = r'C:\PYTHON\TAR.thelist.web2\classifield\BC\BC_PROPERTY.json'
-property_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROPERTY.json'
-#property_file_path = '/home/gitprod/ta_python/classifield/BC/BC_PROPERTY.json'
+#property_file_path = r'C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\BC\BC_PROPERTY.json'
+#property_file_path = '/home/gitdev/ta_python/classifield/BC/BC_PROPERTY.json'
+property_file_path = '/home/gitprod/ta_python/classifield/BC/BC_PROPERTY.json'
 
 api_url = 'https://crm-interface-api.bkkcitismart.com/api/ext/bc/v1/auth'
 response = requests.get(api_url)
@@ -20,7 +20,7 @@ else:
     print(f"Error: {response.status_code}")
 
 
-property_url = 'https://crm-interface-api.bkkcitismart.com/master/v1/property-feed'
+property_url = 'https://crm-interface-api.bkkcitismart.com/master/v1/property-feed?PropertyType=C'
 property_response = requests.get(property_url)
 property_headers = {
         'Authorization': f'Bearer {token}'
