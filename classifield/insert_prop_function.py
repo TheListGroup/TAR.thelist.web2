@@ -249,12 +249,12 @@ def prepare_variable(prop,agent):
         else:
             min_Rental_Contract = str(prop[min_Rental_Contract_ref])
         
-        if prop[deposit_ref] == None:
+        if prop[deposit_ref] == None  or prop[deposit_ref] == "0" or round(float(prop[deposit_ref])) == 0:
             deposit = None
         else:
             deposit = str(prop[deposit_ref])
         
-        if prop[advance_Payment_ref] == None:
+        if prop[advance_Payment_ref] == None or prop[advance_Payment_ref] == "0" or round(float(prop[advance_Payment_ref])) == 0:
             advance_Payment = None
         else:
             advance_Payment = str(prop[advance_Payment_ref])
