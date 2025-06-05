@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS `classified_badge` (
     `ID` SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `Badge_Name` VARCHAR(250) NOT NULL,
     `Badge_Order` SMALLINT UNSIGNED NOT NULL,
-    `Badge_Color` TEXT NOT NULL default '#000000',
+    `Badge_Color` TEXT NOT NULL,
     `Badge_Status` ENUM('0','1','2') NOT NULL,
     PRIMARY KEY (`ID`))
 ENGINE = InnoDB;
