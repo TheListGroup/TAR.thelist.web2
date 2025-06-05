@@ -96,9 +96,11 @@ select a.Housing_Code
             , housing_type.Floor
             , if(a.Housing_Floor_Min is not null and a.Housing_Floor_Max is not null
                 , if(a.Housing_Floor_Min=a.Housing_Floor_Max
-                    , concat(a.Housing_Floor_Min,' ชั้น')
-                    , concat(a.Housing_Floor_Min,' - ',a.Housing_Floor_Max,' ชั้น'))
-                , concat(ifnull(a.Housing_Floor_Max,a.Housing_Floor_Min),' ชั้น')))) as Floor
+                    , concat(if(mod(a.Housing_Floor_Min,1)=0,round(a.Housing_Floor_Min),a.Housing_Floor_Min),' ชั้น')
+                    , concat(if(mod(a.Housing_Floor_Min,1)=0,round(a.Housing_Floor_Min),a.Housing_Floor_Min),' - '
+                            ,if(mod(a.Housing_Floor_Max,1)=0,round(a.Housing_Floor_Max),a.Housing_Floor_Max),' ชั้น'))
+                , concat(ifnull(if(mod(a.Housing_Floor_Max,1)=0,round(a.Housing_Floor_Max),a.Housing_Floor_Max),
+                            if(mod(a.Housing_Floor_Min,1)=0,round(a.Housing_Floor_Min),a.Housing_Floor_Min)),' ชั้น')))) as Floor
     , h_nun(ifnull(housing_type.Bedroom
             , if(a.Bedroom_Min is not null and a.Bedroom_Max is not null
                 , if(a.Bedroom_Min=a.Bedroom_Max
