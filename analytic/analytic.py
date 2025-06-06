@@ -587,7 +587,7 @@ if sql:
     developer_email_not_success = """SELECT count(*)  
                                     FROM `real_contact_email_log`
                                     where Dev_or_Agent = 'D'
-                                    and Contact_Sent <> 'Y'
+                                    and Contact_Sent = 'N'
                                     and Contact_Sent_Date BETWEEN %s and %s"""
     
     spreadsheet = access_ggsheet()
