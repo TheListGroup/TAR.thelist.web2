@@ -1103,6 +1103,10 @@ BEGIN
         ads_base.Last_Update_Date = CURRENT_TIMESTAMP
     where ads_cal_slot.temp_rank <= 100;
 
+    update ads_log
+    set Link = concat(Link,'?utm_source=own_website&utm_medium=',lower(Size),'&utm_campaign=ad_own_website')
+    where Log_Date = CURDATE();
+
 END //
 DELIMITER ;
 
