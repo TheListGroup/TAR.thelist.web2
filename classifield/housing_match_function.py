@@ -114,8 +114,12 @@ def project_have_room(project_list,prop_list):
     return project_list
 
 def table_proj_statge(use_project_list,cursor,connection,agent):
-    query = """INSERT INTO classified_project_staging (Project_ID, Name_TH, Name_ENG, Latitude, Longitude, Created_Date, Last_Updated_Date) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+    if agent != 'Bangkok_Residence':
+        query = """INSERT INTO classified_project_staging (Ref_ID, Project_ID, Name_TH, Name_ENG, Latitude, Longitude, Created_Date, Last_Updated_Date) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+    else:
+        query = """INSERT INTO classified_project_staging (Project_ID, Name_TH, Name_ENG, Latitude, Longitude, Created_Date, Last_Updated_Date) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s)"""
     val = use_project_list
     try:
         cursor.executemany(query,val)
@@ -335,32 +339,57 @@ def point_match(agent,new_project,result,match_list,csv_path):
                 best_housing_code_5 = k[0]
             
         if ratio < 1:
-            match_data = [project_id, nameTH, nameEN, latitude, longitude, created_date, last_updated_date, name, best_word
-                        , best_housing_code, best_housing_name, best_latitude, best_longitude, best_ratio, best_housing_code_1, best_housing_name_1
-                        , best_housing_code_2, best_housing_name_2, best_housing_code_3, best_housing_name_3, best_housing_code_4, best_housing_name_4
-                        , best_housing_code_5, best_housing_name_5]
+            if agent != 'Bangkok_Residence':
+                match_data = [idid, project_id, nameTH, nameEN, latitude, longitude, created_date, last_updated_date, name, best_word
+                            , best_housing_code, best_housing_name, best_latitude, best_longitude, best_ratio, best_housing_code_1, best_housing_name_1
+                            , best_housing_code_2, best_housing_name_2, best_housing_code_3, best_housing_name_3, best_housing_code_4, best_housing_name_4
+                            , best_housing_code_5, best_housing_name_5]
+            else:
+                match_data = [project_id, nameTH, nameEN, latitude, longitude, created_date, last_updated_date, name, best_word
+                            , best_housing_code, best_housing_name, best_latitude, best_longitude, best_ratio, best_housing_code_1, best_housing_name_1
+                            , best_housing_code_2, best_housing_name_2, best_housing_code_3, best_housing_name_3, best_housing_code_4, best_housing_name_4
+                            , best_housing_code_5, best_housing_name_5]
             match_list.append(match_data)
         return insert
     
     def create_csv(agent):
-        header = [f'{agent}_Project_ID', 'nameTH', 'nameEN', 'latitude', 'longitude', 'created_date', 'last_updated_date', 'name_use'
-                , 'real_name_use', 'Housing_Code', 'Housing_Name', 'Housing_Latitude', 'Housing_Longitude', 'best_ratio', 'Housing_Code_1'
-                , 'Housing_Full_Name_1', 'Housing_Code_2', 'Housing_Full_Name_2', 'Housing_Code_3', 'Housing_Full_Name_3', 'Housing_Code_4'
-                , 'Housing_Full_Name_4', 'Housing_Code_5', 'Housing_Full_Name_5', 'msg', 'Old_Housing']
+        if agent != 'Bangkok_Residence':
+            header = [f'{agent}_ID', f'{agent}_Project_ID', 'nameTH', 'nameEN', 'latitude', 'longitude', 'created_date', 'last_updated_date', 'name_use'
+                        , 'real_name_use', 'Housing_Code', 'Housing_Name', 'Housing_Latitude', 'Housing_Longitude', 'best_ratio', 'Housing_Code_1'
+                        , 'Housing_Full_Name_1', 'Housing_Code_2', 'Housing_Full_Name_2', 'Housing_Code_3', 'Housing_Full_Name_3', 'Housing_Code_4'
+                        , 'Housing_Full_Name_4', 'Housing_Code_5', 'Housing_Full_Name_5', 'msg', 'Old_Housing']
+        else:
+            header = [f'{agent}_Project_ID', 'nameTH', 'nameEN', 'latitude', 'longitude', 'created_date', 'last_updated_date', 'name_use'
+                        , 'real_name_use', 'Housing_Code', 'Housing_Name', 'Housing_Latitude', 'Housing_Longitude', 'best_ratio', 'Housing_Code_1'
+                        , 'Housing_Full_Name_1', 'Housing_Code_2', 'Housing_Full_Name_2', 'Housing_Code_3', 'Housing_Full_Name_3', 'Housing_Code_4'
+                        , 'Housing_Full_Name_4', 'Housing_Code_5', 'Housing_Full_Name_5', 'msg', 'Old_Housing']
         return header
     
     insert = 0
     new_project_insert = []
-    for i in new_project:
-        name = i[3].lower().replace(" ","").replace("-","").replace("'","").replace("(","").replace(")","").replace("@","").strip()
-        project_id = i[1]
-        nameTH = i[2]
-        nameEN = i[3]
-        latitude = i[4]
-        longitude = i[5]
-        created_date = i[6]
-        last_updated_date = i[7]
-        insert = point_match2(insert)
+    if agent != 'Bangkok_Residence':
+        for i in new_project:
+            name = i[3].lower().replace(" ","").replace("-","").replace("'","").replace("(","").replace(")","").replace("@","").strip()
+            project_id = i[1]
+            idid = i[0]
+            nameTH = i[2]
+            nameEN = i[3]
+            latitude = i[4]
+            longitude = i[5]
+            created_date = i[6]
+            last_updated_date = i[7]
+            insert = point_match2(insert)
+    else:
+        for i in new_project:
+            name = i[3].lower().replace(" ","").replace("-","").replace("'","").replace("(","").replace(")","").replace("@","").strip()
+            project_id = i[1]
+            nameTH = i[2]
+            nameEN = i[3]
+            latitude = i[4]
+            longitude = i[5]
+            created_date = i[6]
+            last_updated_date = i[7]
+            insert = point_match2(insert)
     header = create_csv(agent)
     with open(csv_path, mode="w", newline="", encoding='utf-8') as file:
         writer = csv.writer(file)

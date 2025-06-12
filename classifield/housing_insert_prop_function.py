@@ -19,6 +19,7 @@ from io import BytesIO
 import mysql.connector
 import json
 from PIL import Image
+import re
 
 def destination(agent):
     #save_folder = rf"C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\classifield\classified_image"
@@ -92,7 +93,10 @@ def open_proj_json(agent,json_path,property_list,cursor,connection,work):
 def project_have_room(property_list,result_match,agent):
     i = 0
     while i in range(len(property_list)):
-        project_id = property_list[i]['Project_ID']
+        if agent != 'BC':
+            project_id = property_list[i]['Project_ID']
+        else:
+            project_id = property_list[i]['project_ID']
         proj_prop = result_match.get(project_id)
         if proj_prop:
             i += 1
@@ -110,58 +114,125 @@ def check_proj(result_match,prop_proj_id):
     return project_id, housing_code
 
 def prepare_variable(prop,agent):
-    idid_ref = "Ref_ID"
-    housing_type_ref = "Housing_Type"
-    lat_ref = "Housing_Latitude"
-    long_ref = "Housing_Longitude"
-    title_TH_ref = "Title_TH"
-    title_ENG_ref = "Title_ENG"
-    description_TH_ref = "Description_TH"
-    description_ENG_ref = "Description_ENG"
-    sale_with_Tenant_ref = "Sale_with_Tenant"
-    sale_reservation_ref = "Sale_Reservation"
-    sale_transfer_fee_ref = "Sale_Transfer_Fee"
-    sale_contact_ref = "Sale_Contact"
-    price_Sale_ref = "Price_Sale"
-    price_Rent_ref = "Price_Rent"
-    min_Rental_Contract_ref = "Min_Rental_Contract"
-    deposit_ref = "Deposit"
-    advance_Payment_ref = "Advance_Payment"
-    totalrai_ref = "Housing_TotalRai"
-    usable_area_ref = "Housing_Usable_Area"
-    floor_ref = "Floor"
-    bedroom_ref = "Bedroom"
-    bathroom_ref = "Bathroom"
-    parking_amount_ref = "Parking_Amount"
-    direction_ref = "Direction"
-    furnish_ref = "Furnish"
-    move_in_ref = "Move_In"
-    image_ref = "Images"
-    last_Updated_Date_ref = "Last_Updated_Date"
-    created_Date_ref = "Created_Date"
+    def format_time(var):
+        datetime = var.split(" ")
+        date = datetime[0].split("/")
+        date = [f'{int(part):02d}' for part in date]
+        time = datetime[1].split(":")
+        time = [f'{int(part):02d}' for part in time]
+        var = '/'.join(date) + " " + ':'.join(time) + " " + datetime[2]
+        if var[-2:] == "AM" and var[11:13] == "12":
+            return var[:11] + "00" + var[13:-3] 
+        elif var[-2:] == "AM":
+            return var[:11] + var[11:-3] 
+        elif var[-2:] == "PM" and var[11:13] == "12":
+            return var[:11] + var[11:-3] 
+        else:
+            return var[:11] + str(int(var[11:13]) + 12) + var[13:19]
+    
+    def date_bc_plus(created_Date):
+        if created_Date != None:
+            created_Date = re.sub('T',' ',created_Date)
+            if '.' in created_Date:
+                created_Date = datetime.strptime(created_Date, '%Y-%m-%d %H:%M:%S.%f')
+            else:
+                created_Date = datetime.strptime(created_Date, '%Y-%m-%d %H:%M:%S')
+            created_Date = created_Date.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            created_Date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        return created_Date
+    
+    if agent != 'BC':
+        idid_ref = "Ref_ID"
+        housing_type_ref = "Housing_Type"
+        lat_ref = "Housing_Latitude"
+        long_ref = "Housing_Longitude"
+        title_TH_ref = "Title_TH"
+        title_ENG_ref = "Title_ENG"
+        description_TH_ref = "Description_TH"
+        description_ENG_ref = "Description_ENG"
+        sale_with_Tenant_ref = "Sale_with_Tenant"
+        sale_reservation_ref = "Sale_Reservation"
+        sale_transfer_fee_ref = "Sale_Transfer_Fee"
+        sale_contact_ref = "Sale_Contact"
+        price_Sale_ref = "Price_Sale"
+        price_Rent_ref = "Price_Rent"
+        min_Rental_Contract_ref = "Min_Rental_Contract"
+        deposit_ref = "Deposit"
+        advance_Payment_ref = "Advance_Payment"
+        totalrai_ref = "Housing_TotalRai"
+        usable_area_ref = "Housing_Usable_Area"
+        floor_ref = "Floor"
+        bedroom_ref = "Bedroom"
+        bathroom_ref = "Bathroom"
+        parking_amount_ref = "Parking_Amount"
+        direction_ref = "Direction"
+        furnish_ref = "Furnish"
+        move_in_ref = "Move_In"
+        image_ref = "Images"
+        last_Updated_Date_ref = "Last_Updated_Date"
+        created_Date_ref = "Created_Date"
+    else:
+        idid_ref = "id"
+        housing_type_ref = "housing_Type"
+        lat_ref = "housing_Latitude"
+        long_ref = "housing_Longitude"
+        title_TH_ref = "title_TH"
+        title_ENG_ref = "title_ENG"
+        description_TH_ref = "description_TH"
+        description_ENG_ref = "description_ENG"
+        sale_with_Tenant_ref = "sale_with_Tenant"
+        sale_reservation_ref = "sale_Reservation"
+        sale_transfer_fee_ref = "sale_Transfer_Fee"
+        sale_contact_ref = "sale_Contact"
+        price_Sale_ref = "price_Sale"
+        price_Rent_ref = "price_Rent"
+        min_Rental_Contract_ref = "min_Rental_Contract"
+        deposit_ref = "deposit"
+        advance_Payment_ref = "advance_Payment"
+        totalrai_ref = "totalRai"
+        usable_area_ref = "usable_Area"
+        floor_ref = "floor"
+        bedroom_ref = "bedroom"
+        bathroom_ref = "bathroom"
+        parking_amount_ref = "parking_Amount"
+        direction_ref = "direction"
+        furnish_ref = "furnish"
+        move_in_ref = "move_In"
+        image_ref = "images"
+        last_Updated_Date_ref = "last_Updated_Date"
+        created_Date_ref = "created_Date"
 
     idid = str(prop[idid_ref])
     
     if prop[housing_type_ref] == None or prop[housing_type_ref] == "":
         housing_type = None
-    elif prop[housing_type_ref] == "single-detached-house":
+    elif prop[housing_type_ref] == "single-detached-house" or prop[housing_type_ref] == "House":
         housing_type = "บ้านเดี่ยว"
-    elif prop[housing_type_ref] == "semi-detached-house":
+    elif prop[housing_type_ref] == "semi-detached-house" or prop[housing_type_ref] == "Semi Detached House":
         housing_type = "บ้านแฝด"
-    elif prop[housing_type_ref] == "townhome":
+    elif prop[housing_type_ref] == "townhome" or prop[housing_type_ref] == "Townhouse":
         housing_type = "ทาวน์โฮม"
     elif prop[housing_type_ref] == "shophouse":
         housing_type = "อาคารพาณิชย์"
     
-    if prop[lat_ref] == None or prop[lat_ref] == "":
+    if prop[lat_ref] == None or prop[lat_ref] == "" or prop[lat_ref] == -1.0:
         lat = None
     else:
-        lat = float(prop[lat_ref])
+        if float(prop[lat_ref]) > 100:
+            lat = str(float(prop[lat_ref]))
+            lat = lat[:2] + '.' + lat[2:]
+        else:
+            lat = float(prop[lat_ref])
     
-    if prop[long_ref] == None or prop[long_ref] == "":
+    if prop[long_ref] == None or prop[long_ref] == "" or prop[long_ref] == -1.0:
         long = None
     else:
-        long = float(prop[long_ref])
+        if float(prop[long_ref]) > 200:
+            long = str(float(prop[long_ref]))
+            long = long[:3] + '.' + long[3:]
+        else:
+            long = float(prop[long_ref])
     
     if prop[title_TH_ref] == None or prop[title_TH_ref] == "":
         title_TH = None
@@ -190,17 +261,17 @@ def prepare_variable(prop,agent):
         classified_type = "ขาย"
     
     if price_Sale != None:
-        if prop[sale_reservation_ref] == None or prop[sale_reservation_ref] == ".00" or prop[sale_reservation_ref] == "":
+        if prop[sale_reservation_ref] == None or prop[sale_reservation_ref] == ".00" or prop[sale_reservation_ref] == "" or str(prop[sale_reservation_ref]) == "0":
             sale_reservation = None
         else:
             sale_reservation = int(round(float(prop[sale_reservation_ref])))
         
-        if prop[sale_transfer_fee_ref] == None or prop[sale_transfer_fee_ref] == ".00" or prop[sale_transfer_fee_ref] == "":
+        if prop[sale_transfer_fee_ref] == None or prop[sale_transfer_fee_ref] == ".00" or prop[sale_transfer_fee_ref] == "" or str(prop[sale_transfer_fee_ref]) == "0":
             sale_transfer_fee = None
         else:
             sale_transfer_fee = (round(float(prop[sale_transfer_fee_ref])) * 100) / price_Sale
         
-        if prop[sale_contact_ref] == None or prop[sale_contact_ref] == ".00" or prop[sale_contact_ref] == "" or prop[sale_contact_ref] == "0":
+        if prop[sale_contact_ref] == None or prop[sale_contact_ref] == ".00" or prop[sale_contact_ref] == "" or str(prop[sale_contact_ref]) == "0":
             sale_contact = None
         else:
             sale_contact = round(float(prop[sale_contact_ref]),2)
@@ -251,7 +322,7 @@ def prepare_variable(prop,agent):
     
     if "Storey" in prop[floor_ref]:
         floor = '2'
-    elif prop[floor_ref] == None or prop[floor_ref] == "-":
+    elif prop[floor_ref] == None or prop[floor_ref] == "-" or prop[floor_ref] == "":
         floor = None
     elif round(float(prop[floor_ref])) == 0:
         floor = None
@@ -292,47 +363,77 @@ def prepare_variable(prop,agent):
     if prop[direction_ref] == None:
         direction = None
     else:
-        if "East" in prop[direction_ref]:
+        if "East" in prop[direction_ref] or "ตะวันออก" == prop[direction_ref]:
             direction = "หันหน้าทิศตะวันออก"
-        elif "West" in prop[direction_ref]:
+        elif "West" in prop[direction_ref] or "ตะวันตก" == prop[direction_ref]:
             direction = "หันหน้าทิศตะวันตก"
-        elif "North" in prop[direction_ref]:
+        elif "North" in prop[direction_ref] or "เหนือ" == prop[direction_ref]:
             direction = "หันหน้าทิศเหนือ"
-        elif "South" in prop[direction_ref]:
+        elif "South" in prop[direction_ref] or "ใต้" == prop[direction_ref]:
             direction = "หันหน้าทิศใต้"
+        elif "ตะวันตกเฉียงเหนือ" == prop[direction_ref]:
+            direction = "หันหน้าทิศตะวันตกเฉียงเหนือ"
+        elif "ตะวันตกเฉียงใต้" == prop[direction_ref]:
+            direction = "หันหน้าทิศตะวันตกเฉียงใต้"
+        elif "ตะวันออกเฉียงเหนือ" == prop[direction_ref]:
+            direction = "หันหน้าทิศตะวันออกเฉียงเหนือ"
+        elif "ตะวันออกเฉียงใต้" == prop[direction_ref]:
+            direction = "หันหน้าทิศตะวันออกเฉียงใต้"
+        else:
+            direction = None
     
     if prop[furnish_ref] == "Un furnished" or prop[furnish_ref] == " No Furnished" or prop[furnish_ref] == "Unfurnished":
         furnish = "Non Furnished"
-    elif prop[furnish_ref] == "Partly Furnished" or prop[furnish_ref] == " Partly Furnished" or prop[furnish_ref] == "semi" or prop[furnish_ref] == "Partially":
+    elif prop[furnish_ref] == "Partly Furnished" or prop[furnish_ref] == " Partly Furnished" or prop[furnish_ref] == "semi" or prop[furnish_ref] == "Partially" or prop[furnish_ref] == " Partly Furnished":
         furnish = "Fully Fitted"
     elif prop[furnish_ref] == "Fully Furnished" or prop[furnish_ref] == " Fully Furnished" or prop[furnish_ref] == "fully" or prop[furnish_ref] == "Fully":
         furnish = "Fully Furnished"
     else:
         furnish = None
     
-    if prop[move_in_ref] == None:
-        move_in = None
+    if agent != 'BC':
+        if prop[move_in_ref] == None:
+            move_in = None
+        else:
+            move_in = "พร้อมให้เข้าอยู่"
+        if prop[created_Date_ref] == None or prop[created_Date_ref] == "":
+            created_Date = None
+        else:
+            created_Date = prop[created_Date_ref]
+            created_Date = datetime.strptime(created_Date, '%Y-%m-%d %H:%M:%S.%f')
+            created_Date = created_Date.strftime('%Y-%m-%d %H:%M:%S')
+        
+        if prop[last_Updated_Date_ref] == None or prop[last_Updated_Date_ref] == "":
+            last_Updated_Date = None
+        else:
+            last_Updated_Date = prop[last_Updated_Date_ref]
+            last_Updated_Date = datetime.strptime(last_Updated_Date, '%Y-%m-%d %H:%M:%S.%f')
+            last_Updated_Date = last_Updated_Date.strftime('%Y-%m-%d %H:%M:%S')
     else:
-        move_in = "พร้อมให้เข้าอยู่"
+        if prop[move_in_ref] == None:
+            move_in = None
+        else:
+            move_in_Date = prop[move_in_ref]
+            move_in_Date = re.sub('T',' ',move_in_Date)
+            if '.' in move_in_Date:
+                move_in_Date = datetime.strptime(move_in_Date, '%Y-%m-%d %H:%M:%S.%f')
+            else:
+                move_in_Date = datetime.strptime(move_in_Date, '%Y-%m-%d %H:%M:%S')
+            datediff =  move_in_Date - datetime.now()
+            if datediff.days <= 0:
+                move_in = "พร้อมให้เข้าอยู่"
+            elif datediff.days <= 90:
+                move_in = "ภายใน 1 - 3 เดือน"
+            else:
+                move_in = "มากกว่า 3 เดือน"
+        
+        last_Updated_Date = date_bc_plus(prop[last_Updated_Date_ref])
+        created_Date = date_bc_plus(prop[created_Date_ref])
     
     if prop[image_ref] == None or prop[image_ref] == "[]":
         image_urls = None
     else:
         image_urls = prop[image_ref]
-
-    if prop[created_Date_ref] == None or prop[created_Date_ref] == "":
-        created_Date = None
-    else:
-        created_Date = prop[created_Date_ref]
-        created_Date = datetime.strptime(created_Date, '%Y-%m-%d %H:%M:%S.%f')
-        created_Date = created_Date.strftime('%Y-%m-%d %H:%M:%S')
-    
-    if prop[last_Updated_Date_ref] == None or prop[last_Updated_Date_ref] == "":
-        last_Updated_Date = None
-    else:
-        last_Updated_Date = prop[last_Updated_Date_ref]
-        last_Updated_Date = datetime.strptime(last_Updated_Date, '%Y-%m-%d %H:%M:%S.%f')
-        last_Updated_Date = last_Updated_Date.strftime('%Y-%m-%d %H:%M:%S')
     
     insert_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     update_insert_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -512,8 +613,14 @@ def check_status(cursor,connection,user_id,property_list,stop_processing,agent):
     for i, info in enumerate(classified):
         if stop_processing:
             break
-        ref_ref  = 'Ref_ID'
-        status_update = '3'
+        if agent != 'BC':
+            ref_ref  = 'Ref_ID'
+        else:
+            ref_ref  = 'id'
+        if agent == 'BC' or agent == 'Bangkok_Residence':
+            status_update = '3'
+        else:
+            status_update = '2'
         classified_id = info[0]
         classified_ref_id = info[1]
         found_ref = next((item for item in property_list if str(item[ref_ref]) == classified_ref_id), None)
