@@ -1,9 +1,10 @@
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import mysql.connector
+from datetime import datetime
 
 ## ggsheet connect
-#json_file = r"C:\PYTHON\TAR.thelist.web2\realist\contract_form\access.json"
+#json_file = rf"C:\Users\RealResearcher1\Documents\GitHub\TAR.thelist.web2\realist\contract_form\access.json"
 json_file = r"/home/gitprod/ta_python/contact_form/access.json"
 
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -39,21 +40,30 @@ except Exception as e:
     print(f'Error: {e}')
 #------------------------------------------------------------------------------------------------------------------------------------------------------
 # function
-def check_null(variable,i):
+def check_null(variable,i,table):
     if variable == None:
         variable = ''
     else:
-        if i == 9 or i == 10 or i == 12:
-            variable = int(variable)
+        if table == 'condo':
+            if i == 9 or i == 10 or i == 12:
+                variable = int(variable)
+            else:
+                variable = str(variable).strip()
         else:
-            variable = str(variable).strip()
+            if i == 9 or i == 10:
+                variable = int(variable)
+            else:
+                variable = str(variable).strip()
     return variable
 
-def insert_ggsheet(query):
+def insert_ggsheet(query,table):
     column_values = sheet.col_values(14)
     column_values = column_values[1:]
-    column_values.sort(reverse=True)
-    lastest_date = column_values[0]
+    if column_values:
+        column_values.sort(reverse=True)
+        lastest_date = column_values[0]
+    else:
+        lastest_date = f"{datetime.now().year}-01-01 00:00:00"
     
     val = (lastest_date,)
     cursor.execute(query,val)
@@ -64,7 +74,7 @@ def insert_ggsheet(query):
         for i, data in enumerate(row):
             if i == 13:
                 data = data.strftime('%Y-%m-%d %H:%M:%S')
-            rows_to_append.append(check_null(data,i))
+            rows_to_append.append(check_null(data,i,table))
         #print("Data to append:", rows_to_append)
         sheet.append_rows([rows_to_append])
 #--------------------------------------------------------------------------------------------------------------------------------------------------
@@ -90,10 +100,10 @@ if sql:
                 left join real_condo rc on rcf.Contact_Ref_ID = rc.Condo_Code
                 left join condo_developer cd on rc.Developer_Code = cd.Developer_Code
                 left join all_condo_price_calculate cpc on rcf.Contact_Ref_ID = cpc.Condo_Code or rc.Condo_Redirect = cpc.Condo_Code
-                where rcf.Contact_Ref_ID like 'CD%'
+                where rcf.Contact_Type = 'contact'
                 and rcf.Contact_Date > %s
                 ORDER BY rcf.Contact_Date  ASC"""
-    insert_ggsheet(query)
+    insert_ggsheet(query,'condo')
     #---------------------------------------------------------------------------------------------------------------------------------------------
     #sheet 2
     sheet = spreadsheet.worksheet('classified')
@@ -118,12 +128,62 @@ if sql:
             left join real_condo rc on c.Condo_Code = rc.Condo_Code
             left join condo_developer cd on rc.Developer_Code = cd.Developer_Code
             left join all_condo_price_calculate cpc on c.Condo_Code = cpc.Condo_Code or rc.Condo_Redirect = cpc.Condo_Code
-            where rcf.Contact_Ref_ID not like 'CD%'
-            and c.Classified_Status <> '2'
+            where rcf.Contact_Type = 'classified'
             and rcf.Contact_Date > %s
             ORDER BY rcf.Contact_Date  ASC"""
-    insert_ggsheet(query)
+    insert_ggsheet(query,'condo')
     #-------------------------------------------------------------------------------------------------------------------------------------------------------
+    #sheet 3
+    sheet = spreadsheet.worksheet('housing_template')
+    query = """SELECT rcf.Contact_Ref_ID as Housing_Code
+                    , h.Housing_ENName
+                    , cd.Developer_ENName
+                    , rcf.Contact_Name
+                    , rcf.Contact_Tel
+                    , rcf.Contact_Email
+                    , rcf.Contact_Room_Status
+                    , rcf.Contact_Position
+                    , rcf.Contact_Decision_Time
+                    , h.Housing_Price_Min
+                    , h.Housing_Price_Max
+                    , h.Housing_Built_Start
+                    , h.Housing_Built_Finished
+                    , rcf.Contact_Date
+                    , rcf.Contact_Link
+                FROM real_contact_form rcf
+                left join housing h on rcf.Contact_Ref_ID = h.Housing_Code
+                left join condo_developer cd on h.Developer_Code = cd.Developer_Code
+                where rcf.Contact_Type = 'housingcontact'
+                and rcf.Contact_Date > %s
+                ORDER BY rcf.Contact_Date  ASC"""
+    insert_ggsheet(query,'housing')
+    #-------------------------------------------------------------------------------------------------------------------------------------------------------
+    #sheet 4
+    sheet = spreadsheet.worksheet('housing_classified')
+    query = """SELECT cu.First_Name
+                , rcf.Contact_Ref_ID
+                , h.Housing_Code
+                , h.Housing_ENName
+                , cd.Developer_ENName
+                , rcf.Contact_Name
+                , rcf.Contact_Tel
+                , rcf.Contact_Email
+                , rcf.Contract_Classified_Text
+                , h.Housing_Price_Min
+                , h.Housing_Price_Max
+                , h.Housing_Built_Start
+                , h.Housing_Built_Finished
+                , rcf.Contact_Date
+                , rcf.Contact_Link
+            FROM real_contact_form rcf
+            left join housing_classified hc on rcf.Contact_Ref_ID = hc.Classified_ID
+            left join classified_user cu on hc.User_ID = cu.User_ID
+            left join housing h on hc.Housing_Code = h.Housing_Code
+            left join condo_developer cd on h.Developer_Code = cd.Developer_Code
+            where rcf.Contact_Type = 'housingclassified'
+            and rcf.Contact_Date > %s
+            ORDER BY rcf.Contact_Date  ASC"""
+    insert_ggsheet(query,'housing')
 
 cursor.close()
 connection.close()
