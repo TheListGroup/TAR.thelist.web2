@@ -45,19 +45,19 @@ def check_null(variable,i,table):
         variable = ''
     else:
         if table == 'condo':
-            if i == 9 or i == 10 or i == 12:
+            if i == 10 or i == 11 or i == 13:
                 variable = int(variable)
             else:
                 variable = str(variable).strip()
         else:
-            if i == 9 or i == 10:
+            if i == 10 or i == 11:
                 variable = int(variable)
             else:
                 variable = str(variable).strip()
     return variable
 
 def insert_ggsheet(query,table):
-    column_values = sheet.col_values(14)
+    column_values = sheet.col_values(15)
     column_values = column_values[1:]
     if column_values:
         column_values.sort(reverse=True)
@@ -72,7 +72,7 @@ def insert_ggsheet(query,table):
     for row in new_data:
         rows_to_append = []
         for i, data in enumerate(row):
-            if i == 13:
+            if i == 14:
                 data = data.strftime('%Y-%m-%d %H:%M:%S')
             rows_to_append.append(check_null(data,i,table))
         #print("Data to append:", rows_to_append)
@@ -81,7 +81,8 @@ def insert_ggsheet(query,table):
 if sql:
     #sheet 1
     sheet = spreadsheet.worksheet('condo_template')
-    query = """SELECT rcf.Contact_Ref_ID as Condo_Code
+    query = """SELECT rcf.Contact_ID
+                    , rcf.Contact_Ref_ID as Condo_Code
                     , rc.Condo_ENName
                     , cd.Developer_ENName
                     , rcf.Contact_Name
@@ -107,7 +108,8 @@ if sql:
     #---------------------------------------------------------------------------------------------------------------------------------------------
     #sheet 2
     sheet = spreadsheet.worksheet('classified')
-    query = """SELECT cu.First_Name
+    query = """SELECT rcf.Contact_ID
+                , cu.First_Name
                 , rcf.Contact_Ref_ID
                 , c.Condo_Code
                 , rc.Condo_ENName
@@ -135,7 +137,8 @@ if sql:
     #-------------------------------------------------------------------------------------------------------------------------------------------------------
     #sheet 3
     sheet = spreadsheet.worksheet('housing_template')
-    query = """SELECT rcf.Contact_Ref_ID as Housing_Code
+    query = """SELECT rcf.Contact_ID
+                    , rcf.Contact_Ref_ID as Housing_Code
                     , h.Housing_ENName
                     , cd.Developer_ENName
                     , rcf.Contact_Name
@@ -160,7 +163,8 @@ if sql:
     #-------------------------------------------------------------------------------------------------------------------------------------------------------
     #sheet 4
     sheet = spreadsheet.worksheet('housing_classified')
-    query = """SELECT cu.First_Name
+    query = """SELECT rcf.Contact_ID
+                , cu.First_Name
                 , rcf.Contact_Ref_ID
                 , h.Housing_Code
                 , h.Housing_ENName
