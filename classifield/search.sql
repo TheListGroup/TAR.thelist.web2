@@ -25,6 +25,9 @@ select c.Classified_ID
     , td.name_th as District_Name
     , cv.Badge_Home as Badge_Home
     , cv.Badge_Listing_or_Template as Badge_Listing_or_Template
+    , rc.Condo_Latitude as Condo_Latitude
+    , rc.Condo_Longitude as Condo_Longitude
+    , rc.Condo_ScopeArea as Condo_ScopeArea
 from classified c
 join condo_fetch_for_map cf on c.Condo_Code = cf.Condo_Code
 join real_condo rc on c.Condo_Code = rc.Condo_Code
@@ -85,6 +88,9 @@ create table if not exists search_classified (
     District_Name varchar(250) null,
     Badge_Home text null,
     Badge_Listing_or_Template text null,
+    Condo_Latitude double null,
+    Condo_Longitude double null,
+    Condo_ScopeArea TEXT null,
     primary key (ID),
     FULLTEXT (Search_Province),
     FULLTEXT (Search_Realist_Yarn),
@@ -124,6 +130,9 @@ BEGIN
     DECLARE v_name21 VARCHAR(250) DEFAULT NULL;
     DECLARE v_name22 TEXT DEFAULT NULL;
     DECLARE v_name23 TEXT DEFAULT NULL;
+    DECLARE v_name24 double DEFAULT NULL;
+    DECLARE v_name25 double DEFAULT NULL;
+    DECLARE v_name26 TEXT DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(70) DEFAULT 'truncateInsert_search_classified';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -136,7 +145,7 @@ BEGIN
     DECLARE cur CURSOR FOR SELECT Classified_ID, Condo_Code, Condo_Age, Title_TH, Title_ENG, Price_Rent, Price_Sale, Bedroom, Bathroom, Size
                                 , Search_Province, Search_Realist_Yarn, Search_Mass_Transit, Search_University, Search_Airport, Search_Custom_Yarn
                                 , Search_Spotlight, Last_Updated_Date, Condo_Name, Image, Province_Name, District_Name
-                                , Badge_Home, Badge_Listing_or_Template
+                                , Badge_Home, Badge_Listing_or_Template, Condo_Latitude, Condo_Longitude, Condo_ScopeArea
                             FROM source_search_classified ;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -155,7 +164,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26;
 
         IF done THEN
             LEAVE read_loop;
@@ -186,9 +195,12 @@ BEGIN
                 `Province_Name`,
                 `District_Name`,
                 `Badge_Home`,
-                `Badge_Listing_or_Template`
+                `Badge_Listing_or_Template`,
+                `Condo_Latitude`,
+                `Condo_Longitude`,
+                `Condo_ScopeArea`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26);
         
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
