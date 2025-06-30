@@ -282,6 +282,8 @@ BEGIN
 	DECLARE v_name2 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name3 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name4 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name5 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name6 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_real_condo_rental';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -291,7 +293,8 @@ BEGIN
 	DECLARE errorcheck      BOOLEAN		DEFAULT 1;
     DECLARE done INT DEFAULT FALSE;
 
-    DECLARE cur CURSOR FOR SELECT Condo_Code, Rent_Per_Unit_Date, Rent_Per_Unit, Rental_Yield_Percent_Date, Rental_Yield_Percent
+    DECLARE cur CURSOR FOR SELECT Condo_Code, Rent_Per_Unit_Date, Rent_Per_Unit, Rental_Yield_Percent_Date
+                                , Rental_Yield_Percent, Rent_Per_Unit_Sqm_Date, Rent_Per_Unit_Sqm
                                 FROM source_real_condo_rental_view;
 	
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -309,7 +312,7 @@ BEGIN
 	
     OPEN cur;
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6;
         
         IF done THEN
             LEAVE read_loop;
@@ -321,9 +324,11 @@ BEGIN
 				Rent_Per_Unit_Date,
 				Rent_Per_Unit,
 				Rental_Yield_Percent_Date,
-				Rental_Yield_Percent
+				Rental_Yield_Percent,
+				Rent_Per_Unit_Sqm_Date,
+				Rent_Per_Unit_Sqm
 			)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6);
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;
         SET i = i + 1;
