@@ -142,6 +142,8 @@ CREATE TABLE IF NOT EXISTS `real_condo_rental` (
     Rent_Per_Unit float NULL,
     Rental_Yield_Percent_Date date NULL,
     Rental_Yield_Percent float null,
+    Rent_Per_Unit_Sqm_Date date NULL,
+    Rent_Per_Unit_Sqm float null,
     PRIMARY KEY (`ID`),
     INDEX r_code (Condo_Code))
 ENGINE = InnoDB;
