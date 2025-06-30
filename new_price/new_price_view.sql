@@ -93,7 +93,22 @@ union all select * from (select total_rent.Condo_Code
 								where Rent = 1
 								group by Condo_Code) total_rent
 						where total_rent.Total_Room_Count_Rent >= 3
-						and total_rent.Total_Price_Per_Unit_Rent is not null) unit_rent;
+						and total_rent.Total_Price_Per_Unit_Rent is not null) unit_rent
+union all select * from (select total_rent.Condo_Code
+							, CURRENT_DATE as Data_Date
+							, 'rent_per_unit_sqm' as Data_Attribute
+							, round(total_rent.Total_Price_Per_Unit_Sqm_Rent) as Data_Value
+						from (select Condo_Code
+									, SUM(Price_Rent*Size)/SUM(Size) as Total_Price_Per_Unit_Rent
+									, SUM((Price_Rent/Size)*Size)/SUM(Size) as Total_Price_Per_Unit_Sqm_Rent
+									, count(*) as Total_Room_Count_Rent
+									, AVG(Size) as Total_Average_Sqm_Rent
+									, sum(Size) as Total_Total_Sqm_Rent
+								from all_classified_view
+								where Rent = 1
+								group by Condo_Code) total_rent
+						where total_rent.Total_Room_Count_Rent >= 3
+						and total_rent.Total_Price_Per_Unit_Sqm_Rent is not null) unit_rent_sqm;
 
 -- source_real_condo_rental_view
 create or replace view source_real_condo_rental_view as
@@ -102,6 +117,8 @@ select cpc.Condo_Code
 	, rp.Data_Value as Rent_Per_Unit
 	, ry.Data_Date as Rental_Yield_Percent_Date
 	, ry.Data_Value as Rental_Yield_Percent
+	, rpq.Data_Date as Rent_Per_Unit_Sqm_Date
+	, rpq.Data_Value as Rent_Per_Unit_Sqm
 from all_condo_price_calculate_view cpc
 left join (select Condo_Code
 				, Data_Date
@@ -134,7 +151,12 @@ left join (select Condo_Code
 											where classified.Data_Attribute = 'rental_yield_percent') classified) sub) all_web
 			where Myorder = 1) ry
 on cpc.Condo_Code = ry.Condo_Code
-where (rp.Data_Value is not null or ry.Data_Value is not null);
+left join (select Condo_Code
+				, Data_Date
+				, Data_Value
+			from classified_price
+			where Data_Attribute = 'rent_per_unit_sqm') rpq on cpc.Condo_Code = rpq.Condo_Code
+where (rp.Data_Value is not null or ry.Data_Value is not null or rpq.Data_Value is not null);
 
 
 -- source_all_price_view
