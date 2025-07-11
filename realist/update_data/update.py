@@ -122,4 +122,6 @@ if sql:
             work = 'insert'
         x = work_process(sheet,table_name[i],column_updatetime[i],x,work,cursor,connection)
         print(f'{sheet} Done')
-print('DONE')
+    cursor.close()
+    connection.close()
+print('Done -- Connection closed')
