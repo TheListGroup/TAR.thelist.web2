@@ -33,7 +33,7 @@ join condo_fetch_for_map cf on c.Condo_Code = cf.Condo_Code
 join real_condo rc on c.Condo_Code = rc.Condo_Code
 join thailand_district td on cf.District_ID = td.district_code
 join thailand_province tp on cf.Province_ID = tp.province_code
-join (select Classified_ID,JSON_ARRAYAGG( JSON_OBJECT('Classified_Image_ID',Classified_Image_ID
+left join (select Classified_ID,JSON_ARRAYAGG( JSON_OBJECT('Classified_Image_ID',Classified_Image_ID
                                                     , 'Classified_Image_Type',Classified_Image_Type
                                                     , 'Classified_Image_Caption',Classified_Image_Caption
                                                     , 'Classified_Image_URL',concat('/realist/condo/uploads/classified/',lpad(Classified_ID,6,0),'/',Classified_Image_URL)
