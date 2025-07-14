@@ -1,4 +1,3 @@
-
 -- view search_classified
 create or replace view source_search_classified as
 select c.Classified_ID
@@ -28,11 +27,13 @@ select c.Classified_ID
     , rc.Condo_Latitude as Condo_Latitude
     , rc.Condo_Longitude as Condo_Longitude
     , rc.Condo_ScopeArea as Condo_ScopeArea
+    , concat_ws(' ',rc.Brand_Code,rc.Developer_Code,rcp.Condo_Segment) as Search_Detail
 from classified c
 join condo_fetch_for_map cf on c.Condo_Code = cf.Condo_Code
 join real_condo rc on c.Condo_Code = rc.Condo_Code
 join thailand_district td on cf.District_ID = td.district_code
 join thailand_province tp on cf.Province_ID = tp.province_code
+left join real_condo_price rcp on c.Condo_Code = rcp.Condo_Code
 left join (select Classified_ID,JSON_ARRAYAGG( JSON_OBJECT('Classified_Image_ID',Classified_Image_ID
                                                     , 'Classified_Image_Type',Classified_Image_Type
                                                     , 'Classified_Image_Caption',Classified_Image_Caption
@@ -91,6 +92,7 @@ create table if not exists search_classified (
     Condo_Latitude double null,
     Condo_Longitude double null,
     Condo_ScopeArea TEXT null,
+    Search_Detail TEXT null,
     primary key (ID),
     FULLTEXT (Search_Province),
     FULLTEXT (Search_Realist_Yarn),
@@ -133,6 +135,7 @@ BEGIN
     DECLARE v_name24 double DEFAULT NULL;
     DECLARE v_name25 double DEFAULT NULL;
     DECLARE v_name26 TEXT DEFAULT NULL;
+    DECLARE v_name27 TEXT DEFAULT NULL;
 
     DECLARE proc_name       VARCHAR(70) DEFAULT 'truncateInsert_search_classified';
     DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -145,7 +148,7 @@ BEGIN
     DECLARE cur CURSOR FOR SELECT Classified_ID, Condo_Code, Condo_Age, Title_TH, Title_ENG, Price_Rent, Price_Sale, Bedroom, Bathroom, Size
                                 , Search_Province, Search_Realist_Yarn, Search_Mass_Transit, Search_University, Search_Airport, Search_Custom_Yarn
                                 , Search_Spotlight, Last_Updated_Date, Condo_Name, Image, Province_Name, District_Name
-                                , Badge_Home, Badge_Listing_or_Template, Condo_Latitude, Condo_Longitude, Condo_ScopeArea
+                                , Badge_Home, Badge_Listing_or_Template, Condo_Latitude, Condo_Longitude, Condo_ScopeArea, Search_Detail
                             FROM source_search_classified ;
 
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -164,7 +167,7 @@ BEGIN
     OPEN cur;
 
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27;
 
         IF done THEN
             LEAVE read_loop;
@@ -198,9 +201,10 @@ BEGIN
                 `Badge_Listing_or_Template`,
                 `Condo_Latitude`,
                 `Condo_Longitude`,
-                `Condo_ScopeArea`
+                `Condo_ScopeArea`,
+                `Search_Detail`
                 )
-        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26);
+        VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6,v_name7,v_name8,v_name9,v_name10,v_name11,v_name12,v_name13,v_name14,v_name15,v_name16,v_name17,v_name18,v_name19,v_name20,v_name21,v_name22,v_name23,v_name24,v_name25,v_name26,v_name27);
         
         GET DIAGNOSTICS nrows = ROW_COUNT;
         SET total_rows = total_rows + nrows;
