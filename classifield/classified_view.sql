@@ -285,7 +285,7 @@ select c.Classified_ID
     , ifnull(concat('(',format(round((CAST(CAST(c.Advance_Payment AS CHAR) AS UNSIGNED)*c.Price_Rent)),0),' บ.)'),null) as Sub_Advance_Payment
     , cu.Email as Mail
     , c.Classified_Status as Classified_Status
-    , ifnull(cu.First_Name, cu.User_Code) as Agent_Name
+    , ifnull(cu.User_Code, cu.First_Name) as Agent_Name
     , td.name_th as District_Name
     , ts.name_th as SubDistrict_Name
     , tp.name_th as Province_Name
