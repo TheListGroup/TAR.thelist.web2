@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS `all_condo_price_calculate` (
     Condo_Price_Per_Unit_Date DATE NULL,
     Source_Condo_Price_Per_Unit VARCHAR(250) NULL,
     Full_Source_Condo_Price_Per_Unit VARCHAR(250) NULL,
-    Condo_Sold_Status_Show_Value VARCHAR(10) NULL,
+    Condo_Sold_Status_Show_Value VARCHAR(100) NULL,
     Condo_Sold_Status_Date DATE NULL,
     Source_Condo_Sold_Status_Show_Value VARCHAR(250) NULL,
     Full_Source_Condo_Sold_Status_Show_Value VARCHAR(250) NULL,
