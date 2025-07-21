@@ -425,13 +425,13 @@ SELECT cpc.Condo_Code as Condo_Code,
         if(if(ifnull(rcft.Passenger_Lift_Amount,0)+ifnull(rcft.Service_Lift_Amount,0)>0,1,0) + 
             if(ifnull(rcft.Pool_Width,0)+ifnull(rcft.Pool_Length,0)>0,1,0)>0,1,0)=2,1,0) as FactSheet_Status
 FROM all_condo_price_calculate as cpc
-inner join real_condo_price as rcp on cpc.Condo_Code = rcp.Condo_Code
-inner join real_condo as rc on cpc.Condo_Code = rc.Condo_Code
+left join real_condo_price as rcp on cpc.Condo_Code = rcp.Condo_Code
+left join real_condo as rc on cpc.Condo_Code = rc.Condo_Code
 left join thailand_district as td on rc.District_ID = td.district_code
 left join real_yarn_main as rd on rc.RealDistrict_Code = rd.District_Code
-inner join thailand_province as tp on rc.Province_ID = tp.province_code
-inner join real_condo_full_template as rcft on cpc.Condo_Code = rcft.Condo_Code
-inner join factsheet_price_view price on cpc.Condo_Code = price.Condo_Code
+left join thailand_province as tp on rc.Province_ID = tp.province_code
+left join real_condo_full_template as rcft on cpc.Condo_Code = rcft.Condo_Code
+left join factsheet_price_view price on cpc.Condo_Code = price.Condo_Code
 left join ( select Condo_Code,Station_THName_Display as Station
             from (  select cv.Condo_Code
                             , ms.Station_THName_Display
@@ -441,7 +441,7 @@ left join ( select Condo_Code,Station_THName_Display as Station
                     order by cv.Condo_Code) a
             where a.RowNum = 1) as sub_station
 on cpc.Condo_Code = sub_station.Condo_Code
-inner join (select rc.Condo_Code as Condo_Code, size1.STU_Size, size2.1BED_Size, size3.2BED_Size, size4.3BED_Size, size5.4BED_Size
+left join (select rc.Condo_Code as Condo_Code, size1.STU_Size, size2.1BED_Size, size3.2BED_Size, size4.3BED_Size, size5.4BED_Size
             from real_condo rc
             left join (SELECT Condo_Code
                         ,   if(roundsize(min(size))=roundsize(max(size)),unitsqm(roundsize(min(Size))),
