@@ -358,25 +358,27 @@ select a.Condo_Code
 		, avg_unit.Price_Source) as Source_Condo_Price_Per_Unit
 	, ifnull(start_unit.Full_Price_Source
 		, avg_unit.Full_Price_Source) as Full_Source_Condo_Price_Per_Unit
-	, if(cal_561_mb.Data_Value is not null
-		, if((cal_561_mb.Data_Value/100) <= 0
-			, 'PRESALE'
-			, if((cal_561_mb.Data_Value/100) >= 1
-				, 'RESALE'
-				, round((cal_561_mb.Data_Value/100), 2)))
-		, if(b.Condo_Built_Finished is not null
-			, if((b.Condo_Built_Finished + interval 5 year) < now()
-				, 'RESALE'
-				, null)
-			, if(b.Condo_Built_Start is not null
-				, if(a.Condo_HighRise = 1
-					, if((b.Condo_Built_Start + interval 9 year) < now()
-						, 'RESALE'
-						, null)
-					, if((b.Condo_Built_Start + interval 8 year) < now()
-						, 'RESALE'
-						, null))
-				, 'RESALE'))) as Condo_Sold_Status_Show_Value
+	, if(a.Condo_Sale_Status = 0
+		, 'ไม่ขายแล้ว'
+		, if(cal_561_mb.Data_Value is not null
+			, if((cal_561_mb.Data_Value/100) <= 0
+				, 'PRESALE'
+				, if((cal_561_mb.Data_Value/100) >= 1
+					, 'RESALE'
+					, round((cal_561_mb.Data_Value/100), 2)))
+			, if(b.Condo_Built_Finished is not null
+				, if((b.Condo_Built_Finished + interval 5 year) < now()
+					, 'RESALE'
+					, null)
+				, if(b.Condo_Built_Start is not null
+					, if(a.Condo_HighRise = 1
+						, if((b.Condo_Built_Start + interval 9 year) < now()
+							, 'RESALE'
+							, null)
+						, if((b.Condo_Built_Start + interval 8 year) < now()
+							, 'RESALE'
+							, null))
+					, 'RESALE')))) as Condo_Sold_Status_Show_Value
 	, cal_561_mb.Price_Source as Source_Condo_Sold_Status_Show_Value
 	, cal_561_mb.Full_Price_Source as Full_Source_Condo_Sold_Status_Show_Value
 	, cal_561_mb.Data_Date as Condo_Sold_Status_Date
