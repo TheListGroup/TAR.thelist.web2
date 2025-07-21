@@ -340,8 +340,13 @@ SELECT cpc.Condo_Code as Condo_Code,
     nun(concat(format(rc.Condo_TotalRai,2),' ไร่')) as Land,
     nun(rc.Condo_Building) as Condo_Building,
     nun(concat(rc.Condo_TotalUnit,' ยูนิต')) as Condo_Total_Unit,
-    if(cpc.Condo_Sold_Status_Show_Value = 'RESALE','RESALE',
-        nun(concat(format((cpc.Condo_Sold_Status_Show_Value*100),0),'% SOLD'))) as Condo_Sold_Status_Show_Value,
+    if(cpc.Condo_Sold_Status_Show_Value = 'RESALE'
+        , 'RESALE'
+        , if(cpc.Condo_Sold_Status_Show_Value = 'PRESALE'
+            , 'PRESALE'
+            , if(cpc.Condo_Sold_Status_Show_Value = 'ไม่ขายแล้ว'
+                , 'ไม่ขายแล้ว'
+                , nun(concat(format((cpc.Condo_Sold_Status_Show_Value*100),0),'% SOLD'))))) as Condo_Sold_Status_Show_Value,
     nun(cpc.Source_Condo_Sold_Status_Show_Value) as Source_Condo_Sold_Status_Show_Value,
     nun(bedsize.STU_Size) as STU_Size,
     nun(bedsize.1BED_Size) as 1BED_Size,
@@ -510,7 +515,7 @@ CREATE TABLE IF NOT EXISTS `full_template_factsheet` (
     `Land` VARCHAR(20) NOT NULL,
     `Condo_Building` VARCHAR(250) NOT NULL,
     `Condo_Total_Unit` VARCHAR(30) NOT NULL,
-    `Condo_Sold_Status_Show_Value` VARCHAR(10) NOT NULL,
+    `Condo_Sold_Status_Show_Value` VARCHAR(50) NOT NULL,
     `Source_Condo_Sold_Status_Show_Value` VARCHAR(250) NOT NULL,
     `STU_Size` VARCHAR(50) NOT NULL,
     `1BED_Size` VARCHAR(50) NOT NULL,
