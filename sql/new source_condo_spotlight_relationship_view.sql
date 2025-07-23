@@ -100,19 +100,13 @@ SELECT
     if((`a`.`Condo_HighRise` = 1), 'Y', 'N') AS `CUS029`,
     if((`c`.`Condo_Sold_Status_Show_Value` = 'RESALE'),'N','Y') AS `CUS030`,
     if((`c`.`Condo_Sold_Status_Show_Value` = 'RESALE'),'Y','N') AS `CUS031`,
-    if((`b`.`Condo_Built_Finished` is not null),
-        if(((year(curdate()) - (year(`b`.`Condo_Built_Finished`) + 1)) > 0),
-            'N',
-            'Y'),
-        if((`b`.`Condo_Built_Start` is not null),
-            if((`a`.`Condo_HighRise` = 1),
-                if(((year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)) > 0),
-                    'N',
-                    'Y'),
-                if(((year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)) > 0),
-                    'N',
-                    'Y')),
-            'N')) AS `CUS032`,
+    (if(b.Condo_Built_Finished is not null
+        , if(DATEDIFF(CURRENT_DATE,b.Condo_Built_Finished) >= 1,'N','Y')
+        , if(b.Condo_Built_Start is not null
+            , if(a.Condo_HighRise = 1 or (a.Condo_HighRise = 0 and a.Condo_LowRise = 0)
+                , if(DATEDIFF(CURRENT_DATE,b.Condo_Built_Start) >= 1460,'N','Y')
+                , if(DATEDIFF(CURRENT_DATE,b.Condo_Built_Start) >= 1095,'N','Y'))
+            ,'Y'))) AS `CUS032`,
     if(((year(`c`.`Condo_Date_Calculate`) >= 2001) and (year(`c`.`Condo_Date_Calculate`) <= 2010)),'Y','N') AS `CUS033`,
     if(((year(`c`.`Condo_Date_Calculate`) >= 2011) and (year(`c`.`Condo_Date_Calculate`) <= 2020)),'Y','N') AS `CUS034`,
     if((year(`c`.`Condo_Date_Calculate`) = 2021),'Y','N') AS `CUS037`,
@@ -532,59 +526,59 @@ BEGIN
 			set errorcheck = 0;
         END;
 
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS001 ='Y' ) WHERE   Spotlight_Code = 'PS001';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS002 ='Y' ) WHERE   Spotlight_Code = 'PS002';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS003 ='Y' ) WHERE   Spotlight_Code = 'PS003';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS006 ='Y' ) WHERE   Spotlight_Code = 'PS006';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS007 ='Y' ) WHERE   Spotlight_Code = 'PS007';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS008 ='Y' ) WHERE   Spotlight_Code = 'PS008';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS009 ='Y' ) WHERE   Spotlight_Code = 'PS009';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS016 ='Y' ) WHERE   Spotlight_Code = 'PS016';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS017 ='Y' ) WHERE   Spotlight_Code = 'PS017';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS019 ='Y' ) WHERE   Spotlight_Code = 'PS019';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS021 ='Y' ) WHERE   Spotlight_Code = 'PS021';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS022 ='Y' ) WHERE   Spotlight_Code = 'PS022';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS024 ='Y' ) WHERE   Spotlight_Code = 'PS024';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS025 ='Y' ) WHERE   Spotlight_Code = 'PS025';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where PS026 ='Y' ) WHERE   Spotlight_Code = 'PS026';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS001 ='Y' ) WHERE   Spotlight_Code = 'CUS001';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS002 ='Y' ) WHERE   Spotlight_Code = 'CUS002';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS003 ='Y' ) WHERE   Spotlight_Code = 'CUS003';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS004 ='Y' ) WHERE   Spotlight_Code = 'CUS004';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS005 ='Y' ) WHERE   Spotlight_Code = 'CUS005';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS006 ='Y' ) WHERE   Spotlight_Code = 'CUS006';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS007 ='Y' ) WHERE   Spotlight_Code = 'CUS007';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS008 ='Y' ) WHERE   Spotlight_Code = 'CUS008';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS009 ='Y' ) WHERE   Spotlight_Code = 'CUS009';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS010 ='Y' ) WHERE   Spotlight_Code = 'CUS010';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS011 ='Y' ) WHERE   Spotlight_Code = 'CUS011';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS014 ='Y' ) WHERE   Spotlight_Code = 'CUS014';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS015 ='Y' ) WHERE   Spotlight_Code = 'CUS015';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS016 ='Y' ) WHERE   Spotlight_Code = 'CUS016';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS017 ='Y' ) WHERE   Spotlight_Code = 'CUS017';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS018 ='Y' ) WHERE   Spotlight_Code = 'CUS018';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS019 ='Y' ) WHERE   Spotlight_Code = 'CUS019';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS020 ='Y' ) WHERE   Spotlight_Code = 'CUS020';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS021 ='Y' ) WHERE   Spotlight_Code = 'CUS021';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS022 ='Y' ) WHERE   Spotlight_Code = 'CUS022';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS023 ='Y' ) WHERE   Spotlight_Code = 'CUS023';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS024 ='Y' ) WHERE   Spotlight_Code = 'CUS024';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS025 ='Y' ) WHERE   Spotlight_Code = 'CUS025';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS026 ='Y' ) WHERE   Spotlight_Code = 'CUS026';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS027 ='Y' ) WHERE   Spotlight_Code = 'CUS027';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS028 ='Y' ) WHERE   Spotlight_Code = 'CUS028';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS029 ='Y' ) WHERE   Spotlight_Code = 'CUS029';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS030 ='Y' ) WHERE   Spotlight_Code = 'CUS030';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS031 ='Y' ) WHERE   Spotlight_Code = 'CUS031';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS032 ='Y' ) WHERE   Spotlight_Code = 'CUS032';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS033 ='Y' ) WHERE   Spotlight_Code = 'CUS033';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS034 ='Y' ) WHERE   Spotlight_Code = 'CUS034';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS037 ='Y' ) WHERE   Spotlight_Code = 'CUS037';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS038 ='Y' ) WHERE   Spotlight_Code = 'CUS038';
-    UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS039 ='Y' ) WHERE   Spotlight_Code = 'CUS039';
-    UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS040 ='Y' ) WHERE   Spotlight_Code = 'CUS040';
-    UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS041 ='Y' ) WHERE   Spotlight_Code = 'CUS041';
-	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  condo_spotlight_relationship_view where CUS042 ='Y' ) WHERE   Spotlight_Code = 'CUS042';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS001 ='Y' ) WHERE   Spotlight_Code = 'PS001';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS002 ='Y' ) WHERE   Spotlight_Code = 'PS002';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS003 ='Y' ) WHERE   Spotlight_Code = 'PS003';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS006 ='Y' ) WHERE   Spotlight_Code = 'PS006';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS007 ='Y' ) WHERE   Spotlight_Code = 'PS007';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS008 ='Y' ) WHERE   Spotlight_Code = 'PS008';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS009 ='Y' ) WHERE   Spotlight_Code = 'PS009';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS016 ='Y' ) WHERE   Spotlight_Code = 'PS016';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS017 ='Y' ) WHERE   Spotlight_Code = 'PS017';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS019 ='Y' ) WHERE   Spotlight_Code = 'PS019';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS021 ='Y' ) WHERE   Spotlight_Code = 'PS021';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS022 ='Y' ) WHERE   Spotlight_Code = 'PS022';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS024 ='Y' ) WHERE   Spotlight_Code = 'PS024';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS025 ='Y' ) WHERE   Spotlight_Code = 'PS025';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where PS026 ='Y' ) WHERE   Spotlight_Code = 'PS026';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS001 ='Y' ) WHERE   Spotlight_Code = 'CUS001';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS002 ='Y' ) WHERE   Spotlight_Code = 'CUS002';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS003 ='Y' ) WHERE   Spotlight_Code = 'CUS003';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS004 ='Y' ) WHERE   Spotlight_Code = 'CUS004';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS005 ='Y' ) WHERE   Spotlight_Code = 'CUS005';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS006 ='Y' ) WHERE   Spotlight_Code = 'CUS006';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS007 ='Y' ) WHERE   Spotlight_Code = 'CUS007';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS008 ='Y' ) WHERE   Spotlight_Code = 'CUS008';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS009 ='Y' ) WHERE   Spotlight_Code = 'CUS009';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS010 ='Y' ) WHERE   Spotlight_Code = 'CUS010';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS011 ='Y' ) WHERE   Spotlight_Code = 'CUS011';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS014 ='Y' ) WHERE   Spotlight_Code = 'CUS014';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS015 ='Y' ) WHERE   Spotlight_Code = 'CUS015';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS016 ='Y' ) WHERE   Spotlight_Code = 'CUS016';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS017 ='Y' ) WHERE   Spotlight_Code = 'CUS017';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS018 ='Y' ) WHERE   Spotlight_Code = 'CUS018';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS019 ='Y' ) WHERE   Spotlight_Code = 'CUS019';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS020 ='Y' ) WHERE   Spotlight_Code = 'CUS020';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS021 ='Y' ) WHERE   Spotlight_Code = 'CUS021';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS022 ='Y' ) WHERE   Spotlight_Code = 'CUS022';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS023 ='Y' ) WHERE   Spotlight_Code = 'CUS023';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS024 ='Y' ) WHERE   Spotlight_Code = 'CUS024';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS025 ='Y' ) WHERE   Spotlight_Code = 'CUS025';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS026 ='Y' ) WHERE   Spotlight_Code = 'CUS026';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS027 ='Y' ) WHERE   Spotlight_Code = 'CUS027';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS028 ='Y' ) WHERE   Spotlight_Code = 'CUS028';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS029 ='Y' ) WHERE   Spotlight_Code = 'CUS029';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS030 ='Y' ) WHERE   Spotlight_Code = 'CUS030';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS031 ='Y' ) WHERE   Spotlight_Code = 'CUS031';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS032 ='Y' ) WHERE   Spotlight_Code = 'CUS032';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS033 ='Y' ) WHERE   Spotlight_Code = 'CUS033';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS034 ='Y' ) WHERE   Spotlight_Code = 'CUS034';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS037 ='Y' ) WHERE   Spotlight_Code = 'CUS037';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS038 ='Y' ) WHERE   Spotlight_Code = 'CUS038';
+    UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS039 ='Y' ) WHERE   Spotlight_Code = 'CUS039';
+    UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS040 ='Y' ) WHERE   Spotlight_Code = 'CUS040';
+    UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS041 ='Y' ) WHERE   Spotlight_Code = 'CUS041';
+	UPDATE  real_condo_spotlight SET Condo_Count = ( SELECT COUNT(1) FROM  all_condo_spotlight_relationship where CUS042 ='Y' ) WHERE   Spotlight_Code = 'CUS042';
 
     if errorcheck then
         SET code    = '00000';
