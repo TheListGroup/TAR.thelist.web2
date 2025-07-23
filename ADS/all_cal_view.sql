@@ -688,337 +688,256 @@ ALTER TABLE `all_condo_spotlight_relationship` DROP `CUS036`;
 
 -- all_condo_spotlight_relationship_view
 CREATE OR REPLACE VIEW all_condo_spotlight_relationship_view AS
-SELECT  a.Condo_Code
-	,	if(s1.c1>0,'Y','N') as PS001
-    ,	if(s2.c1>0,'Y','N') as PS002
-    ,	if(s3.c1>0,'Y','N') as PS003
-    ,	if(d.Branded_Res_Status = 'Y','Y','N') as PS006
-    ,	if(s7.Size > 40,'Y','N') as PS007
-    ,	if(s8.c1>0,'Y','N') as PS008
-    ,	if(s9.c1>0,'Y','N') as PS009
-    ,	if(d.Pet_Friendly_Status = 'Y','Y','N') as PS016
-    ,	if(d.Parking_Amount > a.Condo_TotalUnit,'Y','N') as PS017
-    ,	if(
-        (`b`.`Condo_Segment` in ('SEG05', 'SEG06', 'SEG07')),
-        if(
-            (`a`.`Condo_HighRise` = 1),
+SELECT
+    `a`.`Condo_Code` AS `Condo_Code`,
+    if((`s1`.`c1` > 0), 'Y', 'N') AS `PS001`,
+    if((`s2`.`c1` > 0), 'Y', 'N') AS `PS002`,
+    if((`s3`.`c1` > 0), 'Y', 'N') AS `PS003`,
+    if((`d`.`Branded_Res_Status` = 'Y'), 'Y', 'N') AS `PS006`,
+    if((`s7`.`Size` > 40), 'Y', 'N') AS `PS007`,
+    if((`s8`.`c1` > 0), 'Y', 'N') AS `PS008`,
+    if((`s9`.`c1` > 0), 'Y', 'N') AS `PS009`,
+    if((`d`.`Pet_Friendly_Status` = 'Y'), 'Y', 'N') AS `PS016`,
+    if((`d`.`Parking_Amount` > `a`.`Condo_TotalUnit`),'Y','N') AS `PS017`,
+    if((`b`.`Condo_Segment` in ('SEG05', 'SEG06', 'SEG07')),
+        if((`a`.`Condo_HighRise` = 1),
             if((`a`.`Condo_TotalUnit` < 200), 'Y', 'N'),
-            if((`a`.`Condo_TotalUnit` < 100), 'Y', 'N')
-        ),
-        'N'
-    ) AS `PS019`
-    ,	if(s21.Condo_Code is not null,'Y','N') as PS021
-    ,	if(s22.Condo_Code is not null,'Y','N') as PS022
-    ,	if(s24.c1>0,'Y','N') as PS024
-    ,	if(d.Pool_Length >= 50,'Y','N') as PS025
-    ,	if(d.Private_Lift_Status = 'Y','Y','N') as PS026
-    ,	if((`a`.`Condo_Code` <> ''), 'Y', 'N') AS CUS000
-    ,	if(cs1.c1>0,'Y','N') as CUS001
-    ,	if(cs2.c1>0,'Y','N') as CUS002
-    ,	if(cs3.c1>0,'Y','N') as CUS003
-    ,	if(cs4.c1>0,'Y','N') as CUS004
-    ,	if(cs5.c1>0,'Y','N') as CUS005
-    ,	if(cs6.c1>0,'Y','N') as CUS006
-    ,	if(cs7.c1>0,'Y','N') as CUS007
-    ,	if((`a`.`RealDistrict_Code` = 'M11'), 'Y', 'N') AS `CUS008`
-    ,	if(d.Auto_Parking_Status = 'Y','Y','N') as CUS009
-    ,	if(
-        (
-            (`c`.`Condo_Price_Per_Unit_Sort` <= 1000000)
-            and (`c`.`Condo_Price_Per_Unit_Sort` > 0)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS010`,
-    if(
-        (
-            (`c`.`Condo_Price_Per_Unit_Sort` <= 2000000)
-            and (`c`.`Condo_Price_Per_Unit_Sort` > 1000000)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS011`,
-    if(
-        (`b`.`Condo_Built_Finished` is not null),
-        if(
-            (
-                (
-                    year(curdate()) - year(`b`.`Condo_Built_Finished`)
-                ) > 0
-            ),
+            if((`a`.`Condo_TotalUnit` < 100), 'Y', 'N'))
+        ,'N') AS `PS019`,
+    if((`s21`.`Condo_Code` is not null), 'Y', 'N') AS `PS021`,
+    if((`s22`.`Condo_Code` is not null), 'Y', 'N') AS `PS022`,
+    if((`s24`.`c1` > 0), 'Y', 'N') AS `PS024`,
+    if((`d`.`Pool_Length` >= 50), 'Y', 'N') AS `PS025`,
+    if((`d`.`Private_Lift_Status` = 'Y'), 'Y', 'N') AS `PS026`,
+    if((`a`.`Condo_Code` <> ''), 'Y', 'N') AS `CUS000`,
+    if((`cs1`.`c1` > 0), 'Y', 'N') AS `CUS001`,
+    if((`cs2`.`c1` > 0), 'Y', 'N') AS `CUS002`,
+    if((`cs3`.`c1` > 0), 'Y', 'N') AS `CUS003`,
+    if((`cs4`.`c1` > 0), 'Y', 'N') AS `CUS004`,
+    if((`cs5`.`c1` > 0), 'Y', 'N') AS `CUS005`,
+    if((`cs6`.`c1` > 0), 'Y', 'N') AS `CUS006`,
+    if((`cs7`.`c1` > 0), 'Y', 'N') AS `CUS007`,
+    if((`a`.`RealDistrict_Code` = 'M11'), 'Y', 'N') AS `CUS008`,
+    if((`d`.`Auto_Parking_Status` = 'Y'), 'Y', 'N') AS `CUS009`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 1000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 0)),'Y','N') AS `CUS010`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 2000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 1000000)),'Y','N') AS `CUS011`,
+    if((`b`.`Condo_Built_Finished` is not null),
+        if(((year(curdate()) - year(`b`.`Condo_Built_Finished`)) > 0),
             'Y',
-            'N'
-        ),
-        if(
-            (`b`.`Condo_Built_Start` is not null),
-            if(
-                (
-                    (`a`.`Condo_HighRise` = 1)
-                ),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)
-                        ) > 0
-                    ),
+            'N'),
+        if((`b`.`Condo_Built_Start` is not null),
+            if((`a`.`Condo_HighRise` = 1),
+                if(((year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)) > 0),
                     'Y',
-                    'N'
-                ),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)
-                        ) > 0
-                    ),
+                    'N'),
+                if(((year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)) > 0),
                     'Y',
-                    'N'
-                )
-            ),
-            'N'
-        )
-    ) AS `CUS014`
-    ,	if(cs15.c1>0,'Y','N') as CUS015
-    ,	if(cs16.c1>0,'Y','N') as CUS016
-    ,	if(cs17.c1>0,'Y','N') as CUS017
-    ,	if(cs18.c1>0,'Y','N') as CUS018
-    ,	if(cs19.c1>0,'Y','N') as CUS019
-    ,	if(cs20.c1>0,'Y','N') as CUS020
-    ,	if(
-        (
-            (`c`.`Condo_Price_Per_Unit_Sort` <= 5000000)
-            and (`c`.`Condo_Price_Per_Unit_Sort` > 2000000)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS021`,
-    if(
-        (
-            (`c`.`Condo_Price_Per_Unit_Sort` <= 10000000)
-            and (`c`.`Condo_Price_Per_Unit_Sort` > 5000000)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS022`,
-    if(
-        (
-            (`c`.`Condo_Price_Per_Unit_Sort` <= 20000000)
-            and (`c`.`Condo_Price_Per_Unit_Sort` > 10000000)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS023`,
-    if(
-        (
-            (`c`.`Condo_Price_Per_Unit_Sort` <= 40000000)
-            and (`c`.`Condo_Price_Per_Unit_Sort` > 20000000)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS024`,
+                    'N')),
+            'N')) AS `CUS014`,
+    if((`cs15`.`c1` > 0), 'Y', 'N') AS `CUS015`,
+    if((`cs16`.`c1` > 0), 'Y', 'N') AS `CUS016`,
+    if((`cs17`.`c1` > 0), 'Y', 'N') AS `CUS017`,
+    if((`cs18`.`c1` > 0), 'Y', 'N') AS `CUS018`,
+    if((`cs19`.`c1` > 0), 'Y', 'N') AS `CUS019`,
+    if((`cs20`.`c1` > 0), 'Y', 'N') AS `CUS020`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 5000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 2000000)),'Y','N') AS `CUS021`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 10000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 5000000)),'Y','N') AS `CUS022`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 20000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 10000000)),'Y','N') AS `CUS023`,
+    if(((`c`.`Condo_Price_Per_Unit_Sort` <= 40000000) and (`c`.`Condo_Price_Per_Unit_Sort` > 20000000)),'Y','N') AS `CUS024`,
     if((`c`.`Condo_Price_Per_Unit_Sort` > 40000000), 'Y', 'N') AS `CUS025`,
     if((`a`.`HoldType_ID` = 1), 'Y', 'N') AS `CUS026`,
     if((`a`.`HoldType_ID` = 2), 'Y', 'N') AS `CUS027`,
     if((`a`.`Condo_LowRise` = 1), 'Y', 'N') AS `CUS028`,
     if((`a`.`Condo_HighRise` = 1), 'Y', 'N') AS `CUS029`,
-    if(
-        (`c`.`Condo_Sold_Status_Show_Value` = 'RESALE'),
-        'N',
-        'Y'
-    ) AS `CUS030`,
-    if(
-        (`c`.`Condo_Sold_Status_Show_Value` = 'RESALE'),
-        'Y',
-        'N'
-    ) AS `CUS031`,
-    if(
-        (`b`.`Condo_Built_Finished` is not null),
-        if(
-            (
-                (
-                    year(curdate()) - (year(`b`.`Condo_Built_Finished`) + 1)
-                ) > 0
-            ),
-            'N',
-            'Y'
-        ),
-        if(
-            (`b`.`Condo_Built_Start` is not null),
-            if(
-                (
-                    (`a`.`Condo_HighRise` = 1)
-                ),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Start`) + 4)
-                        ) > 0
-                    ),
-                    'N',
-                    'Y'
-                ),
-                if(
-                    (
-                        (
-                            year(curdate()) - (year(`b`.`Condo_Built_Start`) + 3)
-                        ) > 0
-                    ),
-                    'N',
-                    'Y'
-                )
-            ),
-            'N'
-        )
-    ) AS `CUS032`,
-    if(
-        (
-            (year(`c`.`Condo_Date_Calculate`) >= 2001)
-            and (year(`c`.`Condo_Date_Calculate`) <= 2010)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS033`,
-    if(
-        (
-            (year(`c`.`Condo_Date_Calculate`) >= 2011)
-            and (year(`c`.`Condo_Date_Calculate`) <= 2020)
-        ),
-        'Y',
-        'N'
-    ) AS `CUS034`,
-    if(
-        (year(`c`.`Condo_Date_Calculate`) = 2021),
-        'Y',
-        'N'
-    ) AS `CUS037`,
-    if(
-        (year(`c`.`Condo_Date_Calculate`) = 2022),
-        'Y',
-        'N'
-    ) AS `CUS038`
-    ,   if(c39.Condo_Code is not null, 'Y', 'N') as CUS039
-    ,   if(c40.Condo_Code is not null, 'Y', 'N') as CUS040
-    ,   if((year(`c`.`Condo_Date_Calculate`) = 2024),'Y','N') AS `CUS041`
-    ,   if((year(`c`.`Condo_Date_Calculate`) = 2023),'Y','N') AS `CUS042`
-FROM real_condo as a
-inner join real_condo_price as b on a.Condo_Code = b.Condo_Code
-inner join all_condo_price_calculate_view as c on a.Condo_Code = c.Condo_Code
-left join (select * 
-            from real_condo_full_template
-            where Condo_Code <> 'CD2860'
-            and Condo_Code <> 'CD2861') d 
-on a.Condo_Code = d.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'PS001'
-            group by Condo_Code) s1
-on a.Condo_Code = s1.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'PS002'
-            group by Condo_Code) s2
-on a.Condo_Code = s2.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'PS003'
-            group by Condo_Code) s3
-on a.Condo_Code = s3.Condo_Code
-left join ( select Condo_Code,max(Size) as Size
-            from full_template_unit_type
-            where Unit_Type_Status <> 2
-            group by Condo_Code) s7
-on a.Condo_Code = s7.Condo_Code    
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'PS008'
-            group by Condo_Code) s8
-on a.Condo_Code = s8.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'PS009'
-            group by Condo_Code) s9
-on a.Condo_Code = s9.Condo_Code
-left join ( select Condo_Code,Unit_Floor_Type_ID
-            from full_template_unit_type
-            where Unit_Type_Status <> 2
-            and Unit_Floor_Type_ID = 3
-            group by Condo_Code) s21
-on a.Condo_Code = s21.Condo_Code  
-left join ( select Condo_Code,Unit_Floor_Type_ID
-            from full_template_unit_type
-            where Unit_Type_Status <> 2
-            and Unit_Floor_Type_ID = 2
-            group by Condo_Code) s22
-on a.Condo_Code = s22.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'PS024'
-            group by Condo_Code) s24
-on a.Condo_Code = s24.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS001'
-            group by Condo_Code) cs1
-on a.Condo_Code = cs1.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS002'
-            group by Condo_Code) cs2
-on a.Condo_Code = cs2.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS003'
-            group by Condo_Code) cs3
-on a.Condo_Code = cs3.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS004'
-            group by Condo_Code) cs4
-on a.Condo_Code = cs4.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS005'
-            group by Condo_Code) cs5
-on a.Condo_Code = cs5.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS006'
-            group by Condo_Code) cs6
-on a.Condo_Code = cs6.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS007'
-            group by Condo_Code) cs7
-on a.Condo_Code = cs7.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS015'
-            group by Condo_Code) cs15
-on a.Condo_Code = cs15.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS016'
-            group by Condo_Code) cs16
-on a.Condo_Code = cs16.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS017'
-            group by Condo_Code) cs17
-on a.Condo_Code = cs17.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS018'
-            group by Condo_Code) cs18
-on a.Condo_Code = cs18.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS019'
-            group by Condo_Code) cs19
-on a.Condo_Code = cs19.Condo_Code
-left join ( select Condo_Code, count(1) as c1
-            from real_spotlight_relationships
-            where Spotlight_Code = 'CUS020'
-            group by Condo_Code) cs20
-on a.Condo_Code = cs20.Condo_Code
+    if((`c`.`Condo_Sold_Status_Show_Value` = 'RESALE'),'N','Y') AS `CUS030`,
+    if((`c`.`Condo_Sold_Status_Show_Value` = 'RESALE'),'Y','N') AS `CUS031`,
+    (if(b.Condo_Built_Finished is not null
+        , if(DATEDIFF(CURRENT_DATE,b.Condo_Built_Finished) >= 1,'N','Y')
+        , if(b.Condo_Built_Start is not null
+            , if(a.Condo_HighRise = 1 or (a.Condo_HighRise = 0 and a.Condo_LowRise = 0)
+                , if(DATEDIFF(CURRENT_DATE,b.Condo_Built_Start) >= 1460,'N','Y')
+                , if(DATEDIFF(CURRENT_DATE,b.Condo_Built_Start) >= 1095,'N','Y'))
+            ,'Y'))) AS `CUS032`,
+    if(((year(`c`.`Condo_Date_Calculate`) >= 2001) and (year(`c`.`Condo_Date_Calculate`) <= 2010)),'Y','N') AS `CUS033`,
+    if(((year(`c`.`Condo_Date_Calculate`) >= 2011) and (year(`c`.`Condo_Date_Calculate`) <= 2020)),'Y','N') AS `CUS034`,
+    if((year(`c`.`Condo_Date_Calculate`) = 2021),'Y','N') AS `CUS037`,
+    if((year(`c`.`Condo_Date_Calculate`) = 2022),'Y','N') AS `CUS038`,
+    if(c39.Condo_Code is not null, 'Y', 'N') as CUS039,
+    if(c40.Condo_Code is not null, 'Y', 'N') as CUS040,
+    if((year(`c`.`Condo_Date_Calculate`) = 2024),'Y','N') AS `CUS041`,
+    if((year(`c`.`Condo_Date_Calculate`) = 2023),'Y','N') AS `CUS042`
+FROM (((((((((((((((((((((((((((`real_condo` `a` 
+join `real_condo_price` `b` on((`a`.`Condo_Code` = `b`.`Condo_Code`)))
+join `condo_price_calculate_view` `c` on((`a`.`Condo_Code` = `c`.`Condo_Code`)))
+left join (select `real_condo_full_template`.`id` AS `id`,
+                `real_condo_full_template`.`Condo_Code` AS `Condo_Code`,
+                `real_condo_full_template`.`Parking_Amount` AS `Parking_Amount`,
+                `real_condo_full_template`.`Manual_Parking_Status` AS `Manual_Parking_Status`,
+                `real_condo_full_template`.`Auto_Parking_Status` AS `Auto_Parking_Status`,
+                `real_condo_full_template`.`Passenger_Lift_Amount` AS `Passenger_Lift_Amount`,
+                `real_condo_full_template`.`Service_Lift_Amount` AS `Service_Lift_Amount`,
+                `real_condo_full_template`.`Private_Lift_Status` AS `Private_Lift_Status`,
+                `real_condo_full_template`.`Pool_Type` AS `Pool_Type`,
+                `real_condo_full_template`.`Pool_Width` AS `Pool_Width`,
+                `real_condo_full_template`.`Pool_Length` AS `Pool_Length`,
+                `real_condo_full_template`.`Condo_Fund_Fee` AS `Condo_Fund_Fee`,
+                `real_condo_full_template`.`Branded_Res_Status` AS `Branded_Res_Status`,
+                `real_condo_full_template`.`Pet_Friendly_Status` AS `Pet_Friendly_Status`,
+                `real_condo_full_template`.`STU_Amount` AS `STU_Amount`,
+                `real_condo_full_template`.`1BR_Amount` AS `1BR_Amount`,
+                `real_condo_full_template`.`2BR_Amount` AS `2BR_Amount`,
+                `real_condo_full_template`.`3BR_Amount` AS `3BR_Amount`,
+                `real_condo_full_template`.`4BR_Amount` AS `4BR_Amount`,
+                `real_condo_full_template`.`Manual_Parking_Amount` AS `Manual_Parking_Amount`,
+                `real_condo_full_template`.`Auto_Parking_Amount` AS `Auto_Parking_Amount`,
+                `real_condo_full_template`.`LockElevator_Status` AS `LockElevator_Status`,
+                `real_condo_full_template`.`UnLockElevator_Status` AS `UnLockElevator_Status`,
+                `real_condo_full_template`.`Pool_Name` AS `Pool_Name`,
+                `real_condo_full_template`.`Pool_2_Name` AS `Pool_2_Name`,
+                `real_condo_full_template`.`Pool_2_Width` AS `Pool_2_Width`,
+                `real_condo_full_template`.`Pool_2_Length` AS `Pool_2_Length`,
+                `real_condo_full_template`.`Create_Date` AS `Create_Date`,
+                `real_condo_full_template`.`Create_User` AS `Create_User`,
+                `real_condo_full_template`.`Last_Update_Date` AS `Last_Update_Date`,
+                `real_condo_full_template`.`Last_Update_User` AS `Last_Update_User`
+            from `real_condo_full_template`
+            where ((`real_condo_full_template`.`Condo_Code` <> 'CD2860')
+            and (`real_condo_full_template`.`Condo_Code` <> 'CD2861'))) `d` 
+on((`a`.`Condo_Code` = `d`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'PS001')
+            group by `real_spotlight_relationships`.`Condo_Code`) `s1` 
+on((`a`.`Condo_Code` = `s1`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'PS002')
+            group by `real_spotlight_relationships`.`Condo_Code`) `s2` 
+on((`a`.`Condo_Code` = `s2`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'PS003')
+            group by `real_spotlight_relationships`.`Condo_Code`) `s3` 
+on((`a`.`Condo_Code` = `s3`.`Condo_Code`)))
+left join (select `full_template_unit_type`.`Condo_Code` AS `Condo_Code`,
+                    max(`full_template_unit_type`.`Size`) AS `Size`
+            from `full_template_unit_type`
+            where (`full_template_unit_type`.`Unit_Type_Status` <> 2)
+            group by `full_template_unit_type`.`Condo_Code`) `s7` 
+on((`a`.`Condo_Code` = `s7`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'PS008')
+            group by `real_spotlight_relationships`.`Condo_Code`) `s8` 
+on((`a`.`Condo_Code` = `s8`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'PS009')
+            group by `real_spotlight_relationships`.`Condo_Code`) `s9` 
+on((`a`.`Condo_Code` = `s9`.`Condo_Code`)))
+left join (select `full_template_unit_type`.`Condo_Code` AS `Condo_Code`,
+                    `full_template_unit_type`.`Unit_Floor_Type_ID` AS `Unit_Floor_Type_ID`
+            from `full_template_unit_type`
+            where ((`full_template_unit_type`.`Unit_Type_Status` <> 2)
+            and (`full_template_unit_type`.`Unit_Floor_Type_ID` = 3))
+            group by `full_template_unit_type`.`Condo_Code`) `s21` 
+on((`a`.`Condo_Code` = `s21`.`Condo_Code`)))
+left join (select `full_template_unit_type`.`Condo_Code` AS `Condo_Code`,
+                    `full_template_unit_type`.`Unit_Floor_Type_ID` AS `Unit_Floor_Type_ID`
+            from `full_template_unit_type`
+            where ((`full_template_unit_type`.`Unit_Type_Status` <> 2)
+            and (`full_template_unit_type`.`Unit_Floor_Type_ID` = 2))
+            group by `full_template_unit_type`.`Condo_Code`) `s22` 
+on((`a`.`Condo_Code` = `s22`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'PS024')
+            group by `real_spotlight_relationships`.`Condo_Code`) `s24` 
+on((`a`.`Condo_Code` = `s24`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS001')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs1` 
+on((`a`.`Condo_Code` = `cs1`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS002')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs2` 
+on((`a`.`Condo_Code` = `cs2`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS003')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs3` 
+on((`a`.`Condo_Code` = `cs3`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS004')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs4` 
+on((`a`.`Condo_Code` = `cs4`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS005')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs5` 
+on((`a`.`Condo_Code` = `cs5`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS006')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs6` 
+on((`a`.`Condo_Code` = `cs6`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS007')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs7` 
+on((`a`.`Condo_Code` = `cs7`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS015')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs15` 
+on((`a`.`Condo_Code` = `cs15`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS016')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs16` 
+on((`a`.`Condo_Code` = `cs16`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS017')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs17` 
+on((`a`.`Condo_Code` = `cs17`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS018')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs18` 
+on((`a`.`Condo_Code` = `cs18`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS019')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs19` 
+on((`a`.`Condo_Code` = `cs19`.`Condo_Code`)))
+left join (select `real_spotlight_relationships`.`Condo_Code` AS `Condo_Code`,
+                    count(1) AS `c1`
+            from `real_spotlight_relationships`
+            where (`real_spotlight_relationships`.`Spotlight_Code` = 'CUS020')
+            group by `real_spotlight_relationships`.`Condo_Code`) `cs20` 
+on((`a`.`Condo_Code` = `cs20`.`Condo_Code`)))
 left join (SELECT ff.Condo_Code
             FROM `full_template_floor_plan` ff
             left join full_template_vector_floor_plan_relationship fv on ff.Floor_Plan_ID = fv.Floor_Plan_ID
@@ -1036,16 +955,16 @@ left join (SELECT ff.Condo_Code
             and aaa.cal > 0
             group by ff.Condo_Code
             order by ff.Condo_Code) c39
-on a.Condo_Code = c39.Condo_Code
+on((a.Condo_Code = c39.Condo_Code)))
 left join (select Condo_Code 
             from classified 
             where Classified_Status = '1' 
             group by Condo_Code) c40
-on a.Condo_Code = c40.Condo_Code
-where a.Condo_Latitude is not null
-and a.Condo_Longitude is not null
-and a.Condo_Status = 1
-order by a.Condo_Code;
+on((a.Condo_Code = c40.Condo_Code)))
+WHERE ((`a`.`Condo_Latitude` is not null)
+AND (`a`.`Condo_Longitude` is not null)
+AND (`a`.`Condo_Status` = 1))
+ORDER BY `a`.`Condo_Code` ASC;
 
 
 CREATE TABLE all_condo_spotlight_relationship LIKE condo_spotlight_relationship_view;
