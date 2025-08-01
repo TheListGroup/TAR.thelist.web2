@@ -11,6 +11,7 @@
 -- updateCondoCountSubDistrict_2
 -- updateCondoCountSubDistrict_3
 -- updateCondoCountSubDistrict_4
+-- updateCondoCountEducation
 
 -- updateCondoCountSegment
 DROP PROCEDURE IF EXISTS updateCondoCountSegment;
@@ -873,6 +874,75 @@ BEGIN
 	end if;
 	
     CLOSE curSubDistrict;
+
+END //
+DELIMITER ;
+
+-- updateCondoCountEducation
+DROP PROCEDURE IF EXISTS updateCondoCountEducation;
+DELIMITER //
+
+CREATE PROCEDURE updateCondoCountEducation ()
+BEGIN
+    DECLARE finished        INTEGER     DEFAULT 0;
+    DECLARE eachEducation   VARCHAR(20) DEFAULT NULL;
+
+    DECLARE proc_name       VARCHAR(50) DEFAULT 'updateCondoCountEducation';
+    DECLARE code            VARCHAR(10) DEFAULT '00000';
+    DECLARE msg             TEXT;
+    DECLARE rowCount        INTEGER     DEFAULT 0;
+    DECLARE nrows           INTEGER     DEFAULT 0;
+    DECLARE errorcheck      BOOLEAN     DEFAULT 1;
+
+    DECLARE curEducation CURSOR FOR 
+        SELECT Place_ID FROM real_place_education;
+
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET finished = 1;
+
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        GET DIAGNOSTICS CONDITION 1
+            code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT; 
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) 
+        VALUES (1, code, msg, proc_name);
+        SET errorcheck = 0;
+    END;
+
+    OPEN curEducation;
+
+    updateCondoCount: LOOP
+        FETCH curEducation INTO eachEducation;
+        IF finished = 1 THEN 
+            LEAVE updateCondoCount;
+        END IF;
+
+        SET @sql = CONCAT(
+            'UPDATE real_place_education ',
+            'SET Classified_Unit_Count = (',
+            '  SELECT COUNT(c.Classified_ID) ',
+            '  FROM search_classified c ',
+            '  WHERE c.Search_Education LIKE \'%"', eachEducation, '"%\'',
+            ') ',
+            'WHERE Place_ID = "', eachEducation, '"'
+        );
+
+        PREPARE stmt FROM @sql;
+        EXECUTE stmt;
+        DEALLOCATE PREPARE stmt;
+
+        GET DIAGNOSTICS nrows = ROW_COUNT;
+        SET rowCount = rowCount + nrows;
+
+    END LOOP updateCondoCount;
+
+    IF errorcheck THEN
+        SET code = '00000';
+        SET msg = CONCAT(rowCount, ' rows changed.');
+        INSERT INTO realist_log (Type, SQL_State, Message, Location) 
+        VALUES (0, code, msg, proc_name);
+    END IF;
+
+    CLOSE curEducation;
 
 END //
 DELIMITER ;
