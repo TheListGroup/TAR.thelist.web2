@@ -383,7 +383,7 @@ select a.Housing_ID as Housing_ID
     , a.Housing_Parking_Min as Parking_Min
     , a.Housing_Parking_Max as Parking_Max
     , concat_ws(' ', replace(a.Housing_ENName, '\n', ' '), concat('(', replace(a.Housing_Name, '\n', ' '), ')'), '| REAL DATA') as Housing_Title
-    , concat_ws(' ', 'ข้อมูลโครงการ'
+    , concat_ws(' ', replace(a.Housing_ENName, '\n', ' ')
         , CASE 
             WHEN (LENGTH(b.Housing_Type) - LENGTH(REPLACE(b.Housing_Type, ', ', ''))) < 3
             THEN REPLACE(b.Housing_Type, ', ', 'และ') 
