@@ -500,11 +500,12 @@ if sql:
                         f.write(email_body)
                     
                     #if i != 1:
-                    #emails = 'warintorn.realist@gmail.com;tar5649@gmail.com'
+                    #emails = 'samiessm.realist@gmail.com'
                     #emails = 'samiessm.realist@gmail.com;whitech@gmail.com'
                     emails = email
                     to_email = [e.strip() for e in emails.split(';') if e.strip()]
-                    bcc_email = 'warintorn.realist@gmail.com'
+                    bcc_email = 'warintorn.realist@gmail.com;nattarika.realist@gmail.com'
+                    bcc_list = [e.strip() for e in bcc_email.split(';') if e.strip()]
                         
                     # Email config
                     message = Mail(
@@ -529,8 +530,10 @@ if sql:
                     message.attachment = attachment
                     
                     personalization = Personalization()
-                    personalization.add_to(Email(to_email))
-                    personalization.add_bcc(Email(bcc_email))
+                    for to in to_email:
+                        personalization.add_to(Email(to))
+                    for bcc in bcc_list:
+                        personalization.add_bcc(Email(bcc))
                     message.add_personalization(personalization)
                     
                     # Send the email
