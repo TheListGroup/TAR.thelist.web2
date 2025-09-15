@@ -391,7 +391,7 @@ select a.Housing_ID as Housing_ID
             SUBSTRING_INDEX(b.Housing_Type, ', ', -1))
             END
         , if(a.Province_ID = 10
-            , concat('ย่าน', rm.District_Name)
+            , concat('ย่าน', rs.SubDistrict_Name )
             , concat('เขต', td.name_th, ' ในจังหวด', tp.name_th))
         , concat('จำนวน ', a.Housing_TotalUnit, ' หลัง')
         , concat('ราคาเริ่มต้น ', replace(replace(b.Price, ' ลบ.', ''), ' ', ''), ' ลบ.')
@@ -407,7 +407,7 @@ select a.Housing_ID as Housing_ID
 from housing a 
 left join housing_factsheet_view b on a.Housing_Code = b.Housing_Code
 left join thailand_district td on a.District_ID = td.district_code
-left join real_yarn_main rm on a.RealDistrict_Code = rm.District_Code
+left join real_yarn_sub rs on a.RealSubDistrict_Code = rs.SubDistrict_Code
 left join thailand_province tp on a.Province_ID = tp.province_code
 left join ( select Housing_Code,concat(Place_Attribute_1,' ',Place_Attribute_2) as Express_Way
             from (  select Housing_Code
