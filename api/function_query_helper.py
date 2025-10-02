@@ -265,9 +265,22 @@ def _select_full_office_project_item(new_id: int) -> dict | None:
     cur2 = conn2.cursor(dictionary=True)
     cur2.execute(
         f"""SELECT
-                *
-            FROM office_project
-            WHERE Project_ID=%s""",
+            a.Project_ID, a.Name_TH, a.Name_EN, a.Latitude, a.Longitude, a.Road_Name, a.Province_ID, a.District_ID
+            , a.SubDistrict_ID, a.Realist_DistrictID, a.Realist_SubDistrictID, a.Land_Rai, a.Land_Ngan, a.Land_Wa, a.Land_Total, a.Office_Lettable_Area
+            , a.Total_Usable_Area, a.Parking_Amount, a.Security_Type, a.F_Common_Bathroom, a.F_Common_Pantry, a.F_Common_Garbageroom, a.F_Retail_Conv_Store, a.F_Retail_Supermarket
+            , a.F_Retail_Mall_Shop, a.F_Food_Market, a.F_Food_Foodcourt, a.F_Food_Cafe, a.F_Food_Restaurant, a.F_Services_ATM, a.F_Services_Bank, a.F_Services_Pharma_Clinic
+            , a.F_Services_Hair_Salon, a.F_Services_Spa_Beauty, a.F_Others_Gym, a.F_Others_Valet, a.F_Others_EV, a.F_Others_Conf_Meetingroom, a.Environment_Friendly, a.Project_Description
+            , a.Building_Copy, a.User_ID, a.Project_Status, a.Project_Redirect, a.Created_By, a.Created_Date, a.Last_Updated_By, a.Last_Updated_Date
+            , b.Tags
+            FROM office_project a
+            left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
+                        from office_project_tag_relationship a
+                        join office_project_tag b on a.Tag_ID = b.Tag_ID
+                        where a.Relationship_Status <> '2'
+                        group by a.Project_ID) b 
+            on a.Project_ID = b.Project_ID
+            WHERE a.Project_Status <> '2'
+            AND a.Project_ID = %s""",
         (new_id,)
     )
     row = cur2.fetchone()
@@ -515,7 +528,7 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
         if type_name == "Project":
             path_folder = os.path.join(UPLOAD_DIR, str(f"{ref_id:04d}"), "images")
         else:
-            path_folder = os.path.join(UPLOAD_DIR, str(f"{project_id:04d}"), str(f"{ref_id:04d}"), "images")
+            path_folder = os.path.join(UPLOAD_DIR, str(f"{project_id:04d}"), str(f"{ref_id:04d}"), "floor_plan")
     
     filename = f"{image_id:06d}-H-{width}.webp"
     os.makedirs(path_folder, exist_ok=True)  # create if not exists
@@ -575,3 +588,18 @@ def _select_full_office_building_relationship_item(id: int) -> Dict[str, Any] | 
     cur2.close()
     conn2.close()
     return normalize_row(row)
+
+def _get_floor_plan_display_order(building_id: int) -> int:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""
+            SELECT MAX(Display_Order) FROM office_floor_plan WHERE Building_ID=%s and Floor_Plan_Status = '1'""", (building_id,))
+        (display_order,) = cur.fetchone()
+        if display_order is None:
+            return 1
+        else:
+            return display_order + 1
+    finally:
+        cur.close()
+        conn.close()

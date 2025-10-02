@@ -12,6 +12,7 @@ BEGIN
 	DECLARE v_name3 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name4 VARCHAR(250) DEFAULT NULL;
 	DECLARE v_name5 VARCHAR(250) DEFAULT NULL;
+	DECLARE v_name6 VARCHAR(250) DEFAULT NULL;
 
 	DECLARE proc_name       VARCHAR(50) DEFAULT 'truncateInsert_office_around_station';
 	DECLARE code            VARCHAR(10) DEFAULT '00000';
@@ -22,7 +23,7 @@ BEGIN
 
     DECLARE done INT DEFAULT FALSE;
 
-    DECLARE cur CURSOR FOR SELECT Station_Code, Station_THName_Display, Route_Code, Line_Code, Project_ID, Distance
+    DECLARE cur CURSOR FOR SELECT Station_Code, Station_THName_Display, Route_Code, Line_Code, MTran_ShortName, Project_ID, Distance
                             FROM source_office_around_station;
     
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
@@ -41,7 +42,7 @@ BEGIN
     OPEN cur;
     
     read_loop: LOOP
-        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5;
+        FETCH cur INTO v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6;
         
         IF done THEN
             LEAVE read_loop;
@@ -53,10 +54,11 @@ BEGIN
                 , Station_THName_Display
                 , Route_Code
                 , Line_Code
+                , MTran_ShortName
                 , Project_ID
                 , Distance
 				)
-		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5);
+		VALUES(v_name,v_name1,v_name2,v_name3,v_name4,v_name5,v_name6);
         
 		GET DIAGNOSTICS nrows = ROW_COUNT;
 		SET total_rows = total_rows + nrows;

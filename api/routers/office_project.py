@@ -64,21 +64,84 @@ def _insert_image_record(
         conn2.close()
 
 def _update_image_record(
-    *, image_id, image_name: str, image_url: str,
+    *, image_id, image_url: str,
 ) -> dict:
     conn = get_db()
     cur = conn.cursor()
     try:
         sql = """
             UPDATE office_image
-            SET Image_Name=%s, Image_Url=%s
+            SET Image_Url=%s
             WHERE Image_ID=%s
         """
-        cur.execute(sql, (image_name, image_url, image_id))
+        cur.execute(sql, (image_url, image_id))
         conn.commit()
     finally:
         cur.close()
         conn.close()
+
+def insert_project_tag_relationship(project_id: int, tag_id: int, created_by: int, order: int) -> dict:
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        sql = """INSERT INTO office_project_tag_relationship
+                    (Tag_ID, Project_ID, Relationship_Order, Relationship_Status, Created_By, Last_Updated_By)
+                VALUES (%s, %s, %s, %s, %s, %s)"""
+        cur.execute(sql, (tag_id, project_id, order, '1', created_by, created_by))
+        conn.commit()
+        new_id = cur.lastrowid
+    finally:
+        cur.close()
+        conn.close()
+
+    # ดึงเรคคอร์ดที่เพิ่ง insert
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    try:
+        cur2.execute(
+                """SELECT
+                        ID, Tag_ID, Project_ID, Relationship_Order, Relationship_Status, Created_By, Created_Date,
+                        Last_Updated_By, Last_Updated_Date
+                    FROM office_project_tag_relationship
+                    WHERE ID=%s""",
+            (new_id,))
+        row = cur2.fetchone()
+        return row
+    finally:
+        cur2.close()
+        conn2.close()
+
+def insert_tag_relationship(Project_ID: int, Tag_Text: str, Created_By: int):
+    conn = get_db()
+    cur = conn.cursor()
+    
+    #ล้างให้หมดก่อนจะสร้าง
+    delete_query = "DELETE FROM office_project_tag_relationship WHERE Project_ID = %s"
+    cur.execute(delete_query, (Project_ID,))
+    conn.commit()
+    
+    if Tag_Text is not None:
+        data = []
+        all_tag = Tag_Text.split(",")
+        for i, tag in enumerate(all_tag):
+            check_query = "SELECT Tag_ID FROM office_project_tag WHERE Tag_Name = %s"
+            cur.execute(check_query, (tag,))
+            row = cur.fetchone()
+            if row is not None:
+                tag_id = row[0]
+                #ถ้ามีให้ insert เข้า relationship
+                row = insert_project_tag_relationship(Project_ID, tag_id, Created_By, i+1)
+            #ถ้าไม่มี ไปสร้างก่อน แล้วค่อยสร้าง relationship
+            else:
+                tag_query = "INSERT INTO office_project_tag (Tag_Name, Created_By, Last_Updated_By) VALUES (%s, %s, %s)"
+                cur.execute(tag_query, (tag, Created_By, Created_By))
+                conn.commit()
+                tag_id = cur.lastrowid
+                row = insert_project_tag_relationship(Project_ID, tag_id, Created_By, i+1)
+            data.append({"relationship": row})
+    
+    cur.close()
+    conn.close()
 
 # ----------------------------------------------------- INSERT --------------------------------------------------------------------------------------------
 @router.post("/insert", status_code=201)
@@ -122,6 +185,7 @@ def insert_office_project_and_return_full_record(
     Project_Status: str = Form("0"),
     Created_By: int = Form(...),
     Last_Updated_By: int = Form(...),
+    Tag_Text: str = Form(None),
     _ = Depends(get_current_user),
 ):
     try:
@@ -210,6 +274,8 @@ def insert_office_project_and_return_full_record(
             cur.execute(update_sql, (province, district, subdistrict, realist_district, realist_subdistrict, new_id))
             conn.commit()
         
+        insert_tag_relationship(new_id, Tag_Text, Created_By)
+        
         cur.close()
         conn.close()
     except Exception as e:
@@ -275,7 +341,8 @@ def update_office_project_and_return_full_record(
     User_ID: int = Form(...),
     Project_Status: str = Form("0"),
     Project_Redirect: str = Form(None),
-    Last_Updated_By: int = Form(...),  
+    Last_Updated_By: int = Form(...),
+    Tag_Text: str = Form(None),
     if_match: Optional[str] = Header(None, alias="If-Match"),
     _ = Depends(get_current_user),
 ):
@@ -422,6 +489,8 @@ def update_office_project_and_return_full_record(
             cur.execute(sql, (Project_ID,))
             conn.commit()
         
+        insert_tag_relationship(Project_ID, Tag_Text, Last_Updated_By)
+        
         cur.close()
         conn.close()
     except HTTPException as he:
@@ -477,10 +546,22 @@ def select_all_office_projects(
         
         base_sql = f"""
             SELECT
-                *
-            FROM {TABLE}
-            WHERE Project_Status <> '2'
-            ORDER BY Project_ID
+            a.Project_ID, a.Name_TH, a.Name_EN, a.Latitude, a.Longitude, a.Road_Name, a.Province_ID, a.District_ID
+            , a.SubDistrict_ID, a.Realist_DistrictID, a.Realist_SubDistrictID, a.Land_Rai, a.Land_Ngan, a.Land_Wa, a.Land_Total, a.Office_Lettable_Area
+            , a.Total_Usable_Area, a.Parking_Amount, a.Security_Type, a.F_Common_Bathroom, a.F_Common_Pantry, a.F_Common_Garbageroom, a.F_Retail_Conv_Store, a.F_Retail_Supermarket
+            , a.F_Retail_Mall_Shop, a.F_Food_Market, a.F_Food_Foodcourt, a.F_Food_Cafe, a.F_Food_Restaurant, a.F_Services_ATM, a.F_Services_Bank, a.F_Services_Pharma_Clinic
+            , a.F_Services_Hair_Salon, a.F_Services_Spa_Beauty, a.F_Others_Gym, a.F_Others_Valet, a.F_Others_EV, a.F_Others_Conf_Meetingroom, a.Environment_Friendly, a.Project_Description
+            , a.Building_Copy, a.User_ID, a.Project_Status, a.Project_Redirect, a.Created_By, a.Created_Date, a.Last_Updated_By, a.Last_Updated_Date
+            , b.Tags
+            FROM {TABLE} a
+            left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
+                        from office_project_tag_relationship a
+                        join office_project_tag b on a.Tag_ID = b.Tag_ID
+                        where a.Relationship_Status <> '2'
+                        group by a.Project_ID) b 
+            on a.Project_ID = b.Project_ID
+            WHERE a.Project_Status <> '2'
+            ORDER BY a.Project_ID
         """
 
         cur.execute(base_sql)
@@ -619,6 +700,7 @@ async def upload_and_record(
     Project_ID: int = Form(...),
     Created_By: int = Form(...),
     Image_Status: str = Form("0"),
+    Image_caption: str = Form(...),
     _ = Depends(get_current_user),
 ):
     if not files:
@@ -627,7 +709,8 @@ async def upload_and_record(
     results = []
     image_size_list = [(1440,810),(800,450),(400,225)]
     order = _get_image_display_order(Project_ID, Category_ID, "Project")
-    for f in files:
+    images_name = Image_caption.split(";")
+    for i,f in enumerate(files):
         name = f.filename or "unnamed"
         ext = os.path.splitext(name)[1].lower()
         content_type = f.content_type
@@ -639,7 +722,7 @@ async def upload_and_record(
                     project_id=Project_ID,
                     ref_type="Project",
                     category_id=Category_ID,
-                    image_name="",
+                    image_name=images_name[i],
                     image_url="",
                     display_order=order,
                     image_status=Image_Status,
@@ -651,11 +734,9 @@ async def upload_and_record(
             if image_size[0] == 1440:
                 _update_image_record(
                     image_id=image_id,
-                    image_name=meta["filename"],
                     image_url=meta["url"],
                 )
             
-                record["Image_Name"] = meta["filename"]
                 record["Image_Url"] = meta["url"]
             
             results.append({"file": meta, "record": record})
@@ -677,6 +758,27 @@ def update_project_image_order(
         results.append({"data": meta})
 
     return {"items": results}
+
+# ----------------------------------------------------- UPDATE Image Name --------------------------------------------------------------------------------------------
+@router.put("/image/update/image_caption", status_code=200)
+@router.post("/image/update/image_caption", status_code=200)
+def update_project_image_caption(
+    Image_ID: int = Form(...),
+    Image_Caption: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor()
+    update_query = "UPDATE office_image SET Image_Name = %s WHERE Image_ID = %s"
+    try:
+        cur.execute(update_query, (Image_Caption, Image_ID))
+        conn.commit()
+        return {"data": {"Image_ID": Image_ID, "Image_Name": Image_Caption}}
+    except Exception as e:
+        return to_problem(409, "Conflict", f"Update Image Caption failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
 # ============ ลบ ============
 @router.delete("/images/delete/{Image_ID}", status_code=204)
@@ -739,6 +841,27 @@ def select_all_office_unit_images(
 
         return {"data": data}
     
+    finally:
+        cur.close()
+        conn.close()
+
+
+# ====================== SELECT ALL TAG ======================
+@router.get("/select-tag/all/{Tag_Text}", status_code=200)
+def select_all_office_tags(
+    Tag_Text: str,
+    _ = Depends(get_current_user),
+):
+    try:
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        
+        base_sql = "SELECT Tag_Name FROM office_project_tag WHERE Tag_Name LIKE %s"
+
+        cur.execute(base_sql, (f"%{Tag_Text}%",))
+        rows = cur.fetchall()
+        
+        return rows
     finally:
         cur.close()
         conn.close()

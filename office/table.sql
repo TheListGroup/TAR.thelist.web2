@@ -161,10 +161,10 @@ CREATE TABLE IF NOT EXISTS office_unit (
     Unit_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Building_ID INT UNSIGNED NOT NULL,
     Unit_NO TEXT NOT NULL,
-    Rent_Price INT UNSIGNED NOT NULL,
-    Size FLOAT NOT NULL,
+    Rent_Price INT UNSIGNED NULL,
+    Size FLOAT NULL,
     Unit_Status ENUM('0', '1', '2', '3') NOT NULL DEFAULT '0',
-    Available TIMESTAMP NOT NULL,
+    Available TIMESTAMP NULL,
     Furnish_Condition ENUM('As Is', 'Standard', 'Bareshell', 'Furnished') NULL,
     Combine_Divide BOOLEAN NULL,
     Min_Divide_Size FLOAT NULL,
@@ -227,6 +227,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS office_image (
     Image_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Category_ID SMALLINT UNSIGNED NOT NULL,
+    Project_or_Building ENUM('Project', 'Building') NOT NULL,
     Ref_ID INT UNSIGNED NOT NULL,
     Image_Name VARCHAR(100) NULL,
     Image_URL VARCHAR(100) NOT NULL,
@@ -256,6 +257,7 @@ CREATE TABLE IF NOT EXISTS office_around_station (
     Station_THName_Display VARCHAR(200) NOT NULL,
     Route_Code VARCHAR(30) NOT NULL,
     Line_Code VARCHAR(30) NOT NULL,
+    MTran_ShortName VARCHAR(100) NULL,
     Project_ID INT UNSIGNED NOT NULL,
     Distance FLOAT NOT NULL,
     PRIMARY KEY (ID),
@@ -321,6 +323,7 @@ CREATE TABLE IF NOT EXISTS office_floor_plan (
     Floor_Name VARCHAR(100) NOT NULL,
     Building_ID INT UNSIGNED NOT NULL,
     Floor_Plan_Image VARCHAR(100) NOT NULL,
+    Display_Order SMALLINT UNSIGNED NOT NULL,
     Floor_Plan_Status ENUM('0', '1', '2') NOT NULL DEFAULT '0',
     Created_By INT UNSIGNED NOT NULL DEFAULT 0,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -561,6 +564,46 @@ CREATE TABLE IF NOT EXISTS office_sole_agent (
     PRIMARY KEY (Sole_Agent_ID))
 ENGINE = InnoDB;
 
+-- -----------------------------------------------------
+-- Table office_project_tag
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_project_tag (
+    Tag_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Tag_Name TEXT NOT NULL,
+    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (Tag_ID),
+    INDEX tag_admin1 (Created_By),
+    INDEX tag_admin2 (Last_Updated_By),
+    CONSTRAINT tag_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
+    CONSTRAINT tag_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table office_project_tag_relationship
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_project_tag_relationship (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Tag_ID INT UNSIGNED NOT NULL,
+    Project_ID INT UNSIGNED NOT NULL,
+    Relationship_Order INT NOT NULL,
+    Relationship_Status ENUM('1', '2') NOT NULL DEFAULT '1',
+    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (ID),
+    INDEX tag_re_tag (Tag_ID),
+    INDEX tag_re_project (Project_ID),
+    INDEX tag_re_admin1 (Created_By),
+    INDEX tag_re_admin2 (Last_Updated_By),
+    CONSTRAINT tag_re_tag FOREIGN KEY (Tag_ID) REFERENCES office_project_tag(Tag_ID),
+    CONSTRAINT tag_re_project FOREIGN KEY (Project_ID) REFERENCES office_project(Project_ID),
+    CONSTRAINT tag_re_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
+    CONSTRAINT tag_re_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
+ENGINE = InnoDB;
 
 -- -----------------------------------------------------
 -- Table mass_transit_bus_stop

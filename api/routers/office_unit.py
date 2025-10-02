@@ -11,6 +11,7 @@ from PIL import Image
 import re
 from wand.image import Image as WandImage
 from io import BytesIO
+from datetime import datetime
 
 router = APIRouter()
 TABLE = "office_unit"
@@ -101,17 +102,17 @@ def _insert_image_record(
         conn2.close()
 
 def _update_image_record(
-    *, image_id, image_name: str, image_url: str,
+    *, image_id, image_url: str,
 ) -> dict:
     conn = get_db()
     cur = conn.cursor()
     try:
         sql = """
             UPDATE office_unit_image
-            SET Image_Name=%s, Image_Url=%s
+            SET Image_Url=%s
             WHERE Unit_Image_ID=%s
         """
-        cur.execute(sql, (image_name, image_url, image_id))
+        cur.execute(sql, (image_url, image_id))
         conn.commit()
     finally:
         cur.close()
@@ -173,10 +174,10 @@ def insert_office_unit_and_return_full_record(
     response: Response,
     Building: int = Form(...),
     Unit_NO: str = Form(...),
-    Rent_Price: int = Form(...),
-    Size: float = Form(...),
+    Rent_Price: int = Form(None),
+    Size: float = Form(None),
     Unit_Status: str = Form("0"),  # <- ENUM('0','1','2','3')
-    Available: str = Form(...),       # จะถูกแปลงเป็น 'YYYY-MM-DD HH:MM:SS'
+    Available: str = Form(None),       # จะถูกแปลงเป็น 'YYYY-MM-DD HH:MM:SS'
     Furnish_Condition: str = Form('Standard'),
     Combine_Divide: str = Form(None),
     Min_Divide_Size: str = Form(None),
@@ -201,6 +202,9 @@ def insert_office_unit_and_return_full_record(
     _ = Depends(get_current_user),
 ):
     try:
+        Rent_Price = None if not Rent_Price else int(Rent_Price)
+        Size = None if not Size else float(Size)
+        Available = None if not Available else datetime.strptime(Available, "%Y-%m-%d %H:%M:%S")
         Unit_Status = Unit_Status if Unit_Status else '0'
         Bathroom_InUnit = None if not Bathroom_InUnit else int(Bathroom_InUnit)
         Rent_Term = None if not Rent_Term else int(Rent_Term)
@@ -265,10 +269,10 @@ def update_office_unit_and_return_full_record(
     response: Response,
     Building: int = Form(...),
     Unit_NO: str = Form(...),
-    Rent_Price: int = Form(...),
-    Size: float = Form(...),
+    Rent_Price: int = Form(None),
+    Size: float = Form(None),
     Unit_Status: str = Form("0"),  # <- ENUM('0','1','2','3')
-    Available: str = Form(...),       # จะถูกแปลงเป็น 'YYYY-MM-DD HH:MM:SS'
+    Available: str = Form(None),       # จะถูกแปลงเป็น 'YYYY-MM-DD HH:MM:SS'
     Furnish_Condition: str = Form('Standard'),
     Combine_Divide: str = Form(None),
     Min_Divide_Size: str = Form(None),
@@ -293,6 +297,9 @@ def update_office_unit_and_return_full_record(
     _ = Depends(get_current_user),
 ):
     try:
+        Rent_Price = None if not Rent_Price else int(Rent_Price)
+        Size = None if not Size else float(Size)
+        Available = None if not Available else datetime.strptime(Available, "%Y-%m-%d %H:%M:%S")
         Unit_Status = Unit_Status if Unit_Status else '0'
         Bathroom_InUnit = None if not Bathroom_InUnit else int(Bathroom_InUnit)
         Rent_Term = None if not Rent_Term else int(Rent_Term)
@@ -496,6 +503,7 @@ async def upload_and_record(
     files: List[UploadFile] = File(...),
     Unit_Category_ID: int = Form(...),
     Unit_ID: int = Form(...),
+    Image_caption: str = Form(...),
     Created_By: int = Form(...),
     Image_Status: str = Form("0"),
     _ = Depends(get_current_user),
@@ -506,7 +514,8 @@ async def upload_and_record(
     results = []
     image_size_list = [(1440,810),(800,450),(400,225)]
     order = _get_unit_display_order(Unit_ID, Unit_Category_ID)
-    for f in files:
+    images_name = Image_caption.split(";")
+    for i ,f in enumerate(files):
         name = f.filename or "unnamed"
         ext = os.path.splitext(name)[1].lower()
         content_type = f.content_type
@@ -517,7 +526,7 @@ async def upload_and_record(
         record = _insert_image_record(
             unit_id=Unit_ID,
             unit_category_id=Unit_Category_ID,
-            image_name="",
+            image_name=images_name[i],
             image_url="",
             display_order=order,
             image_status=Image_Status,
@@ -532,11 +541,9 @@ async def upload_and_record(
             if image_size[0] == 1440:
                 _update_image_record(
                     image_id=image_id,
-                    image_name=meta["filename"],
                     image_url=meta["url"],
                 )
             
-                record["Image_Name"] = meta["filename"]
                 record["Image_Url"] = meta["url"]
         
             results.append({"file": meta, "record": record})
@@ -558,6 +565,27 @@ def update_unit_image_order(
         results.append({"data": meta})
 
     return {"items": results}
+
+# ----------------------------------------------------- UPDATE Image Name --------------------------------------------------------------------------------------------
+@router.put("/image/update/image_caption", status_code=200)
+@router.post("/image/update/image_caption", status_code=200)
+def update_project_image_caption(
+    Unit_Image_ID: int = Form(...),
+    Image_Caption: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor()
+    update_query = "UPDATE office_unit_image SET Image_Name = %s WHERE Unit_Image_ID = %s"
+    try:
+        cur.execute(update_query, (Image_Caption, Unit_Image_ID))
+        conn.commit()
+        return {"data": {"Unit_Image_ID": Unit_Image_ID, "Image_Name": Image_Caption}}
+    except Exception as e:
+        return to_problem(409, "Conflict", f"Update Unit Image Caption failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
 # ============ ลบ ============
 @router.delete("/images/delete/{Image_ID}", status_code=204)

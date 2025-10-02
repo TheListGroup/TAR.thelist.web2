@@ -4,7 +4,8 @@ from auth import get_current_user  # << ใช้ตัวเดิม (รอ�
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
 from function_query_helper import _insert_building_record, _insert_cover_record \
     , normalize_row, _select_full_office_building_item, _delete_cover, _save_image_file, _update_cover_record \
-    , _select_full_office_building_relationship_item, _get_building_relationship, _get_project_name, _get_building_name
+    , _select_full_office_building_relationship_item, _get_building_relationship, _get_project_name, _get_building_name, _get_floor_plan_display_order \
+    , _update_image_order
 from typing import Optional, Tuple, Dict, Any, List
 import os, uuid, shutil
 from datetime import datetime
@@ -12,7 +13,119 @@ from datetime import datetime
 router = APIRouter()
 TABLE = "office_building"
 
+UPLOAD_DIR = "/var/www/html/real-lease/uploads"
+PUBLIC_PREFIX = "/real-lease/uploads"
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+
+def _insert_image_record(
+    building_id, floorplan_name: str, image_url: str,
+    display_order: int, floorplan_status: str, created_by: int
+) -> dict:
+    # ตัดชื่อไฟล์ให้ไม่เกิน 100 ตัวอักษรตาม schema
+    floorplan_name = floorplan_name[:100] if floorplan_name else None
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        sql = """
+            INSERT INTO office_floor_plan
+                (Floor_Name, Building_ID, Floor_Plan_Image, Display_Order, Floor_Plan_Status, Created_By, Last_Updated_By)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """
+        cur.execute(sql, (
+            floorplan_name,
+            building_id,
+            image_url,
+            display_order,
+            floorplan_status,
+            created_by,
+            created_by,
+        ))
+        conn.commit()
+        new_id = cur.lastrowid
+    finally:
+        cur.close()
+        conn.close()
+
+    # ดึงเรคคอร์ดที่เพิ่ง insert
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    try:
+        cur2.execute(
+            """SELECT
+                    Floor_Plan_ID, Floor_Name, Building_ID, Floor_Plan_Image,
+                    Display_Order, Floor_Plan_Status, Created_By, Created_Date, Last_Updated_By, Last_Updated_Date
+                FROM office_floor_plan
+                WHERE Floor_Plan_ID=%s""",
+            (new_id,)
+        )
+        row = cur2.fetchone()
+        return row
+    finally:
+        cur2.close()
+        conn2.close()
+
+def _update_image_record(
+    *, floorplan_id, floorplan_url: str,
+) -> dict:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        sql = """
+            UPDATE office_floor_plan
+            SET Floor_Plan_Image=%s
+            WHERE Floor_Plan_ID=%s
+        """
+        cur.execute(sql, (floorplan_url, floorplan_id))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+
+def _delete_floorplan(image_id: int, action: str):
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        image_size_list = [(1440,810),(800,450),(400,225)]
+        cur.execute("SELECT Building_ID FROM office_floor_plan WHERE Floor_Plan_ID=%s", (image_id,))
+        row = cur.fetchone()
+        if not row:
+            return
+        (building_id,) = row
+
+        cur.execute("SELECT Project_ID FROM office_building WHERE Building_ID=%s", (building_id,))
+        (project_id,) = cur.fetchone()
+        
+        cur.execute("SELECT Display_Order FROM office_floor_plan WHERE Floor_Plan_ID=%s", (image_id,))
+        row = cur.fetchone()
+        if not row:
+            return
+        (display_order,) = row
+        
+        if action == "Delete_Image":
+            cur.execute("DELETE FROM office_floor_plan WHERE Floor_Plan_ID=%s", (image_id,))
+            conn.commit()
+            affected = cur.rowcount
+
+            if affected > 0:
+                cur.execute("SELECT Floor_Plan_ID FROM office_floor_plan WHERE Display_Order>%s AND Building_ID=%s", (display_order, building_id))
+                rows = cur.fetchall()
+                for row in rows:
+                    cur.execute("UPDATE office_floor_plan SET Display_Order=Display_Order-1 WHERE Floor_Plan_ID=%s", (row[0],))
+                    conn.commit()
+                
+                project_folder = os.path.join(UPLOAD_DIR, f"{project_id:04d}")
+                building_folder = os.path.join(project_folder, f"{building_id:04d}")
+                for image_size in image_size_list:
+                    filename = f"{image_id:06d}-H-{image_size[0]}.webp"
+                    dest_path = os.path.join(building_folder, "floor_plan", filename)
+                    os.remove(dest_path)
+        else:
+            cur.execute("UPDATE office_floor_plan SET Floor_Plan_Status='2' WHERE Floor_Plan_ID=%s", (image_id,))
+            conn.commit()
+            affected = cur.rowcount
+    finally:
+        cur.close()
+        conn.close()
 
 # ----------------------------------------------------- INSERT --------------------------------------------------------------------------------------------
 @router.post("/insert", status_code=201)
@@ -67,7 +180,7 @@ def insert_office_building_and_return_full_record(
     _ = Depends(get_current_user),
 ):
     try:
-        Office_Condo = None if not Office_Condo else int(Office_Condo)
+        Office_Condo = 0 if not Office_Condo else int(Office_Condo)
         Rent_Price_Max = None if not Rent_Price_Max else int(Rent_Price_Max)
         Building_Latitude = None if not Building_Latitude else float(Building_Latitude)
         Building_Longitude = None if not Building_Longitude else float(Building_Longitude)
@@ -184,7 +297,7 @@ def update_office_building_and_return_full_record(
     _ = Depends(get_current_user),
 ):
     try:
-        Office_Condo = None if not Office_Condo else int(Office_Condo)
+        Office_Condo = 0 if not Office_Condo else int(Office_Condo)
         Rent_Price_Max = None if not Rent_Price_Max else int(Rent_Price_Max)
         Building_Latitude = None if not Building_Latitude else float(Building_Latitude)
         Building_Longitude = None if not Building_Longitude else float(Building_Longitude)
@@ -307,6 +420,10 @@ def update_office_building_and_return_full_record(
             sql = f"""UPDATE office_image SET Image_Status='1' WHERE Project_or_Building='Building' AND Ref_ID=%s"""
             cur.execute(sql, (Building_ID,))
             conn.commit()
+            
+            sql = f"""UPDATE office_floor_plan SET Floor_Plan_Status='1' WHERE Building_ID=%s"""
+            cur.execute(sql, (Building_ID,))
+            conn.commit()
         
         cur.close()
         conn.close()
@@ -337,6 +454,12 @@ def delete_office_building(
     rows = cur.fetchall()
     for row in rows:
         _delete_cover(row[0], "Delete_Building", "Building")
+    
+    #floor_plan management
+    cur.execute(f"SELECT Floor_Plan_ID FROM office_floor_plan WHERE Building_ID=%s", (Building_ID,))
+    rows = cur.fetchall()
+    for row in rows:
+        _delete_floorplan(row[0], "Delete_Building")
     
     cur.close()
     conn.close()
@@ -585,6 +708,151 @@ def select_all_office_building_relationship(
             })
         
         return {"data": data}
+    finally:
+        cur.close()
+        conn.close()
+
+# ============ อัปโหลดกี่ไฟล์ก็ได้ + บันทึก DB ============
+@router.post("/floorplan/record", status_code=201)
+async def upload_and_record(
+    files: List[UploadFile] = File(...),
+    Floorplan_Name: str = Form(...),
+    Building_ID: int = Form(...),
+    Created_By: int = Form(...),
+    Floorplan_Status: str = Form("0"),
+    _ = Depends(get_current_user),
+):
+    if not files:
+        raise HTTPException(status_code=400, detail="No files")
+    
+    row = _select_full_office_building_item(Building_ID)
+    Project_ID = row["Project_ID"]
+    
+    results = []
+    image_size_list = [(1440,810),(800,450),(400,225)]
+    order = _get_floor_plan_display_order(Building_ID)
+    images_name = Floorplan_Name.split(";")
+    for i,f in enumerate(files):
+        name = f.filename or "unnamed"
+        ext = os.path.splitext(name)[1].lower()
+        content_type = f.content_type
+        if ext not in ALLOWED_EXT:
+            raise HTTPException(status_code=400, detail=f"File type not allowed: {ext}")
+        
+        file_bytes = f.file.read()
+        record = _insert_image_record(
+                    building_id=Building_ID,
+                    floorplan_name=images_name[i],
+                    image_url="",
+                    display_order=order,
+                    floorplan_status=Floorplan_Status,
+                    created_by=Created_By,
+                )
+        floorplan_id = record["Floor_Plan_ID"]
+        for image_size in image_size_list:
+            meta = _save_image_file(file_bytes, floorplan_id, Building_ID, "FloorPlan", "Building", Project_ID, image_size, content_type)
+            if image_size[0] == 1440:
+                _update_image_record(
+                    floorplan_id=floorplan_id,
+                    floorplan_url=meta["url"],
+                )
+            
+                record["Floor_Plan_Image"] = meta["url"]
+            
+            results.append({"file": meta, "record": record})
+        order += 1
+
+    return {"count": len(results), "items": results}
+
+# ----------------------------------------------------- UPDATE Floor Plan Order --------------------------------------------------------------------------------------------
+@router.put("/floorplan/update/floorplan_order", status_code=200)
+@router.post("/floorplan/update/floorplan_order", status_code=200)
+def update_floorplan_order(
+    Display_Order: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    order_list = Display_Order.split(",")
+    results = []
+    for i, order in enumerate(order_list):
+        meta = _update_image_order(image_id=int(order), display_order=i+1, table_name="office_floor_plan", id_column="Floor_Plan_ID")
+        results.append({"data": meta})
+
+    return {"items": results}
+
+# ----------------------------------------------------- UPDATE Image Name --------------------------------------------------------------------------------------------
+@router.put("/floorplan/update/floorplan_caption", status_code=200)
+@router.post("/floorplan/update/floorplan_caption", status_code=200)
+def update_floorplan_caption(
+    Floorplan_ID: int = Form(...),
+    Floorplan_Caption: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor()
+    update_query = "UPDATE office_floor_plan SET Floor_Name = %s WHERE Floor_Plan_ID = %s"
+    try:
+        cur.execute(update_query, (Floorplan_Caption, Floorplan_ID))
+        conn.commit()
+        return {"data": {"Floor_Plan_ID": Floorplan_ID, "Floor_Name": Floorplan_Caption}}
+    except Exception as e:
+        return to_problem(409, "Conflict", f"Update Floorplan Caption failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+# ============ ลบ ============
+@router.delete("/floorplan/delete/{Floor_Plan_ID}", status_code=204)
+@router.post("/floorplan/delete/{Floor_Plan_ID}", status_code=204)
+async def delete_floorplan_record(
+    Floor_Plan_ID: int,
+    _ = Depends(get_current_user),
+):
+    _delete_floorplan(Floor_Plan_ID, "Delete_Image")
+
+# ====================== SELECT BY KEY ======================
+@router.get("/floorplan/select/{Building_ID}", status_code=200)
+def select_all_office_building_floorplan(
+    Building_ID: int,
+    if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
+    response: Response = Response(),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        building = _select_full_office_building_item(Building_ID)
+        require_row_exists(building, Building_ID, 'Building')
+        
+        et = etag_of(building)
+        # ถ้า client ส่ง If-None-Match มาและตรง → 304
+        if if_none_match and if_none_match == et:
+            response.headers["ETag"] = et
+            response.status_code = status.HTTP_304_NOT_MODIFIED
+            return
+        
+        base_sql = """SELECT
+                        Floor_Plan_ID,
+                        Floor_Name,
+                        Floor_Plan_Image,
+                        Display_Order,
+                        Created_By,
+                        Created_Date,
+                        Last_Updated_By,
+                        Last_Updated_Date
+                    FROM office_floor_plan
+                    WHERE Building_ID = %s AND Floor_Plan_Status = '1'
+                    ORDER BY Display_Order"""
+        
+        cur.execute(base_sql, (Building_ID,))
+        rows = cur.fetchall()
+        rows = [normalize_row(r) for r in rows]
+        
+        data = []
+        for row in rows:
+            data.append({"floorplan": row})
+
+        return {"data": data}
+    
     finally:
         cur.close()
         conn.close()
