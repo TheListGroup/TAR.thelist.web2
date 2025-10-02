@@ -206,7 +206,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS office_image_category (
     Category_ID SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     Category_Name VARCHAR(100) NOT NULL,
-    Section ENUM('Exterior', 'Interior', 'Amentiles') NOT NULL,
+    Section ENUM('Exteriors','Interiors','Facilities','Floor Plan','Retail Zones') NOT NULL,
     Display_Order SMALLINT UNSIGNED NOT NULL,
     Category_Status ENUM('0', '1', '2') NOT NULL DEFAULT '0',
     Created_By INT UNSIGNED NOT NULL DEFAULT 0,
@@ -345,7 +345,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS office_unit_image_category (
     Unit_Category_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Category_Name VARCHAR(100) NOT NULL,
-    Section ENUM('Interior') NOT NULL,
+    Section ENUM('Overview','Interior','Windows / View','Utilities','Floor Plan') NOT NULL,
     Display_Order SMALLINT UNSIGNED NOT NULL,
     Category_Status ENUM('0', '1', '2') NOT NULL DEFAULT '0',
     Created_By INT UNSIGNED NOT NULL DEFAULT 0,
