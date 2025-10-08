@@ -183,7 +183,9 @@ def _get_province(Project_ID: int) -> str:
                     AND op.Longitude IS NOT NULL
                     AND op.Project_ID=%s""", (Project_ID,))
         row = cur.fetchone()
-        return row[0]
+        if row:
+            return row[0]
+        return None
     finally:
         cur.close()
         conn.close()
@@ -201,7 +203,9 @@ def _get_district(Project_ID: int) -> str:
                     AND op.Longitude IS NOT NULL
                     AND op.Project_ID=%s""", (Project_ID,))
         row = cur.fetchone()
-        return row[0]
+        if row:
+            return row[0]
+        return None
     finally:
         cur.close()
         conn.close()
@@ -219,7 +223,9 @@ def _get_subdistrict(Project_ID: int) -> str:
                     AND op.Longitude IS NOT NULL
                     AND op.Project_ID=%s""", (Project_ID,))
         row = cur.fetchone()
-        return row[0]
+        if row:
+            return row[0]
+        return None
     finally:
         cur.close()
         conn.close()
@@ -237,7 +243,9 @@ def _get_realist_district(Project_ID: int) -> str:
                     AND op.Longitude IS NOT NULL
                     AND op.Project_ID=%s""", (Project_ID,))
         row = cur.fetchone()
-        return row[0]
+        if row:
+            return row[0]
+        return None
     finally:
         cur.close()
         conn.close()
@@ -255,7 +263,9 @@ def _get_realist_subdistrict(Project_ID: int) -> str:
                     AND op.Longitude IS NOT NULL
                     AND op.Project_ID=%s""", (Project_ID,))
         row = cur.fetchone()
-        return row[0]
+        if row:
+            return row[0]
+        return None
     finally:
         cur.close()
         conn.close()
@@ -273,7 +283,7 @@ def _select_full_office_project_item(new_id: int) -> dict | None:
             , a.Building_Copy, a.User_ID, a.Project_Status, a.Project_Redirect, a.Created_By, a.Created_Date, a.Last_Updated_By, a.Last_Updated_Date
             , b.Tags
             FROM office_project a
-            left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
+            left join (select a.Project_ID, group_concat(b.Tag_Name ORDER BY Relationship_Order SEPARATOR ';') as Tags
                         from office_project_tag_relationship a
                         join office_project_tag b on a.Tag_ID = b.Tag_ID
                         where a.Relationship_Status <> '2'

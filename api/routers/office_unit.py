@@ -174,8 +174,8 @@ def insert_office_unit_and_return_full_record(
     response: Response,
     Building: int = Form(...),
     Unit_NO: str = Form(...),
-    Rent_Price: int = Form(None),
-    Size: float = Form(None),
+    Rent_Price: str = Form(None),
+    Size: str = Form(None),
     Unit_Status: str = Form("0"),  # <- ENUM('0','1','2','3')
     Available: str = Form(None),       # จะถูกแปลงเป็น 'YYYY-MM-DD HH:MM:SS'
     Furnish_Condition: str = Form('Standard'),
@@ -204,7 +204,7 @@ def insert_office_unit_and_return_full_record(
     try:
         Rent_Price = None if not Rent_Price else int(Rent_Price)
         Size = None if not Size else float(Size)
-        Available = None if not Available else datetime.strptime(Available, "%Y-%m-%d %H:%M:%S")
+        Available = None if not Available else datetime.strptime(Available, "%Y-%m-%d")
         Unit_Status = Unit_Status if Unit_Status else '0'
         Bathroom_InUnit = None if not Bathroom_InUnit else int(Bathroom_InUnit)
         Rent_Term = None if not Rent_Term else int(Rent_Term)
@@ -269,8 +269,8 @@ def update_office_unit_and_return_full_record(
     response: Response,
     Building: int = Form(...),
     Unit_NO: str = Form(...),
-    Rent_Price: int = Form(None),
-    Size: float = Form(None),
+    Rent_Price: str = Form(None),
+    Size: str = Form(None),
     Unit_Status: str = Form("0"),  # <- ENUM('0','1','2','3')
     Available: str = Form(None),       # จะถูกแปลงเป็น 'YYYY-MM-DD HH:MM:SS'
     Furnish_Condition: str = Form('Standard'),
@@ -299,7 +299,7 @@ def update_office_unit_and_return_full_record(
     try:
         Rent_Price = None if not Rent_Price else int(Rent_Price)
         Size = None if not Size else float(Size)
-        Available = None if not Available else datetime.strptime(Available, "%Y-%m-%d %H:%M:%S")
+        Available = None if not Available else datetime.strptime(Available, "%Y-%m-%d")
         Unit_Status = Unit_Status if Unit_Status else '0'
         Bathroom_InUnit = None if not Bathroom_InUnit else int(Bathroom_InUnit)
         Rent_Term = None if not Rent_Term else int(Rent_Term)
