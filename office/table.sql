@@ -1,3 +1,32 @@
+-- office_admin_and_leasing_user
+-- office_project
+-- office_building
+-- office_unit
+-- office_image_category
+-- office_image
+-- office_around_station
+-- tenant_user
+-- tenant_document
+-- office_floor_plan
+-- office_unit_image_category
+-- office_unit_image
+-- office_highlight
+-- office_highlight_relationship
+-- office_cover
+-- tenant_user_search_input
+-- tenant_user_search_output
+-- office_email_log
+-- tenant_user_variable
+-- office_building_relationship
+-- office_sole_agent
+-- office_project_tag
+-- office_project_tag_relationship
+-- office_around_express_way
+-- office_unit_carousel_recommend
+-- office_contact_form
+-- office_project_carousel_recommend
+
+
 -- -----------------------------------------------------
 -- Table office_admin_and_leasing_user
 -- -----------------------------------------------------
@@ -164,7 +193,7 @@ CREATE TABLE IF NOT EXISTS office_unit (
     Rent_Price INT UNSIGNED NULL,
     Size FLOAT NULL,
     Unit_Status ENUM('0', '1', '2', '3') NOT NULL DEFAULT '0',
-    Available TIMESTAMP NULL,
+    Available DATE NULL,
     Furnish_Condition ENUM('As Is', 'Standard', 'Bareshell', 'Furnished') NULL,
     Combine_Divide BOOLEAN NULL,
     Min_Divide_Size FLOAT NULL,
@@ -388,20 +417,18 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table office_features
+-- Table office_highlight
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS office_features (
-    Features_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Feature_Name VARCHAR(100) NOT NULL,
-    Category ENUM('Security', 'Common', 'Retails', 'Food', 'Services', 'Others') NOT NULL,
-    Feature_Icon TEXT NULL,
-    Feature_Order SMALLINT UNSIGNED NOT NULL,
-    Feature_Status ENUM('0', '1', '2') NULL,
+CREATE TABLE IF NOT EXISTS office_highlight (
+    Highlight_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Highlight_Name VARCHAR(200) NOT NULL,
+    Highlight_Order SMALLINT UNSIGNED NOT NULL,
+    Highlight_Status ENUM('0', '1', '2') NOT NULL,
     Created_By INT UNSIGNED NOT NULL DEFAULT 0,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
     Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (Features_ID),
+    PRIMARY KEY (Highlight_ID),
     INDEX feat_admin1 (Created_By),
     INDEX feat_admin2 (Last_Updated_By),
     CONSTRAINT feat_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
@@ -410,26 +437,18 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table office_features_relationship
+-- Table office_highlight_relationship
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS office_features_relationship (
+CREATE TABLE IF NOT EXISTS office_highlight_relationship (
     ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Building_or_Unit ENUM('Building', 'Unit') NOT NULL,
+    Data_Type ENUM('Project', 'Building', 'Unit') NOT NULL,
     Ref_ID INT UNSIGNED NOT NULL,
-    Features_ID INT UNSIGNED NOT NULL,
-    Relationship_Status ENUM('0', '1', '2') NOT NULL DEFAULT '0',
-    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
-    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
-    Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Highlight_ID INT UNSIGNED NOT NULL,
+    Extra_Text VARCHAR(200) NULL,
     PRIMARY KEY (ID),
     INDEX rela_ref (Ref_ID),
-    INDEX rela_feat (Features_ID),
-    INDEX rela_admin1 (Created_By),
-    INDEX rela_admin2 (Last_Updated_By),
-    CONSTRAINT rela_feat FOREIGN KEY (Features_ID) REFERENCES office_features(Features_ID),
-    CONSTRAINT rela_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
-    CONSTRAINT rela_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
+    INDEX rela_highlight (Highlight_ID),
+    CONSTRAINT rela_highlight FOREIGN KEY (Highlight_ID) REFERENCES office_highlight(Highlight_ID))
 ENGINE = InnoDB;
 
 
@@ -606,6 +625,24 @@ CREATE TABLE IF NOT EXISTS office_project_tag_relationship (
 ENGINE = InnoDB;
 
 -- -----------------------------------------------------
+-- Table office_around_express_way
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_around_express_way (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Place_ID INT UNSIGNED NOT NULL,
+    Place_Type VARCHAR(80) NOT NULL,
+    Place_Category VARCHAR(150) NOT NULL,
+    Place_Name VARCHAR(100) NOT NULL,
+    Place_Latitude double NOT NULL,
+    Place_Longitude double NOT NULL,
+    Project_ID INT UNSIGNED NOT NULL,
+    Distance FLOAT NOT NULL,
+    PRIMARY KEY (ID),
+    INDEX express_proj (Project_ID),
+    CONSTRAINT express_proj FOREIGN KEY (Project_ID) REFERENCES office_project (Project_ID))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
 -- Table mass_transit_bus_stop
 -- -----------------------------------------------------
 /*CREATE TABLE IF NOT EXISTS mass_transit_bus_stop (
@@ -618,3 +655,49 @@ ENGINE = InnoDB;
     INDEX bus_stop_lat (Bus_Stop_Latitude),
     INDEX bus_stop_long (Bus_Stop_Longitude))
 ENGINE = InnoDB;*/
+
+CREATE TABLE IF NOT EXISTS office_unit_carousel_recommend (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Unit_ID INT UNSIGNED NOT NULL,
+    Title VARCHAR(100) NOT NULL,
+    Project_Name VARCHAR(250) NOT NULL,
+    Project_Tag_Used text NULL,
+    Project_Tag_All text NULL,
+    near_by json NULL,
+    Rent_Price varchar(100) NULL,
+    Rent_Price_Sqm varchar(100) NULL,
+    Rent_Price_Status SMALLINT NULL,
+    Carousel_Image json NULL,
+    Carousel_Image_Random json NULL,
+    PRIMARY KEY (ID),
+    INDEX recommend_unit (Unit_ID),
+    CONSTRAINT recommend_unit FOREIGN KEY (Unit_ID) REFERENCES office_unit (Unit_ID))
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS office_contact_form (
+    Contact_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Contact_Name VARCHAR(50) NOT NULL,
+    Contact_Tel VARCHAR(30) NOT NULL,
+    Contact_Email VARCHAR(80) NOT NULL,
+    Contact_Text TEXT NULL,
+    Contact_IP VARCHAR(50) NOT NULL,
+    Contact_Date DATETIME NOT NULL,
+    PRIMARY KEY (Contact_ID))
+ENGINE = InnoDB;
+
+CREATE TABLE IF NOT EXISTS office_project_carousel_recommend (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Project_ID INT UNSIGNED NOT NULL,
+    Project_Name VARCHAR(250) NULL,
+    Project_Tag_Used text NULL,
+    Project_Tag_All text NULL,
+    near_by json NULL,
+    Highlight json NULL,
+    Rent_Price varchar(100) NULL,
+    Project_Image json NULL,
+    Unit_Count int NULL,
+    Project_Image_All json NULL,
+    PRIMARY KEY (ID),
+    INDEX recommend_proj (Project_ID),
+    CONSTRAINT recommend_proj FOREIGN KEY (Project_ID) REFERENCES office_project (Project_ID))
+ENGINE = InnoDB;
