@@ -493,7 +493,7 @@ left join (WITH nearest_express_way AS (
                         PARTITION BY Project_ID ORDER BY Distance ASC
                     ) AS rn2
                 FROM distinct_express_way) t
-            WHERE rn2 <= 2
+            WHERE rn2 <= 1
             group by Project_ID) express_way
 on p.Project_ID = express_way.Project_ID
 where u.Unit_Status = '1'
@@ -596,7 +596,7 @@ left join (WITH nearest_express_way AS (
                         PARTITION BY Project_ID ORDER BY Distance ASC
                     ) AS rn2
                 FROM distinct_express_way) t
-            WHERE rn2 <= 2
+            WHERE rn2 <= 1
             group by Project_ID) express_way
 on a.Project_ID = express_way.Project_ID
 left join (select a.Ref_ID, JSON_ARRAYAGG(JSON_OBJECT('Highlight_Name', if(b.Highlight_ID = 2, concat(b.Highlight_Name, ' 1:', a.Extra_Text), b.Highlight_Name)
