@@ -486,7 +486,7 @@ left join (WITH nearest_express_way AS (
                 SELECT Project_ID, Place_Name, Place_Type, Place_Category, Place_Latitude, Place_Longitude, Distance
                 FROM nearest_express_way
                 WHERE rn = 1)
-            SELECT Project_ID, concat('[{"Express_Way": "', group_concat(concat(replace(Place_Name ,'ทางพิเศษ', Place_Type), ' (', Place_Category, ')') SEPARATOR ';') , '"}]') as Express_Way
+            SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Express_Way', CONCAT(REPLACE(Place_Name, 'ทางพิเศษ', Place_Type), ' (', Place_Category, ')'))) as Express_Way
             FROM (
                 SELECT *,
                     ROW_NUMBER() OVER (
@@ -589,7 +589,7 @@ left join (WITH nearest_express_way AS (
                 SELECT Project_ID, Place_Name, Place_Type, Place_Category, Place_Latitude, Place_Longitude, Distance
                 FROM nearest_express_way
                 WHERE rn = 1)
-            SELECT Project_ID, concat('[{"Express_Way": "', group_concat(concat(replace(Place_Name ,'ทางพิเศษ', Place_Type), ' (', Place_Category, ')') SEPARATOR ';') , '"}]') as Express_Way
+            SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Express_Way', CONCAT(REPLACE(Place_Name, 'ทางพิเศษ', Place_Type), ' (', Place_Category, ')'))) as Express_Way
             FROM (
                 SELECT *,
                     ROW_NUMBER() OVER (
