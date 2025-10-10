@@ -33,7 +33,8 @@ from (SELECT mtsmr.Station_Code
         left join mass_transit_route mtr on mtsmr.Route_Code = mtr.Route_Code
         left join mass_transit_line mtl on mtr.Line_Code = mtl.Line_Code
         left join mass_transit mt on mtl.MTrand_ID = mt.MTran_ID
-        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o
+        where mtsmr.Route_Timeline = 'Completion') aaa
 where Distance <= 0.8;
 
 -- view source_office_around_express_way
