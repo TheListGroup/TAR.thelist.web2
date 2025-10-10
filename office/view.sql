@@ -410,8 +410,8 @@ select u.Unit_ID
     , project_tag_used.Tags as Project_Tag_Used
     , project_tag_all.Tags as Project_Tag_All
     , ifnull(station.Station,express_way.Express_Way) as near_by
-    , concat(u.Rent_Price, ' บ./ด.') as Rent_Price
-    , concat(u.Size,' ตร.ม. X ', (u.Rent_Price/u.Size), ' บ./ด.') as Rent_Price_Sqm
+    , concat(format(u.Rent_Price,0), ' บ./ด.') as Rent_Price
+    , concat(format(u.Size,0),' ตร.ม. X ', format((u.Rent_Price/u.Size),0), ' บ./ด.') as Rent_Price_Sqm
     , if(u.Rent_Price is not null,1,0) as Rent_Price_Status
     , img_carousel.Image_Set as Carousel_Image
     , img_random.Image_Set as Carousel_Image_Random
