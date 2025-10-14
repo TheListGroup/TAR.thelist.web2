@@ -414,13 +414,13 @@ select u.Unit_ID
     , concat(format(u.Rent_Price,0), ' บ./ด.') as Rent_Price
     , concat(format(u.Size,0),' ตร.ม. X ', format((u.Rent_Price/u.Size),0), ' บ./ด.') as Rent_Price_Sqm
     , if(u.Rent_Price is not null,1,0) as Rent_Price_Status
-    , img_carousel.Image_Set as Carousel_Image
-    , img_random.Image_Set as Carousel_Image_Random
+    /*, img_carousel.Image_Set as Carousel_Image
+    , img_random.Image_Set as Carousel_Image_Random*/
 from office_unit u
 join office_building b on u.Building_ID = b.Building_ID
 join office_project p on b.Project_ID = p.Project_ID
-left join source_office_image_carousel img_carousel on u.Unit_ID = img_carousel.Unit_ID
-left join source_office_image_carousel_random img_random on u.Unit_ID = img_random.Unit_ID
+-- left join source_office_image_carousel img_carousel on u.Unit_ID = img_carousel.Unit_ID
+-- left join source_office_image_carousel_random img_random on u.Unit_ID = img_random.Unit_ID
 left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
             from office_project_tag_relationship a
             join office_project_tag b on a.Tag_ID = b.Tag_ID
@@ -428,11 +428,12 @@ left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
             and a.Relationship_Order <= 2
             group by a.Project_ID) project_tag_used
 on p.Project_ID = project_tag_used.Project_ID
-left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
-            from office_project_tag_relationship a
-            join office_project_tag b on a.Tag_ID = b.Tag_ID
-            where a.Relationship_Status <> '2'
-            group by a.Project_ID) project_tag_all
+left join (select Project_ID, concat('[',group_concat(Tags separator ','),']') as Tags
+            from (select a.Project_ID, concat('"',b.Tag_Name,'"') as Tags
+                    from office_project_tag_relationship a
+                    join office_project_tag b on a.Tag_ID = b.Tag_ID
+                    where a.Relationship_Status <> '2') a
+            group by Project_ID) project_tag_all
 on p.Project_ID = project_tag_all.Project_ID
 left join (WITH nearest_station AS (
                 SELECT 
@@ -531,11 +532,12 @@ left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
             and a.Relationship_Order <= 2
             group by a.Project_ID) project_tag_used
 on a.Project_ID = project_tag_used.Project_ID
-left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
-            from office_project_tag_relationship a
-            join office_project_tag b on a.Tag_ID = b.Tag_ID
-            where a.Relationship_Status <> '2'
-            group by a.Project_ID) project_tag_all
+left join (select Project_ID, concat('[',group_concat(Tags separator ','),']') as Tags
+            from (select a.Project_ID, concat('"',b.Tag_Name,'"') as Tags
+                    from office_project_tag_relationship a
+                    join office_project_tag b on a.Tag_ID = b.Tag_ID
+                    where a.Relationship_Status <> '2') a
+            group by Project_ID) project_tag_all
 on a.Project_ID = project_tag_all.Project_ID
 left join (WITH nearest_station AS (
                 SELECT 
