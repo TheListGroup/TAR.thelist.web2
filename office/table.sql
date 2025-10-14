@@ -22,9 +22,7 @@
 -- office_project_tag
 -- office_project_tag_relationship
 -- office_around_express_way
--- office_unit_carousel_recommend
 -- office_contact_form
--- office_project_carousel_recommend
 
 
 -- -----------------------------------------------------
@@ -656,24 +654,6 @@ ENGINE = InnoDB;
     INDEX bus_stop_long (Bus_Stop_Longitude))
 ENGINE = InnoDB;*/
 
-CREATE TABLE IF NOT EXISTS office_unit_carousel_recommend (
-    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Unit_ID INT UNSIGNED NOT NULL,
-    Title VARCHAR(100) NOT NULL,
-    Project_Name VARCHAR(250) NOT NULL,
-    Project_Tag_Used text NULL,
-    Project_Tag_All text NULL,
-    near_by json NULL,
-    Rent_Price varchar(100) NULL,
-    Rent_Price_Sqm varchar(100) NULL,
-    Rent_Price_Status SMALLINT NULL,
-    Carousel_Image json NULL,
-    Carousel_Image_Random json NULL,
-    PRIMARY KEY (ID),
-    INDEX recommend_unit (Unit_ID),
-    CONSTRAINT recommend_unit FOREIGN KEY (Unit_ID) REFERENCES office_unit (Unit_ID))
-ENGINE = InnoDB;
-
 CREATE TABLE IF NOT EXISTS office_contact_form (
     Contact_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Contact_Name VARCHAR(50) NOT NULL,
@@ -683,21 +663,4 @@ CREATE TABLE IF NOT EXISTS office_contact_form (
     Contact_IP VARCHAR(50) NOT NULL,
     Contact_Date DATETIME NOT NULL,
     PRIMARY KEY (Contact_ID))
-ENGINE = InnoDB;
-
-CREATE TABLE IF NOT EXISTS office_project_carousel_recommend (
-    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Project_ID INT UNSIGNED NOT NULL,
-    Project_Name VARCHAR(250) NULL,
-    Project_Tag_Used text NULL,
-    Project_Tag_All text NULL,
-    near_by json NULL,
-    Highlight json NULL,
-    Rent_Price varchar(100) NULL,
-    Project_Image json NULL,
-    Unit_Count int NULL,
-    Project_Image_All json NULL,
-    PRIMARY KEY (ID),
-    INDEX recommend_proj (Project_ID),
-    CONSTRAINT recommend_proj FOREIGN KEY (Project_ID) REFERENCES office_project (Project_ID))
 ENGINE = InnoDB;
