@@ -8,7 +8,8 @@ def get_db():
             user="real-dev",
             password="6Yh#H4L5Zk9jYMe0gr@X",
             database="realist_office",
-            charset="utf8mb4"
+            charset="utf8mb4",
+            collation="utf8mb4_unicode_ci"
         )
         return conn
     except Error as e:
