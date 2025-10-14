@@ -30,7 +30,7 @@
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS office_admin_and_leasing_user (
     User_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Role_ID INT UNSIGNED NOT NULL,
+    Role_ID INT NOT NULL,
     Company_Name VARCHAR(100) NOT NULL,
     Phone_Number VARCHAR(15) NOT NULL,
     User_FullName VARCHAR(250) NOT NULL,
