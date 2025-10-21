@@ -502,6 +502,91 @@ and b.Building_Status = '1'
 and p.Project_Status = '1';
 
 
+-- view source_office_project_highlight
+create or replace view source_office_project_highlight as
+select a.Project_ID
+            , 'N' as 'Skywalk'
+            , building.Parking_Ratio as 'Parking'
+            , if(building.Parking_Ratio >= 120, 'Y', if(building.Parking_Ratio >= 80, 'Y', 'N')) as 'Parking_Ratio'
+            , if(building.Typical_Floor_Plate >= 1500, 'Y', 'N') as 'Typical_Floor_Plate'
+            , if(a.F_Others_EV = 1, 'Y', 'N') as 'EV_Changers'
+            , 'N' as 'Mall_Connect'
+            , if(a.F_Others_Gym = 1, 'Y', 'N') as 'Fitness'
+            , if(a.F_Retail_Mall_Shop = 1, 'Y', 'N') as 'Mall_Shop'
+            , if((a.F_Services_ATM = 1 or a.F_Services_Bank = 1), 'Y', 'N') as 'Bank'
+            , if(a.F_Retail_Conv_Store = 1, 'Y', 'N') as 'Seven'
+            , if((a.F_Food_Foodcourt = 1 or a.F_Food_Restaurant = 1), 'Y', 'N') as 'Food'
+            , if(a.F_Food_Cafe = 1, 'Y', 'N') as 'Cafe'
+            , if(a.F_Others_Conf_Meetingroom = 1, 'Y', 'N') as 'Meeting_Room'
+            ,if(building.AC <> 'N', 'Y', 'N') as 'AC'
+        from office_project a
+        left join (select Project_ID
+                        , max(SUBSTRING_INDEX(Parking_Ratio, ':', -1)) as Parking_Ratio
+                        , greatest(ifnull(max(Typical_Floor_Plate_1),0), greatest(ifnull(max(Typical_Floor_Plate_2),0), ifnull(max(Typical_Floor_Plate_3),0))) as Typical_Floor_Plate
+                        , ifnull(max(ifnull(AC_OT_Weekday_by_Hour,ifnull(AC_OT_Weekday_by_Area,ifnull(AC_OT_Weekend_by_Hour,ifnull(AC_OT_Weekend_by_Area,null))))), 'N') as AC
+                    from office_building 
+                    where Building_Status = '1'
+                    group by Project_ID) building
+        on a.Project_ID = building.Project_ID
+        where a.Project_Status = '1';
+
+create or replace view source_office_project_highlight_relationship as
+SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Highlight_Name', if(aaa.Highlight = 2, concat(b.Highlight_Name, ' 1:', aaa.Extra_Text), b.Highlight_Name)
+                                            , 'Highlight_Order', b.Highlight_Order)) as Highlight
+from (SELECT Project_ID, 1 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Skywalk <> 'N'
+        UNION ALL
+        SELECT Project_ID, 2 AS Highlight, if(Parking >= 120, 120, if(Parking >= 80, 80, NULL)) as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Parking_Ratio <> 'N'
+        UNION ALL
+        SELECT Project_ID, 3 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Typical_Floor_Plate <> 'N'
+        UNION ALL
+        SELECT Project_ID, 4 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE EV_Changers <> 'N'
+        UNION ALL
+        SELECT Project_ID, 5 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Mall_Connect <> 'N'
+        UNION ALL
+        SELECT Project_ID, 6 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Fitness <> 'N'
+        UNION ALL
+        SELECT Project_ID, 7 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Mall_Shop <> 'N'
+        UNION ALL
+        SELECT Project_ID, 8 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Bank <> 'N'
+        UNION ALL
+        SELECT Project_ID, 9 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Seven <> 'N'
+        UNION ALL
+        SELECT Project_ID, 10 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Food <> 'N'
+        UNION ALL
+        SELECT Project_ID, 11 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Cafe <> 'N'
+        UNION ALL
+        SELECT Project_ID, 12 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Meeting_Room <> 'N'
+        UNION ALL
+        SELECT Project_ID, 13 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE AC <> 'N') aaa
+join office_highlight b on aaa.Highlight = b.Highlight_ID
+where b.Highlight_Status = '1'
+group by aaa.Project_ID;
 
 -- view source_office_project_carousel_recommend
 create or replace view source_office_project_carousel_recommend as
@@ -516,6 +601,7 @@ select a.Project_ID
     , countunit.Unit_Count as Unit_Count
     , proj_gallery_all.Project_Image as Project_Image_All
 from office_project a
+left join source_office_project_highlight_relationship highlight on a.Project_ID = highlight.Project_ID
 left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count
             from office_project a
             left join office_building b on a.Project_ID = b.Project_ID
@@ -601,13 +687,6 @@ left join (WITH nearest_express_way AS (
             WHERE rn2 <= 1
             group by Project_ID) express_way
 on a.Project_ID = express_way.Project_ID
-left join (select a.Ref_ID, JSON_ARRAYAGG(JSON_OBJECT('Highlight_Name', if(b.Highlight_ID = 2, concat(b.Highlight_Name, ' 1:', a.Extra_Text), b.Highlight_Name)
-                                                        , 'Highlight_Order', b.Highlight_Order)) as Highlight
-            from office_highlight_relationship a
-            join office_highlight b on a.Highlight_ID = b.Highlight_ID
-            where a.Data_Type = 'Project'
-            group by a.Ref_ID) highlight
-on a.Project_ID = highlight.Ref_ID
 left join (select Project_ID
                 , if(min(Price)=max(Price)
                     , format(min(Price),0)

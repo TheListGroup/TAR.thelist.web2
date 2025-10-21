@@ -11,7 +11,6 @@
 -- office_unit_image_category
 -- office_unit_image
 -- office_highlight
--- office_highlight_relationship
 -- office_cover
 -- tenant_user_search_input
 -- tenant_user_search_output
@@ -141,7 +140,7 @@ CREATE TABLE IF NOT EXISTS office_building (
     Floor_above FLOAT NULL,
     Floor_basement FLOAT NULL,
     Floor_office_only FLOAT NULL,
-    Ceiling_Avg FLOAT NULL,
+    Ceiling_Avg DECIMAL(5,2) NULL,
     Parking_Ratio VARCHAR(20) NULL,
     Parking_Fee_Car INT UNSIGNED NULL,
     Total_Lift SMALLINT UNSIGNED NULL,
@@ -432,23 +431,6 @@ CREATE TABLE IF NOT EXISTS office_highlight (
     CONSTRAINT feat_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
     CONSTRAINT feat_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
 ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table office_highlight_relationship
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS office_highlight_relationship (
-    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Data_Type ENUM('Project', 'Building', 'Unit') NOT NULL,
-    Ref_ID INT UNSIGNED NOT NULL,
-    Highlight_ID INT UNSIGNED NOT NULL,
-    Extra_Text VARCHAR(200) NULL,
-    PRIMARY KEY (ID),
-    INDEX rela_ref (Ref_ID),
-    INDEX rela_highlight (Highlight_ID),
-    CONSTRAINT rela_highlight FOREIGN KEY (Highlight_ID) REFERENCES office_highlight(Highlight_ID))
-ENGINE = InnoDB;
-
 
 -- -----------------------------------------------------
 -- Table office_cover
