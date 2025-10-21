@@ -632,7 +632,7 @@ def _get_project_card_data(proj_id: int) -> str:
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""SELECT a.Project_Tag_Used, a.Project_Tag_All, a.near_by, a.Highlight, a.Project_Image_All
+        cur.execute("""SELECT a.Project_Tag_Used, a.Project_Tag_All, a.near_by, a.Highlight
                     FROM source_office_project_carousel_recommend a
                     WHERE a.Project_ID=%s""", (proj_id,))
         row = cur.fetchone()
@@ -803,6 +803,59 @@ def get_image(ref_id: int) -> str:
         row = cur.fetchone()
         if row:
             return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_project_image(ref_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select Ref_ID
+                        , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
+                                                    , 'Image_Name', Image_Name
+                                                    , 'Category_Order', Category_Order
+                                                    , 'Display_Order', Display_Order
+                                                    , 'Image_URL', Image_URL
+                                                    , 'Image_Type', Image_Type)) as Image_Set
+                    from source_office_image_all
+                    WHERE Ref_ID=%s
+                    and Image_Type in ('Project_Image', 'Cover_Project')
+                    and Section <> 'Floor Plan'
+                    group by Ref_ID""", (ref_id,))
+        row = cur.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_all_carousel_images(unit_id: int, project_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        sql_query = """
+        SELECT JSON_ARRAYAGG(JSON_OBJECT(
+                'Image_ID', Image_ID,
+                'Image_Name', Image_Name,
+                'Category_Order', Category_Order,
+                'Display_Order', Display_Order,
+                'Image_URL', Image_URL,
+                'Image_Type', Image_Type
+            )) AS Image_Set
+        FROM
+            source_office_image_all
+        WHERE
+            (Ref_ID = %s AND Image_Type = 'Unit_Image')
+            OR
+            (Ref_ID = %s AND Image_Type IN ('Project_Image', 'Cover_Project') AND Section <> 'Floor Plan')
+        """
+        cur.execute(sql_query, (unit_id, project_id))
+        row = cur.fetchone()
+        if row:
+            return row[0]
         return None
     finally:
         cur.close()
@@ -987,30 +1040,6 @@ def get_project_education(proj_id: int) -> Optional[str]:
         row = cur.fetchone()
         if row and row[0]:
             return row[0]
-        return None
-    finally:
-        cur.close()
-        conn.close()
-
-def get_project_image(ref_id: int) -> str:
-    conn = get_db()
-    cur = conn.cursor()
-    try:
-        cur.execute("""select Ref_ID
-                        , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
-                                                    , 'Image_Name', Image_Name
-                                                    , 'Category_Order', Category_Order
-                                                    , 'Display_Order', Display_Order
-                                                    , 'Image_URL', Image_URL
-                                                    , 'Image_Type', Image_Type)) as Image_Set
-                    from source_office_image_all
-                    WHERE Ref_ID=%s
-                    and Image_Type in ('Project_Image', 'Cover_Project')
-                    and Section <> 'Floor Plan'
-                    group by Ref_ID""", (ref_id,))
-        row = cur.fetchone()
-        if row:
-            return row[1]
         return None
     finally:
         cur.close()
