@@ -274,7 +274,7 @@ CREATE TABLE IF NOT EXISTS office_image (
 ENGINE = InnoDB;
 
 
--- -----------------------------------------------------
+/*-- -----------------------------------------------------
 -- Table office_around_station
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS office_around_station (
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS office_around_station (
     PRIMARY KEY (ID),
     INDEX station_proj (Project_ID),
     CONSTRAINT station_proj FOREIGN KEY (Project_ID) REFERENCES office_project (Project_ID))
-ENGINE = InnoDB;
+ENGINE = InnoDB;*/
 
 
 -- -----------------------------------------------------
@@ -604,7 +604,7 @@ CREATE TABLE IF NOT EXISTS office_project_tag_relationship (
     CONSTRAINT tag_re_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
 ENGINE = InnoDB;
 
--- -----------------------------------------------------
+/*-- -----------------------------------------------------
 -- Table office_around_express_way
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS office_around_express_way (
@@ -620,7 +620,7 @@ CREATE TABLE IF NOT EXISTS office_around_express_way (
     PRIMARY KEY (ID),
     INDEX express_proj (Project_ID),
     CONSTRAINT express_proj FOREIGN KEY (Project_ID) REFERENCES office_project (Project_ID))
-ENGINE = InnoDB;
+ENGINE = InnoDB;*/
 
 -- -----------------------------------------------------
 -- Table mass_transit_bus_stop

@@ -1,4 +1,4 @@
--- procedure truncateInsert_office_around_station
+/*-- procedure truncateInsert_office_around_station
 DROP PROCEDURE IF EXISTS truncateInsert_office_around_station;
 DELIMITER //
 
@@ -154,4 +154,4 @@ BEGIN
 	
     CLOSE cur;
 END //
-DELIMITER ;
+DELIMITER ;*/

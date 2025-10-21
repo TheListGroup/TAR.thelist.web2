@@ -5,6 +5,8 @@
 -- source_office_image_carousel_random (unit)
 -- source_office_unit_carousel_recommend
 -- source_office_project_carousel_recommend
+-- view source_office_project_highlight
+-- view source_office_project_highlight_relationship
 
 
 -- view source_office_around_station
@@ -448,7 +450,7 @@ left join (WITH nearest_station AS (
                         PARTITION BY Project_ID, Station_THName_Display 
                         ORDER BY Distance ASC
                     ) AS rn
-                FROM office_around_station
+                FROM source_office_around_station
                 WHERE MTran_ShortName is not null)
             , distinct_station AS (
                 SELECT Project_ID, Route_Code, Line_Code, Station_Code, Station_THName_Display, MTran_ShortName, Distance
@@ -482,7 +484,7 @@ left join (WITH nearest_express_way AS (
                         PARTITION BY Project_ID, Place_Name 
                         ORDER BY Distance ASC
                     ) AS rn
-                FROM office_around_express_way)
+                FROM source_office_around_express_way)
             , distinct_express_way AS (
                 SELECT Project_ID, Place_Name, Place_Type, Place_Category, Place_Latitude, Place_Longitude, Distance
                 FROM nearest_express_way
@@ -530,6 +532,7 @@ select a.Project_ID
         on a.Project_ID = building.Project_ID
         where a.Project_Status = '1';
 
+-- view source_office_project_highlight_relationship
 create or replace view source_office_project_highlight_relationship as
 SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Highlight_Name', if(aaa.Highlight = 2, concat(b.Highlight_Name, ' 1:', aaa.Extra_Text), b.Highlight_Name)
                                             , 'Highlight_Order', b.Highlight_Order)) as Highlight
@@ -597,9 +600,7 @@ select a.Project_ID
     , ifnull(station.Station,express_way.Express_Way) as near_by
     , highlight.Highlight as Highlight
     , concat(building.Rent_Price,' บ./ตร.ม./ด.') as Rent_Price
-    , proj_gallery5.Project_Image as Project_Image
     , countunit.Unit_Count as Unit_Count
-    , proj_gallery_all.Project_Image as Project_Image_All
 from office_project a
 left join source_office_project_highlight_relationship highlight on a.Project_ID = highlight.Project_ID
 left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count
@@ -638,7 +639,7 @@ left join (WITH nearest_station AS (
                         PARTITION BY Project_ID, Station_THName_Display 
                         ORDER BY Distance ASC
                     ) AS rn
-                FROM office_around_station
+                FROM source_office_around_station
                 WHERE MTran_ShortName is not null)
             , distinct_station AS (
                 SELECT Project_ID, Route_Code, Line_Code, Station_Code, Station_THName_Display, MTran_ShortName, Distance
@@ -672,7 +673,7 @@ left join (WITH nearest_express_way AS (
                         PARTITION BY Project_ID, Place_Name 
                         ORDER BY Distance ASC
                     ) AS rn
-                FROM office_around_express_way)
+                FROM source_office_around_express_way)
             , distinct_express_way AS (
                 SELECT Project_ID, Place_Name, Place_Type, Place_Category, Place_Latitude, Place_Longitude, Distance
                 FROM nearest_express_way
@@ -702,31 +703,4 @@ left join (select Project_ID
                                     and Rent_Price_Max is not null) max_price) a
             group by Project_ID) building
 on a.Project_ID = building.Project_ID
-left join (select Ref_ID 
-            , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
-                                        , 'Image_Name', Image_Name
-                                        , 'Category_Order', Category_Order
-                                        , 'Display_Order', Display_Order
-                                        , 'Image_URL', Image_URL
-                                        , 'Image_Type', Image_Type)) as Project_Image
-            from (select Ref_ID, Image_URL, Image_ID, Image_Name, Category_Order, Display_Order, Image_Type
-                        , row_number() over (partition by Ref_ID order by Category_Order, Display_Order) as row_num 
-                    from source_office_image_all 
-                    where Image_Type in ('Project_Image', 'Cover_Project') and Section <> 'Floor Plan') b
-            where row_num <= 5
-            group by Ref_ID) proj_gallery5
-on a.Project_ID = proj_gallery5.Ref_ID
-left join (select Ref_ID 
-            , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
-                                        , 'Image_Name', Image_Name
-                                        , 'Category_Order', Category_Order
-                                        , 'Display_Order', Display_Order
-                                        , 'Image_URL', Image_URL
-                                        , 'Image_Type', Image_Type)) as Project_Image
-            from (select Ref_ID, Image_URL, Image_ID, Image_Name, Category_Order, Display_Order, Image_Type
-                        , row_number() over (partition by Ref_ID order by Category_Order, Display_Order) as row_num 
-                    from source_office_image_all 
-                    where Image_Type in ('Project_Image', 'Cover_Project') and Section <> 'Floor Plan') b
-            group by Ref_ID) proj_gallery_all
-on a.Project_ID = proj_gallery_all.Ref_ID
 where a.Project_Status = '1';
