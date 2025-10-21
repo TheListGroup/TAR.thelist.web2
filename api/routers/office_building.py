@@ -143,7 +143,7 @@ def insert_office_building_and_return_full_record(
     Typical_Floor_Plate_1: str = Form(None),
     Typical_Floor_Plate_2: str = Form(None),
     Typical_Floor_Plate_3: str = Form(None),
-    Unit_Size_Min: str = Form(...),
+    Unit_Size_Min: str = Form(None),
     Unit_Size_Max: str = Form(None),
     Landlord: str = Form(None),
     Management: str = Form(None),
@@ -189,6 +189,7 @@ def insert_office_building_and_return_full_record(
         Typical_Floor_Plate_1 = None if not Typical_Floor_Plate_1 else int(Typical_Floor_Plate_1)
         Typical_Floor_Plate_2 = None if not Typical_Floor_Plate_2 else int(Typical_Floor_Plate_2)
         Typical_Floor_Plate_3 = None if not Typical_Floor_Plate_3 else int(Typical_Floor_Plate_3)
+        Unit_Size_Min = None if not Unit_Size_Min else float(Unit_Size_Min)
         Unit_Size_Max = None if not Unit_Size_Max else float(Unit_Size_Max)
         Landlord = None if not Landlord else Landlord
         Management = None if not Management else Management
@@ -199,7 +200,7 @@ def insert_office_building_and_return_full_record(
         Floor_Basement = None if not Floor_Basement else float(Floor_Basement)
         Floor_Office_Only = None if not Floor_Office_Only else float(Floor_Office_Only)
         Ceiling_Avg = None if not Ceiling_Avg else float(Ceiling_Avg)
-        Parking_Ratio = None if not Parking_Ratio else f"1 : {Parking_Ratio}"
+        Parking_Ratio = None if not Parking_Ratio else Parking_Ratio
         Parking_Fee_Car = None if not Parking_Fee_Car else int(Parking_Fee_Car)
         Total_Lift = None if not Total_Lift else int(Total_Lift)
         Passenger_Lift = None if not Passenger_Lift else int(Passenger_Lift)
@@ -260,7 +261,7 @@ def update_office_building_and_return_full_record(
     Typical_Floor_Plate_1: str = Form(None),
     Typical_Floor_Plate_2: str = Form(None),
     Typical_Floor_Plate_3: str = Form(None),
-    Unit_Size_Min: str = Form(...),
+    Unit_Size_Min: str = Form(None),
     Unit_Size_Max: str = Form(None),
     Landlord: str = Form(None),
     Management: str = Form(None),
@@ -306,6 +307,7 @@ def update_office_building_and_return_full_record(
         Typical_Floor_Plate_1 = None if not Typical_Floor_Plate_1 else int(Typical_Floor_Plate_1)
         Typical_Floor_Plate_2 = None if not Typical_Floor_Plate_2 else int(Typical_Floor_Plate_2)
         Typical_Floor_Plate_3 = None if not Typical_Floor_Plate_3 else int(Typical_Floor_Plate_3)
+        Unit_Size_Min = None if not Unit_Size_Min else float(Unit_Size_Min)
         Unit_Size_Max = None if not Unit_Size_Max else float(Unit_Size_Max)
         Landlord = None if not Landlord else Landlord
         Management = None if not Management else Management
@@ -316,7 +318,7 @@ def update_office_building_and_return_full_record(
         Floor_Basement = None if not Floor_Basement else float(Floor_Basement)
         Floor_Office_Only = None if not Floor_Office_Only else float(Floor_Office_Only)
         Ceiling_Avg = None if not Ceiling_Avg else float(Ceiling_Avg)
-        Parking_Ratio = None if not Parking_Ratio else (Parking_Ratio + " : 100")
+        Parking_Ratio = None if not Parking_Ratio else Parking_Ratio
         Parking_Fee_Car = None if not Parking_Fee_Car else int(Parking_Fee_Car)
         Total_Lift = None if not Total_Lift else int(Total_Lift)
         Passenger_Lift = None if not Passenger_Lift else int(Passenger_Lift)
