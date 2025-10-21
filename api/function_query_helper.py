@@ -991,3 +991,27 @@ def get_project_education(proj_id: int) -> Optional[str]:
     finally:
         cur.close()
         conn.close()
+
+def get_project_image(ref_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select Ref_ID
+                        , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
+                                                    , 'Image_Name', Image_Name
+                                                    , 'Category_Order', Category_Order
+                                                    , 'Display_Order', Display_Order
+                                                    , 'Image_URL', Image_URL
+                                                    , 'Image_Type', Image_Type)) as Image_Set
+                    from source_office_image_all
+                    WHERE Ref_ID=%s
+                    and Image_Type in ('Project_Image', 'Cover_Project')
+                    and Section <> 'Floor Plan'
+                    group by Ref_ID""", (ref_id,))
+        row = cur.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
