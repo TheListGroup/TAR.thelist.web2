@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Form, Depends, Query, Response, Header, HTTPException, Request, status, UploadFile, File
 from db import get_db
-from function_utility import iso8601_z, normalize_unit_row, normalize_row
+from function_utility import iso8601_z, normalize_unit_row, normalize_row, format_seconds_to_time_str
 from typing import Optional, Tuple, Dict, Any, List
 import os, uuid, shutil
 from PIL import Image
@@ -281,7 +281,7 @@ def _select_full_office_project_item(new_id: int) -> dict | None:
             , a.F_Retail_Mall_Shop, a.F_Food_Market, a.F_Food_Foodcourt, a.F_Food_Cafe, a.F_Food_Restaurant, a.F_Services_ATM, a.F_Services_Bank, a.F_Services_Pharma_Clinic
             , a.F_Services_Hair_Salon, a.F_Services_Spa_Beauty, a.F_Others_Gym, a.F_Others_Valet, a.F_Others_EV, a.F_Others_Conf_Meetingroom, a.Environment_Friendly, a.Project_Description
             , a.Building_Copy, a.User_ID, a.Project_Status, a.Project_Redirect, a.Created_By, a.Created_Date, a.Last_Updated_By, a.Last_Updated_Date
-            , b.Tags
+            , b.Tags, floor_plan.Floor_Plan
             FROM office_project a
             left join (select a.Project_ID, group_concat(b.Tag_Name ORDER BY Relationship_Order SEPARATOR ';') as Tags
                         from office_project_tag_relationship a
@@ -289,6 +289,18 @@ def _select_full_office_project_item(new_id: int) -> dict | None:
                         where a.Relationship_Status <> '2'
                         group by a.Project_ID) b 
             on a.Project_ID = b.Project_ID
+            left join (SELECT a.Project_ID,  JSON_ARRAYAGG(JSON_OBJECT( 'Building_ID', c.Building_ID
+                                                                        , 'Building_Name', b.Building_Name
+                                                                        , 'Floor_Plan_ID', c.Floor_Plan_ID
+                                                                        , 'Floor_Name', c.Floor_Name
+                                                                        , 'Follr_Plan_Order', c.Display_Order
+                                                                        , 'Floor_Plan_URL', c.Floor_Plan_Image)) as Floor_Plan
+                        FROM office_project a
+                        join office_building b on a.Project_ID = b.Project_ID
+                        join office_floor_plan c on b.Building_ID = c.Building_ID
+                        where c.Floor_Plan_Status = '1'
+                        group by a.Project_ID) floor_plan
+            on a.Project_ID = floor_plan.Project_ID
             WHERE a.Project_Status <> '2'
             AND a.Project_ID = %s""",
         (new_id,)
@@ -319,6 +331,8 @@ def _select_full_office_building_item(new_id: int) -> dict | None:
     if row:
         for k in ("Created_Date", "Last_Updated_Date"):
             row[k] = iso8601_z(row[k])
+        for k in ("ACTime_Start", "ACTime_End"):
+            row[k] = format_seconds_to_time_str(row[k])
     return row
 
 def _insert_building_record(
@@ -610,6 +624,370 @@ def _get_floor_plan_display_order(building_id: int) -> int:
             return 1
         else:
             return display_order + 1
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_project_card_data(proj_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""SELECT a.Project_Tag_Used, a.Project_Tag_All, a.near_by, a.Highlight, a.Project_Image_All
+                    FROM source_office_project_carousel_recommend a
+                    WHERE a.Project_ID=%s""", (proj_id,))
+        row = cur.fetchone()
+        if row:
+            return row
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_project_template_price_card_data(proj_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select Project_ID
+                            , if(min(Price)=max(Price)
+                                , format(min(Price),0)
+                                , concat(format(min(Price),0),' - ',format(max(Price),0))) as Rent_Price
+                        from (select * from (select Project_ID, Rent_Price_Min as Price
+                                            from office_building
+                                            where Building_Status = '1'
+                                            and Rent_Price_Min is not null) min_price
+                                union all
+                                select * from (select Project_ID, Rent_Price_Max as Price
+                                                from office_building
+                                                where Building_Status = '1'
+                                                and Rent_Price_Max is not null) max_price) a
+                        WHERE a.Project_ID=%s
+                        group by Project_ID""", (proj_id,))
+        row = cur.fetchone()
+        if row:
+            return row
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_project_template_area_card_data(proj_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select Project_ID
+                            , if(min(Area)=max(Area)
+                                , format(min(Area),0)
+                                , concat(format(min(Area),0),' - ',format(max(Area),0))) as Area
+                        from (select * from (select Project_ID, Unit_Size_Min as Area
+                                            from office_building
+                                            where Building_Status = '1'
+                                            and Unit_Size_Min is not null) min_area
+                                union all
+                                select * from (select Project_ID, Unit_Size_Max as Area
+                                                from office_building
+                                                where Building_Status = '1'
+                                                and Unit_Size_Max is not null) max_area) a
+                        WHERE a.Project_ID=%s
+                        group by Project_ID""", (proj_id,))
+        row = cur.fetchone()
+        if row:
+            return row
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_project_building(proj_id: int) -> Dict[str, Any] | None:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""SELECT a.Building_ID, a.Building_Name
+                        , CONCAT(IF(a.Floor_above = FLOOR(a.Floor_above)
+                                    , CAST(FLOOR(a.Floor_above) AS CHAR)
+                                    , a.Floor_above), ' ชั้น') as Floor
+                        , if(a.Unit_Size_Min is not null and a.Unit_Size_Max is not null
+                            , if(a.Unit_Size_Min = a.Unit_Size_Max
+                                , concat(format(a.Unit_Size_Min,0), ' ตร.ม.')
+                                , concat(format(a.Unit_Size_Min,0),' - ',format(a.Unit_Size_Max,0), ' ตร.ม.'))
+                            , concat(format(ifnull(a.Unit_Size_Max,a.Unit_Size_Min),0), ' ตร.ม.')) as Area
+                        , if(a.Rent_Price_Min is not null and a.Rent_Price_Max is not null
+                            , if(a.Rent_Price_Min = a.Rent_Price_Max
+                                , concat(format(a.Rent_Price_Min,0), ' บ./ตร.ม.')
+                                , concat(format(a.Rent_Price_Min,0),' - ',format(a.Rent_Price_Max,0), ' บ./ตร.ม.'))
+                            , concat(format(ifnull(a.Rent_Price_Max,a.Rent_Price_Min),0), ' บ./ตร.ม.')) as Rent_Price
+                        , b.Cover_Url as Cover
+                        , YEAR(a.Built_Complete) as Year_Built_Complete
+                        , YEAR(a.Last_Renovate) as Year_Last_Renovate
+                        , concat(format(a.Total_Building_Area,0), ' ตร.ม.') as Total_Building_Area
+                        , concat(format(a.Typical_Floor_Plate_1,0), ' ตร.ม.') as Typical_Floor_Plate_1
+                        , concat(format(a.Typical_Floor_Plate_2,0), ' ตร.ม.') as Typical_Floor_Plate_2
+                        , concat(format(a.Typical_Floor_Plate_3,0), ' ตร.ม.') as Typical_Floor_Plate_3
+                        , IF(MOD(ROUND(a.Ceiling_Avg, 1), 1) = 0
+                            , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 0), ' ม.')
+                            , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 1), ' ม.')) as Ceiling
+                        , Total_Lift as Total_Lift
+                        , AC_System as AC_System
+                    FROM office_building a
+                    left join office_cover b on a.Building_ID = b.Ref_ID and b.Project_or_Building = 'Building' AND b.Cover_Size = 800 AND b.Cover_Status = '1'
+                    WHERE a.Project_ID=%s
+                    AND a.Building_Status = '1'""", (proj_id,))
+        row = cur.fetchall()
+        if len(row) >= 1:
+            return row
+        else:
+            return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_subdistrict_data(subdistrict_code : str) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""SELECT ts.subdistrict_code, ts.full_name_th, ts.full_name_en, ts.name_th, ts.name_en
+                    FROM thailand_subdistrict ts
+                    WHERE ts.subdistrict_code =%s""", (subdistrict_code,))
+        row = cur.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_district_data(district_code : str) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""SELECT td.district_code, td.full_name_th, td.full_name_en, td.name_th, td.name_en
+                    FROM thailand_district td
+                    WHERE td.district_code =%s""", (district_code,))
+        row = cur.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_province_data(province_code : str) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""SELECT tp.province_code, tp.name_th, tp.name_en
+                    FROM thailand_province tp
+                    WHERE tp.province_code =%s""", (province_code,))
+        row = cur.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_image(ref_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select Ref_ID
+                        , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
+                                                    , 'Image_Name', Image_Name
+                                                    , 'Category_Order', Category_Order
+                                                    , 'Display_Order', Display_Order
+                                                    , 'Image_URL', Image_URL
+                                                    , 'Image_Type', Image_Type)) as Image_Set
+                    from source_office_image_all
+                    WHERE Ref_ID=%s
+                    AND Image_Type = 'Unit_Image'
+                    group by Ref_ID""", (ref_id,))
+        row = cur.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_project_station(proj_id: int) -> Optional[str]:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Station_Code', Station_Code
+                                                    , 'Station_THName_Display', Station_THName_Display
+                                                    , 'Route_Code', Route_Code
+                                                    , 'Line_Code', Line_Code
+                                                    , 'MTran_ShortName', MTran_ShortName
+                                                    , 'Project_ID', Project_ID
+                                                    , 'Distance', Distance)) as Station
+                        from (SELECT mtsmr.Station_Code
+                                    , mtsmr.Station_THName_Display
+                                    , mtsmr.Route_Code
+                                    , mtr.Line_Code
+                                    , mtsmr.Station_Latitude
+                                    , mtsmr.Station_Longitude
+                                    , o.Project_ID
+                                    , o.Latitude
+                                    , o.Longitude
+                                    , mt.MTran_ShortName
+                                    , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - mtsmr.Station_Latitude)) / 2), 2)
+                                        + COS(RADIANS(mtsmr.Station_Latitude)) * COS(RADIANS(o.Latitude)) *
+                                        POWER(SIN((RADIANS(o.Longitude - mtsmr.Station_Longitude)) / 2), 2 )))) AS Distance
+                                FROM mass_transit_station_match_route mtsmr
+                                left join mass_transit_route mtr on mtsmr.Route_Code = mtr.Route_Code
+                                left join mass_transit_line mtl on mtr.Line_Code = mtl.Line_Code
+                                left join mass_transit mt on mtl.MTrand_ID = mt.MTran_ID
+                                cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o
+                                where mtsmr.Route_Timeline = 'Completion') aaa
+                        where Distance <= 0.8
+                        and Project_ID = %s
+                        order by Distance
+                        limit 2""", (proj_id,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return row[0]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_project_express_way(proj_id: int) -> Optional[str]:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+                                                    , 'Place_Type', Place_Type
+                                                    , 'Place_Category', Place_Category
+                                                    , 'Place_Name', Place_Name
+                                                    , 'Place_Latitude', Place_Latitude
+                                                    , 'Place_Longitude', Place_Longitude
+                                                    , 'Project_ID', Project_ID
+                                                    , 'Distance', Distance)) as Express_Way_Set
+                        from (SELECT ew.Place_ID 
+                                    , ew.Place_Type
+                                    , ew.Place_Category
+                                    , ew.Place_Name
+                                    , ew.Place_Latitude
+                                    , ew.Place_Longitude
+                                    , o.Project_ID
+                                    , o.Latitude
+                                    , o.Longitude
+                                    , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - ew.Place_Latitude)) / 2), 2)
+                                        + COS(RADIANS(ew.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                                        POWER(SIN((RADIANS(o.Longitude - ew.Place_Longitude)) / 2), 2 )))) AS Distance
+                                FROM real_place_express_way ew
+                                cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+                        where Distance <= 2.0
+                        and Project_ID = %s
+                        order by Distance
+                        limit 2""", (proj_id,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return row[0]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_project_retail(proj_id: int) -> Optional[str]:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+                                                    , 'Place_Name', Place_Name
+                                                    , 'Place_Latitude', Place_Latitude
+                                                    , 'Place_Longitude', Place_Longitude
+                                                    , 'Project_ID', Project_ID
+                                                    , 'Distance', Distance)) as Retail_Set
+                        from (SELECT r.Place_ID
+                                , r.Place_Name
+                                , r.Place_Latitude
+                                , r.Place_Longitude
+                                , o.Project_ID
+                                , o.Latitude
+                                , o.Longitude
+                                , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - r.Place_Latitude)) / 2), 2)
+                                    + COS(RADIANS(r.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                                    POWER(SIN((RADIANS(o.Longitude - r.Place_Longitude)) / 2), 2 )))) AS Distance
+                            FROM real_place_retail r
+                            cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+                            where Distance <= 0.8
+                            and Project_ID = %s
+                            order by Distance
+                            limit 2""", (proj_id,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return row[0]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_project_hospital(proj_id: int) -> Optional[str]:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+                                                    , 'Place_Name', CONCAT(Place_Category, Place_Name)
+                                                    , 'Place_Latitude', Place_Latitude
+                                                    , 'Place_Longitude', Place_Longitude
+                                                    , 'Project_ID', Project_ID
+                                                    , 'Distance', Distance)) as Hospital
+                        from (SELECT h.Place_ID
+                                , h.Place_Category
+                                , h.Place_Name
+                                , h.Place_Latitude
+                                , h.Place_Longitude
+                                , o.Project_ID
+                                , o.Latitude
+                                , o.Longitude
+                                , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - h.Place_Latitude)) / 2), 2)
+                                    + COS(RADIANS(h.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                                    POWER(SIN((RADIANS(o.Longitude - h.Place_Longitude)) / 2), 2 )))) AS Distance
+                            FROM real_place_hospital h
+                            cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+                            where Distance <= 0.8
+                            and Project_ID = %s
+                            order by Distance
+                            limit 2""", (proj_id,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return row[0]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_project_education(proj_id: int) -> Optional[str]:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+                                                    , 'Place_Name', CONCAT(Place_Category, Place_Name)
+                                                    , 'Place_Latitude', Place_Latitude
+                                                    , 'Place_Longitude', Place_Longitude
+                                                    , 'Project_ID', Project_ID
+                                                    , 'Distance', Distance)) as Education
+                        from (SELECT e.Place_ID
+                                , e.Place_Category
+                                , e.Place_Name
+                                , e.Place_Latitude
+                                , e.Place_Longitude
+                                , o.Project_ID
+                                , o.Latitude
+                                , o.Longitude
+                                , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - e.Place_Latitude)) / 2), 2)
+                                    + COS(RADIANS(e.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                                    POWER(SIN((RADIANS(o.Longitude - e.Place_Longitude)) / 2), 2 )))) AS Distance
+                            FROM real_place_education e
+                            cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+                            where Distance <= 0.8
+                            and Project_ID = %s
+                            order by Distance
+                            limit 2""", (proj_id,))
+        row = cur.fetchone()
+        if row and row[0]:
+            return row[0]
+        return None
     finally:
         cur.close()
         conn.close()

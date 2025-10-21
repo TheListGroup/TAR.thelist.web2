@@ -21,6 +21,24 @@ def iso8601_z(dt) -> Optional[str]:
         return dt.isoformat().replace("+00:00", "Z")
     return str(dt)
 
+def format_seconds_to_time_str(seconds) -> Optional[str]:
+    """
+    แปลงค่าตัวเลขวินาที (นับจากเที่ยงคืน)
+    ให้เป็นสตริงเวลาในรูปแบบ 'HH:MM:SS'
+    """
+    if seconds is None:
+        return None
+    if not isinstance(seconds, (int, float)):
+        return str(seconds)
+    try:
+        time_delta = datetime.timedelta(seconds=int(seconds))
+        reference_date = datetime.datetime.min
+        result_time = (reference_date + time_delta).time()
+
+        return result_time.strftime("%H:%M:%S")
+    except (ValueError, TypeError):
+        return str(seconds)
+
 def to_problem(status_code:int, title:str, detail:str, type_url:str = "", errors:List[dict]|None=None, headers:Dict[str,str]|None=None):
     body = {
         "type": type_url or f"https://api.example.com/errors/{title.lower().replace(' ', '_')}",
