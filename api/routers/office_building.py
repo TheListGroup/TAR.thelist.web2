@@ -207,7 +207,11 @@ def insert_office_building_and_return_full_record(
         Service_Lift = None if not Service_Lift else int(Service_Lift)
         Retail_Parking_Lift = None if not Retail_Parking_Lift else int(Retail_Parking_Lift)
         AC_System = None if not AC_System else AC_System
+        if ACTime_Start and ACTime_Start.count(':') == 1:
+            ACTime_Start += ":00"
         ACTime_Start = None if not ACTime_Start else datetime.strptime(ACTime_Start, "%H:%M:%S").time()
+        if ACTime_End and ACTime_End.count(':') == 1:
+            ACTime_End += ":00"
         ACTime_End = None if not ACTime_End else datetime.strptime(ACTime_End, "%H:%M:%S").time()
         AC_OT_Weekday_by_Hour = None if not AC_OT_Weekday_by_Hour else float(AC_OT_Weekday_by_Hour)
         AC_OT_Weekday_by_Area = None if not AC_OT_Weekday_by_Area else float(AC_OT_Weekday_by_Area)
@@ -325,7 +329,11 @@ def update_office_building_and_return_full_record(
         Service_Lift = None if not Service_Lift else int(Service_Lift)
         Retail_Parking_Lift = None if not Retail_Parking_Lift else int(Retail_Parking_Lift)
         AC_System = None if not AC_System else AC_System
+        if ACTime_Start and ACTime_Start.count(':') == 1:
+            ACTime_Start += ":00"
         ACTime_Start = None if not ACTime_Start else datetime.strptime(ACTime_Start, "%H:%M:%S").time()
+        if ACTime_End and ACTime_End.count(':') == 1:
+            ACTime_End += ":00"
         ACTime_End = None if not ACTime_End else datetime.strptime(ACTime_End, "%H:%M:%S").time()
         AC_OT_Weekday_by_Hour = None if not AC_OT_Weekday_by_Hour else float(AC_OT_Weekday_by_Hour)
         AC_OT_Weekday_by_Area = None if not AC_OT_Weekday_by_Area else float(AC_OT_Weekday_by_Area)
