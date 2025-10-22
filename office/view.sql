@@ -408,7 +408,7 @@ GROUP BY u.Unit_ID;
 -- view source_office_unit_carousel_recommend
 create or replace view source_office_unit_carousel_recommend as
 select u.Unit_ID
-    , concat_ws(' ',concat(u.Size,' ตร.ม.'), u.Unit_NO, concat('ชั้น ', u.Floor)) as Title
+    , concat_ws(' ',concat(format(u.Size,0),' ตร.ม.'), u.Unit_NO, concat('ชั้น ', u.Floor)) as Title
     , p.Name_EN as Project_Name
     , project_tag_used.Tags as Project_Tag_Used
     , project_tag_all.Tags as Project_Tag_All
@@ -704,3 +704,249 @@ left join (select Project_ID
             group by Project_ID) building
 on a.Project_ID = building.Project_ID
 where a.Project_Status = '1';
+
+
+create or replace view source_office_project_highlight_relationship_data as
+SELECT Project_ID, group_concat(if(aaa.Highlight = 2, concat(b.Highlight_Name, ' 1:', aaa.Extra_Text), b.Highlight_Name) separator '\n') as Highlight
+from (SELECT Project_ID, 1 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Skywalk <> 'N'
+        UNION ALL
+        SELECT Project_ID, 2 AS Highlight, if(Parking >= 120, 120, if(Parking >= 80, 80, NULL)) as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Parking_Ratio <> 'N'
+        UNION ALL
+        SELECT Project_ID, 3 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Typical_Floor_Plate <> 'N'
+        UNION ALL
+        SELECT Project_ID, 4 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE EV_Changers <> 'N'
+        UNION ALL
+        SELECT Project_ID, 5 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Mall_Connect <> 'N'
+        UNION ALL
+        SELECT Project_ID, 6 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Fitness <> 'N'
+        UNION ALL
+        SELECT Project_ID, 7 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Mall_Shop <> 'N'
+        UNION ALL
+        SELECT Project_ID, 8 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Bank <> 'N'
+        UNION ALL
+        SELECT Project_ID, 9 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Seven <> 'N'
+        UNION ALL
+        SELECT Project_ID, 10 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Food <> 'N'
+        UNION ALL
+        SELECT Project_ID, 11 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Cafe <> 'N'
+        UNION ALL
+        SELECT Project_ID, 12 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Meeting_Room <> 'N'
+        UNION ALL
+        SELECT Project_ID, 13 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE AC <> 'N') aaa
+join office_highlight b on aaa.Highlight = b.Highlight_ID
+where b.Highlight_Status = '1'
+group by aaa.Project_ID;
+
+create or replace view source_office_project_data as
+select u.Unit_ID
+    , u.Unit_NO
+    , u.Rent_Price as Unit_Rent_Price
+    , u.Size as Unit_Size
+    , u.Available as Unit_Available
+    , u.Furnish_Condition as Unit_Furnish_Condition
+    , u.Combine_Divide as Unit_Combine_Divide
+    , u.Min_Divide_Size as Unit_Min_Divide_Size
+    , u.Floor_Zone as Unit_Floor_Zone
+    , u.Floor as Unit_Floor
+    , u.View_N as Unit_View_N
+    , u.View_E as Unit_View_E
+    , u.View_S as Unit_View_S
+    , u.View_W as Unit_View_W
+    , u.Ceiling_Dropped as Unit_Ceiling_Dropped
+    , u.Ceiling_Full_Structure as Unit_Ceiling_Full_Structure
+    , u.Column_InUnit as Unit_Column_InUnit
+    , u.AC_Split_Type as Unit_AC_Split_Type
+    , u.Pantry_InUnit as Unit_Pantry_InUnit
+    , u.Bathroom_InUnit as Unit_Bathroom_InUnit
+    , u.Rent_Term as Unit_Rent_Term
+    , u.Rent_Deposit as Unit_Rent_Deposit
+    , u.Rent_Advance as Unit_Rent_Advance
+    , a.Project_ID
+    , a.Name_EN as Project_Name
+    , c.name_th as Province
+    , d.name_th as District
+    , e.name_th as Subdistrict
+    , project_tag_all.Tags
+    , station.Station
+    , express_way.Express_Way
+    , highlight.Highlight
+    , a.Project_Description
+    , concat(rent_price.Rent_Price, ' บาท / ตร.ม.') as Rent_Price
+    , concat(area.Area, ' ตร.ม.') as Area
+    , concat(building.Floor, ' ชั้น') as Floor
+    , concat(format(building.Total_Building_Area,0), ' ตร.ม.') as Total_Building_Area
+    , concat(format(a.Office_Lettable_Area,0), ' ตร.ม.') as Office_Lettable_Area
+    , building.Year_Built_Complete
+    , building.Year_Last_Renovate
+    , concat(format(if(building.Typical_Floor_Plate=0, null, building.Typical_Floor_Plate),0), ' ตร.ม.') as Typical_Floor_Plate
+    , concat(building.Ceiling, ' ม.') as Ceiling
+    , concat(building.Total_Lift, ' ตัว') as Total_Lift
+    , building.AC_System
+    , concat(format(a.Parking_Amount,0), ' คัน') as Parking_Amount
+    , nullif(concat_ws('\n', if(a.F_Services_ATM=1, "ตู้เอทีเอ็ม", null)
+                , if(a.F_Services_Bank=1, "ธนาคาร", null)
+                , if(a.F_Food_Cafe=1, "คาเฟ่", null)
+                , if(a.F_Food_Restaurant=1, "ร้านอาหาร", null)
+                , if(a.F_Food_Foodcourt=1, "ศูนย์อาหาร", null)
+                , if(a.F_Food_Market=1, "ตลาดนัด", null)
+                , if(a.F_Retail_Mall_Shop=1, "ร้านค้า", null)
+                , if(a.F_Retail_Conv_Store=1, "ร้านสะดวกซื้อ", null)
+                , if(a.F_Retail_Supermarket=1, "ซุปเปอร์มาเก็ต", null)
+                , if(a.F_Services_Pharma_Clinic=1, "ร้านขายยา/คลินิก", null)
+                , if(a.F_Services_Hair_Salon=1, "ร้านทำผม", null)
+                , if(a.F_Services_Spa_Beauty=1, "สปา/ร้านเสริมสวย", null)
+                , if(a.F_Others_Gym=1, "ฟิตเนส", null)
+                , if(a.F_Others_EV=1, "EV Charger", null)
+                , if(a.F_Others_Valet=1, "Valet Parking", null)
+                , if(a.F_Others_Conf_Meetingroom=1, "ห้องประชุม", null)), '') as Amenities
+from office_unit u
+join office_building ob on u.Building_ID = ob.Building_ID
+join office_project a on ob.Project_ID = a.Project_ID
+left join (select Project_ID, group_concat(Tags separator '\n') as Tags
+            from (select a.Project_ID, b.Tag_Name as Tags
+                    from office_project_tag_relationship a
+                    join office_project_tag b on a.Tag_ID = b.Tag_ID
+                    where a.Relationship_Status <> '2') a
+            group by Project_ID) project_tag_all
+on a.Project_ID = project_tag_all.Project_ID
+left join thailand_province c on a.Province_ID = c.province_code
+left join thailand_district d on a.District_ID = d.district_code
+left join thailand_subdistrict e on a.Subdistrict_ID = e.subdistrict_code
+left join source_office_project_highlight_relationship_data highlight on a.Project_ID = highlight.Project_ID
+left join (WITH nearest_station AS (
+                SELECT 
+                    Project_ID,
+                    Route_Code,
+                    Line_Code,
+                    Station_Code,
+                    Station_THName_Display,
+                    MTran_ShortName,
+                    Distance,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY Project_ID, Station_THName_Display 
+                        ORDER BY Distance ASC
+                    ) AS rn
+                FROM source_office_around_station
+                WHERE MTran_ShortName is not null)
+            , distinct_station AS (
+                SELECT Project_ID, Route_Code, Line_Code, Station_Code, Station_THName_Display, MTran_ShortName, Distance
+                FROM nearest_station
+                WHERE rn = 1)
+            SELECT Project_ID, group_concat(concat(MTran_ShortName, ' ', Station_THName_Display, ' - ', round(Distance,2), ' km') separator '\n') as Station
+            FROM (
+                SELECT *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY Project_ID ORDER BY Distance ASC
+                    ) AS rn2
+                FROM distinct_station) t
+            WHERE rn2 <= 2
+            group by Project_ID) station
+on a.Project_ID = station.Project_ID
+left join (WITH nearest_express_way AS (
+                SELECT 
+                    Project_ID,
+                    Place_Name,
+                    Place_Type,
+                    Place_Category,
+                    Place_Latitude,
+                    Place_Longitude,
+                    Distance,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY Project_ID, Place_Name 
+                        ORDER BY Distance ASC
+                    ) AS rn
+                FROM source_office_around_express_way)
+            , distinct_express_way AS (
+                SELECT Project_ID, Place_Name, Place_Type, Place_Category, Place_Latitude, Place_Longitude, Distance
+                FROM nearest_express_way
+                WHERE rn = 1)
+            SELECT Project_ID, group_concat(CONCAT(REPLACE(Place_Name, 'ทางพิเศษ', Place_Type), ' (', Place_Category, ')', ' - ', round(Distance,2), ' km') separator '\n') as Express_Way
+            FROM (
+                SELECT *,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY Project_ID ORDER BY Distance ASC
+                    ) AS rn2
+                FROM distinct_express_way) t
+            WHERE rn2 <= 1
+            group by Project_ID) express_way
+on a.Project_ID = express_way.Project_ID
+left join (select Project_ID
+                , if(min(Price)=max(Price)
+                    , format(min(Price),0)
+                    , concat(format(min(Price),0),' - ',format(max(Price),0))) as Rent_Price
+            from (select * from (select Project_ID, Rent_Price_Min as Price
+                                from office_building
+                                where Building_Status = '1'
+                                and Rent_Price_Min is not null) min_price
+                    union all
+                    select * from (select Project_ID, Rent_Price_Max as Price
+                                    from office_building
+                                    where Building_Status = '1'
+                                    and Rent_Price_Max is not null) max_price) a
+            group by Project_ID) rent_price
+on a.Project_ID = rent_price.Project_ID
+left join (select Project_ID
+                , if(min(Area)=max(Area)
+                    , format(min(Area),0)
+                    , concat(format(min(Area),0),' - ',format(max(Area),0))) as Area
+            from (select * from (select Project_ID, Unit_Size_Min as Area
+                                from office_building
+                                where Building_Status = '1'
+                                and Unit_Size_Min is not null) min_area
+                    union all
+                    select * from (select Project_ID, Unit_Size_Max as Area
+                                    from office_building
+                                    where Building_Status = '1'
+                                    and Unit_Size_Max is not null) max_area) a
+            group by Project_ID) area
+on a.Project_ID = area.Project_ID
+left join (SELECT a.Project_ID
+                , if(min(Floor_above)=max(Floor_above)
+                    , min(Floor_above)
+                    , concat(min(Floor_above),' - ',max(Floor_above))) as Floor
+                , sum(a.Total_Building_Area) as Total_Building_Area
+                , max(YEAR(a.Built_Complete)) as Year_Built_Complete
+                , max(YEAR(a.Last_Renovate)) as Year_Last_Renovate
+                , greatest(ifnull(max(a.Typical_Floor_Plate_1),0), ifnull(max(a.Typical_Floor_Plate_2),0), ifnull(max(a.Typical_Floor_Plate_3),0)) as Typical_Floor_Plate
+                , if(min(a.Ceiling_Avg) = max(a.Ceiling_Avg)
+                    , if(mod(round(min(a.Ceiling_Avg), 1), 1) = 0
+                        , format(round(min(a.Ceiling_Avg), 0), 0)
+                        , format(round(min(a.Ceiling_Avg), 1), 1))
+                    , if(mod(round(max(a.Ceiling_Avg), 1), 1) = 0
+                        , concat(format(round(min(a.Ceiling_Avg), 0), 0), ' - ', format(round(max(a.Ceiling_Avg), 0), 0))
+                        , concat(format(round(min(a.Ceiling_Avg), 1), 1), ' - ', format(round(max(a.Ceiling_Avg), 1), 1)))) as Ceiling
+                , if(sum(a.Total_Lift)=0, null, sum(a.Total_Lift)) as Total_Lift
+                , group_concat(distinct a.AC_System separator '\n') as AC_System
+            FROM office_building a
+            WHERE a.Building_Status = '1'
+            group by a.Project_ID) building
+on a.Project_ID = building.Project_ID
+where a.Project_Status = '1'
+and ob.Building_Status = '1'
+and u.Unit_Status = '1';
