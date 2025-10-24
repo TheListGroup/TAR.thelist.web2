@@ -600,18 +600,42 @@ def select_all_office_building_cover(
             response.status_code = status.HTTP_304_NOT_MODIFIED
             return
         
-        base_sql = """SELECT
-                        Cover_ID,
-                        Cover_Size,
-                        Cover_Url,
-                        Created_By,
-                        Created_Date,
-                        Last_Updated_By,
-                        Last_Updated_Date
-                    FROM office_cover
-                    WHERE Ref_ID = %s AND Cover_Status = '1' AND Project_or_Building = 'Building'
-                    AND Cover_Size = 800
-                    ORDER BY Cover_Size desc"""
+        base_sql = """select ifnull(b.Cover_ID, c.Cover_ID) as Cover_ID
+                            , ifnull(b.Cover_Size, c.Cover_Size) as Cover_Size
+                            , ifnull(b.Cover_Url, c.Cover_Url) as Cover_Url
+                            , ifnull(b.Created_By, c.Created_By) as Created_By
+                            , ifnull(b.Created_Date, c.Created_Date) as Created_Date
+                            , ifnull(b.Last_Updated_By, c.Last_Updated_By) as Last_Updated_By
+                            , ifnull(b.Last_Updated_Date, c.Last_Updated_Date) as Last_Updated_Date
+                    from office_building a
+                    join office_project d on a.Project_ID = d.Project_ID
+                    left join (select Ref_ID
+                                    , Cover_ID
+                                    , Cover_Size
+                                    , Cover_Url
+                                    , Created_By
+                                    , Created_Date
+                                    , Last_Updated_By
+                                    , Last_Updated_Date
+                            from office_cover
+                            where Project_or_Building = 'Building'
+                            and Cover_Status = '1'
+                            and Cover_Size = 800) b 
+                    on a.Building_ID = b.Ref_ID
+                    left join (select Ref_ID
+                                    , Cover_ID
+                                    , Cover_Size
+                                    , Cover_Url
+                                    , Created_By
+                                    , Created_Date
+                                    , Last_Updated_By
+                                    , Last_Updated_Date
+                            from office_cover
+                            where Project_or_Building = 'Project'
+                            and Cover_Status = '1'
+                            and Cover_Size = 800) c 
+                    on d.Project_ID = c.Ref_ID
+                    where a.Building_ID = %s"""
         
         cur.execute(base_sql, (Building_ID,))
         rows = cur.fetchall()
