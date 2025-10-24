@@ -416,6 +416,7 @@ select u.Unit_ID
     , concat(format(u.Rent_Price,0), ' บ./ด.') as Rent_Price
     , concat(format(u.Size,0),' ตร.ม. X ', format((u.Rent_Price/u.Size),0), ' บ./ด.') as Rent_Price_Sqm
     , if(u.Rent_Price is not null,1,0) as Rent_Price_Status
+    , p.Project_ID
     /*, img_carousel.Image_Set as Carousel_Image
     , img_random.Image_Set as Carousel_Image_Random*/
 from office_unit u
