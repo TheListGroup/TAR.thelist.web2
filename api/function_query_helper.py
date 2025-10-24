@@ -293,7 +293,7 @@ def _select_full_office_project_item(new_id: int) -> dict | None:
                                                                         , 'Building_Name', b.Building_Name
                                                                         , 'Floor_Plan_ID', c.Floor_Plan_ID
                                                                         , 'Floor_Name', c.Floor_Name
-                                                                        , 'Follr_Plan_Order', c.Display_Order
+                                                                        , 'FLoor_Plan_Order', c.Display_Order
                                                                         , 'Floor_Plan_URL', c.Floor_Plan_Image)) as Floor_Plan
                         FROM office_project a
                         join office_building b on a.Project_ID = b.Project_ID
@@ -719,6 +719,7 @@ def _get_project_building(proj_id: int) -> Dict[str, Any] | None:
                         , YEAR(a.Built_Complete) as Year_Built_Complete
                         , YEAR(a.Last_Renovate) as Year_Last_Renovate
                         , concat(format(a.Total_Building_Area,0), ' ตร.ม.') as Total_Building_Area
+                        , concat(format(a.Lettable_Area,0), ' ตร.ม.') as Lettable_Area
                         , concat(format(a.Typical_Floor_Plate_1,0), ' ตร.ม.') as Typical_Floor_Plate_1
                         , concat(format(a.Typical_Floor_Plate_2,0), ' ตร.ม.') as Typical_Floor_Plate_2
                         , concat(format(a.Typical_Floor_Plate_3,0), ' ตร.ม.') as Typical_Floor_Plate_3
@@ -832,31 +833,65 @@ def get_project_image(ref_id: int) -> str:
         cur.close()
         conn.close()
 
-def get_all_carousel_images(unit_id: int, project_id: int) -> str:
+def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
     conn = get_db()
-    cur = conn.cursor()
+    cur = conn.cursor(dictionary=True)
+    unit_placeholders = ', '.join(['%s'] * len(unit_ids))
+    project_placeholders = ', '.join(['%s'] * len(project_ids))
+    
     try:
-        sql_query = """
-        SELECT JSON_ARRAYAGG(JSON_OBJECT(
-                'Image_ID', Image_ID,
-                'Image_Name', Image_Name,
-                'Category_Order', Category_Order,
-                'Display_Order', Display_Order,
-                'Image_URL', Image_URL,
-                'Image_Type', Image_Type
-            )) AS Image_Set
+        sql_query = f"""
+        WITH ProcessedImages AS (
+        SELECT
+            CASE 
+                WHEN img.Image_Type = 'Unit_Image' THEN img.Ref_ID
+                ELSE map.Unit_ID
+            END AS Owning_Unit_ID,
+
+            CASE
+                WHEN img.Image_Type = 'Cover_Project'
+                THEN REPLACE(
+                        REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'), -- ใช้ \\d+ ที่ถูกต้อง
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1),
+                        LPAD(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1) AS UNSIGNED) + 2, LENGTH(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1)), '0')
+                    )
+                ELSE REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400') -- ใช้ \\d+ ที่ถูกต้อง
+            END AS Modified_Image_URL,
+
+            CASE
+                WHEN img.Image_Type = 'Cover_Project' THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
+                ELSE img.Image_ID
+            END AS Modified_Image_ID,
+
+            img.Image_Name, img.Category_Order, img.Display_Order, img.Image_Type
         FROM
-            source_office_image_all
+            source_office_image_all AS img
+        LEFT JOIN 
+            (SELECT DISTINCT Unit_ID, Project_ID FROM source_office_unit_carousel_recommend) AS map
+            ON img.Ref_ID = map.Project_ID AND img.Image_Type IN ('Project_Image', 'Cover_Project')
         WHERE
-            (Ref_ID = %s AND Image_Type = 'Unit_Image')
+            (img.Image_Type = 'Unit_Image' AND img.Ref_ID IN ({unit_placeholders}))
             OR
-            (Ref_ID = %s AND Image_Type IN ('Project_Image', 'Cover_Project') AND Section <> 'Floor Plan')
+            (img.Image_Type IN ('Project_Image', 'Cover_Project') AND img.Ref_ID IN ({project_placeholders}) AND img.Section <> 'Floor Plan')
+            )
+                SELECT 
+                    Owning_Unit_ID,
+                    JSON_ARRAYAGG(JSON_OBJECT(
+                        'Image_ID', Modified_Image_ID,
+                        'Image_Name', Image_Name,
+                        'Category_Order', Category_Order,
+                        'Display_Order', Display_Order,
+                        'Image_URL', Modified_Image_URL,
+                        'Image_Type', Image_Type
+                    )) AS Image_Set
+                FROM ProcessedImages
+                WHERE Owning_Unit_ID IS NOT NULL
+                GROUP BY Owning_Unit_ID
         """
-        cur.execute(sql_query, (unit_id, project_id))
-        row = cur.fetchone()
-        if row:
-            return row[0]
-        return None
+        params = tuple(unit_ids) + tuple(project_ids)
+        cur.execute(sql_query, params)
+        rows = cur.fetchall()
+        return {row['Owning_Unit_ID']: row['Image_Set'] for row in rows}
     finally:
         cur.close()
         conn.close()
