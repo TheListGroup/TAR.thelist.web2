@@ -343,7 +343,7 @@ def _insert_building_record(
     ceiling_avg: float|None,
     parking_ratio: str|None, parking_fee: int|None, total_lift: int|None, passenger_lift: int|None, service_lift: int|None, retail_parking_lift: int|None,
     ac: str|None, ac_time_start: str|None, ac_time_end: str|None, ac_ot_weekday_by_hour: float|None, ac_ot_weekday_by_area: float|None,
-    ac_ot_weekend_by_hour: float|None, ac_ot_weekend_by_area: float|None, ac_ot_min_hour: float|None,
+    ac_ot_weekend_by_hour: float|None, ac_ot_weekend_by_area: float|None, ac_ot_min_hour: float|None, ac_ot_min_baht: float|None,
     bill_elec: float|None, bill_water: float|None, rent_term: int|None, rent_deposit: int|None, rent_advance: int|None, user_id: int, building_status: str,
     created_by: int, last_updated_by: int
 ) -> dict:
@@ -358,7 +358,7 @@ def _insert_building_record(
                 , Ceiling_Avg
                 , Parking_Ratio, Parking_Fee_Car
                 , Total_Lift, Passenger_Lift, Service_Lift, Retail_Parking_Lift, AC_System, ACTime_Start, ACTime_End
-                , AC_OT_Weekday_by_Hour, AC_OT_Weekday_by_Area, AC_OT_Weekend_by_Hour, AC_OT_Weekend_by_Area, AC_OT_Min_Hour
+                , AC_OT_Weekday_by_Hour, AC_OT_Weekday_by_Area, AC_OT_Weekend_by_Hour, AC_OT_Weekend_by_Area, AC_OT_Min_Hour, AC_OT_Min_Baht
                 , Bills_Electricity, Bills_Water
                 , Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Building_Status
                 , Created_By, Last_Updated_By)
@@ -369,7 +369,7 @@ def _insert_building_record(
                         , floor_plate1, floor_plate2, floor_plate3, size_min, size_max, landlord, management
                         , sole_agent, built_completed, last_renovate, floor_above, floor_basement, floor_office_only, ceiling_avg, parking_ratio, parking_fee, total_lift
                         , passenger_lift, service_lift, retail_parking_lift, ac, ac_time_start, ac_time_end, ac_ot_weekday_by_hour, ac_ot_weekday_by_area
-                        , ac_ot_weekend_by_hour, ac_ot_weekend_by_area, ac_ot_min_hour, bill_elec, bill_water
+                        , ac_ot_weekend_by_hour, ac_ot_weekend_by_area, ac_ot_min_hour, ac_ot_min_baht, bill_elec, bill_water
                         , rent_term, rent_deposit, rent_advance, user_id, building_status, created_by, last_updated_by))
         conn.commit()
         new_id = cur.lastrowid
@@ -704,28 +704,28 @@ def _get_project_building(proj_id: int) -> Dict[str, Any] | None:
         cur.execute("""SELECT a.Building_ID, a.Building_Name
                         , CONCAT(IF(a.Floor_above = FLOOR(a.Floor_above)
                                     , CAST(FLOOR(a.Floor_above) AS CHAR)
-                                    , a.Floor_above), ' ชั้น') as Floor
+                                    , a.Floor_above), ';ชั้น') as Floor
                         , if(a.Unit_Size_Min is not null and a.Unit_Size_Max is not null
                             , if(a.Unit_Size_Min = a.Unit_Size_Max
-                                , concat(format(a.Unit_Size_Min,0), ' ตร.ม.')
-                                , concat(format(a.Unit_Size_Min,0),' - ',format(a.Unit_Size_Max,0), ' ตร.ม.'))
-                            , concat(format(ifnull(a.Unit_Size_Max,a.Unit_Size_Min),0), ' ตร.ม.')) as Area
+                                , concat(format(a.Unit_Size_Min,0), ';ตร.ม.')
+                                , concat(format(a.Unit_Size_Min,0),' - ',format(a.Unit_Size_Max,0), ';ตร.ม.'))
+                            , concat(format(ifnull(a.Unit_Size_Max,a.Unit_Size_Min),0), ';ตร.ม.')) as Area
                         , if(a.Rent_Price_Min is not null and a.Rent_Price_Max is not null
                             , if(a.Rent_Price_Min = a.Rent_Price_Max
-                                , concat(format(a.Rent_Price_Min,0), ' บ./ตร.ม.')
-                                , concat(format(a.Rent_Price_Min,0),' - ',format(a.Rent_Price_Max,0), ' บ./ตร.ม.'))
-                            , concat(format(ifnull(a.Rent_Price_Max,a.Rent_Price_Min),0), ' บ./ตร.ม.')) as Rent_Price
+                                , concat(format(a.Rent_Price_Min,0), ';บ./ตร.ม.')
+                                , concat(format(a.Rent_Price_Min,0),' - ',format(a.Rent_Price_Max,0), ';บ./ตร.ม.'))
+                            , concat(format(ifnull(a.Rent_Price_Max,a.Rent_Price_Min),0), ';บ./ตร.ม.')) as Rent_Price
                         , b.Cover_Url as Cover
                         , YEAR(a.Built_Complete) as Year_Built_Complete
                         , YEAR(a.Last_Renovate) as Year_Last_Renovate
-                        , concat(format(a.Total_Building_Area,0), ' ตร.ม.') as Total_Building_Area
-                        , concat(format(a.Lettable_Area,0), ' ตร.ม.') as Lettable_Area
-                        , concat(format(a.Typical_Floor_Plate_1,0), ' ตร.ม.') as Typical_Floor_Plate_1
-                        , concat(format(a.Typical_Floor_Plate_2,0), ' ตร.ม.') as Typical_Floor_Plate_2
-                        , concat(format(a.Typical_Floor_Plate_3,0), ' ตร.ม.') as Typical_Floor_Plate_3
+                        , concat(format(a.Total_Building_Area,0), ';ตร.ม.') as Total_Building_Area
+                        , concat(format(a.Lettable_Area,0), ';ตร.ม.') as Lettable_Area
+                        , concat(format(a.Typical_Floor_Plate_1,0), ';ตร.ม.') as Typical_Floor_Plate_1
+                        , concat(format(a.Typical_Floor_Plate_2,0), ';ตร.ม.') as Typical_Floor_Plate_2
+                        , concat(format(a.Typical_Floor_Plate_3,0), ';ตร.ม.') as Typical_Floor_Plate_3
                         , IF(MOD(ROUND(a.Ceiling_Avg, 1), 1) = 0
-                            , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 0), ' ม.')
-                            , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 1), ' ม.')) as Ceiling
+                            , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 0), ';ม.')
+                            , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 1), ';ม.')) as Ceiling
                         , Total_Lift as Total_Lift
                         , AC_System as AC_System
                     FROM office_building a
@@ -800,6 +800,29 @@ def get_image(ref_id: int) -> str:
                     from source_office_image_all
                     WHERE Ref_ID=%s
                     AND Image_Type = 'Unit_Image'
+                    group by Ref_ID""", (ref_id,))
+        row = cur.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_project_cover(ref_id: int) -> str:
+    conn = get_db()
+    cur = conn.cursor()
+    try:
+        cur.execute("""select Ref_ID
+                        , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
+                                                    , 'Image_Name', Image_Name
+                                                    , 'Category_Order', Category_Order
+                                                    , 'Display_Order', Display_Order
+                                                    , 'Image_URL', Image_URL
+                                                    , 'Image_Type', Image_Type)) as Image_Set
+                    from source_office_image_all
+                    WHERE Ref_ID=%s
+                    and Image_Type = 'Cover_Project'
                     group by Ref_ID""", (ref_id,))
         row = cur.fetchone()
         if row:
@@ -1079,3 +1102,158 @@ def get_project_education(proj_id: int) -> Optional[str]:
     finally:
         cur.close()
         conn.close()
+
+def get_unit_highlight(unit_id: int) -> Optional[str]:
+    conn2 = get_db()
+    cur2 = conn2.cursor()
+    try:
+        cur2.execute(
+            f"""SELECT
+                    *
+                FROM source_office_unit_highlight_relationship
+                WHERE Unit_ID=%s""",
+            (unit_id,)
+        )
+        row = cur2.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur2.close()
+        conn2.close()
+
+def get_unit_info_card(unit_id: int) -> Optional[str]:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    try:
+        cur2.execute(
+            f"""SELECT
+                    /* a.Unit_ID
+                    ,*/ concat(format((a.Rent_Price/a.Size), 0), ';บ./ตร.ม./ด.') as Rent_Price
+                    , concat(format(a.Size, 0), ';ตร.ม.') as Unit_Size
+                    , if(d.building > 1, b.Building_Name, NULL) as Building_Name
+                    , c.Name_EN as Project_Name
+                    , e.Highlight as Highlight
+                    , e.near_by as Nearby
+                FROM office_unit a
+                join office_building b on a.Building_ID = b.Building_ID
+                join office_project c on b.Project_ID = c.Project_ID
+                left join (select a.Project_ID, count(b.Building_ID) as building
+                            from office_project a
+                            LEFT JOIN office_building b on a.Project_ID = b.Project_ID
+                            where b.Building_Status = '1'
+                            and a.Project_Status = '1'
+                            group by a.Project_ID) d
+                on c.Project_ID = d.Project_ID
+                left join source_office_project_carousel_recommend e on c.Project_ID = e.Project_ID
+                WHERE a.Unit_ID=%s""",
+            (unit_id,)
+        )
+        row = cur2.fetchone()
+        if row:
+            return row
+        return None
+    finally:
+        cur2.close()
+        conn2.close()
+
+def get_project_convenience_store(proj_id: int) -> Optional[str]:
+    conn2 = get_db()
+    cur2 = conn2.cursor()
+    try:
+        cur2.execute(
+            f"""WITH nearest_convenience_store AS (
+                    SELECT 
+                        Project_ID,
+                        Store_ID,
+                        Store_Type,
+                        Branch_Name,
+                        Place_Latitude,
+                        Place_Longitude,
+                        Distance,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Project_ID, Store_Type 
+                            ORDER BY Distance ASC
+                        ) AS rn
+                    FROM source_office_around_convenience_store)
+                , distinct_convenience_store AS (
+                    SELECT Project_ID, Store_ID, Store_Type, Branch_Name, Place_Latitude, Place_Longitude, Distance
+                    FROM nearest_convenience_store
+                    WHERE rn = 1)
+                SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Store_ID
+                                                            , 'Store_Type', Store_Type
+                                                            , 'Branch_Name', Branch_Name
+                                                            , 'Place_Latitude', Place_Latitude
+                                                            , 'Place_Longitude', Place_Longitude
+                                                            , 'Distance', Distance)) as Convenience_Store
+                FROM (
+                    SELECT *,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Project_ID ORDER BY Distance ASC
+                        ) AS rn2
+                    FROM distinct_convenience_store
+                    WHERE Project_ID=%s) t
+                group by Project_ID""",
+            (proj_id,)
+        )
+        row = cur2.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur2.close()
+        conn2.close()
+
+def get_project_bank(proj_id: int) -> Optional[str]:
+    conn2 = get_db()
+    cur2 = conn2.cursor()
+    try:
+        cur2.execute(
+            f"""WITH nearest_bank AS (
+                    SELECT 
+                        Project_ID,
+                        Bank_ID,
+                        Bank_Name_TH,
+                        Bank_Name_EN,
+                        Branch_Name,
+                        Place_Latitude,
+                        Place_Longitude,
+                        Distance,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Project_ID, Bank_Name_TH 
+                            ORDER BY Distance ASC
+                        ) AS rn
+                    FROM source_office_around_bank)
+                , distinct_bank AS (
+                    SELECT Project_ID, Bank_ID, Bank_Name_TH, Bank_Name_EN, Branch_Name, Place_Latitude, Place_Longitude, Distance
+                    FROM nearest_bank
+                    WHERE rn = 1)
+                SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Bank_ID
+                                                            , 'Bank_Name_TH', Bank_Name_TH
+                                                            , 'Bank_Name_EN', Bank_Name_EN
+                                                            , 'Branch_Name', Branch_Name
+                                                            , 'Place_Latitude', Place_Latitude
+                                                            , 'Place_Longitude', Place_Longitude
+                                                            , 'Distance', Distance)) as Bank
+                FROM (
+                    SELECT *,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY Project_ID ORDER BY Distance ASC
+                        ) AS rn2
+                    FROM distinct_bank
+                    WHERE Project_ID=%s) t
+                WHERE rn2 <= 2
+                group by Project_ID""",
+            (proj_id,)
+        )
+        row = cur2.fetchone()
+        if row:
+            return row[1]
+        return None
+    finally:
+        cur2.close()
+        conn2.close()
+
+#def get_search_project(Text: str) -> dict:
+#    conn = get_db()
+#    cur = conn.cursor(dictionary=True)
