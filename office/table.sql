@@ -22,6 +22,9 @@
 -- office_project_tag_relationship
 -- office_around_express_way
 -- office_contact_form
+-- office_unit_highlight
+-- real_place_bank
+-- real_place_convenience_store
 
 
 -- -----------------------------------------------------
@@ -155,6 +158,7 @@ CREATE TABLE IF NOT EXISTS office_building (
     AC_OT_Weekend_by_Hour FLOAT NULL,
     AC_OT_Weekend_by_Area FLOAT NULL,
     AC_OT_Min_Hour FLOAT NULL,
+    AC_OT_Min_Baht FLOAT NULL,
     Bills_Electricity FLOAT NULL,
     Bills_Water FLOAT NULL,
     Rent_Term SMALLINT UNSIGNED NULL,
@@ -209,6 +213,7 @@ CREATE TABLE IF NOT EXISTS office_unit (
     Rent_Term SMALLINT UNSIGNED NULL,
     Rent_Deposit SMALLINT UNSIGNED NULL,
     Rent_Advance SMALLINT UNSIGNED NULL,
+    Unit_Description TEXT NULL,
     User_ID INT UNSIGNED NOT NULL,
     Created_By INT UNSIGNED NOT NULL DEFAULT 0,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -645,4 +650,52 @@ CREATE TABLE IF NOT EXISTS office_contact_form (
     Contact_IP VARCHAR(50) NOT NULL,
     Contact_Date DATETIME NOT NULL,
     PRIMARY KEY (Contact_ID))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table office_unit_highlight
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_unit_highlight (
+    Highlight_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Highlight_Name VARCHAR(200) NOT NULL,
+    Highlight_Order SMALLINT UNSIGNED NOT NULL,
+    Highlight_Status ENUM('0', '1', '2') NOT NULL,
+    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (Highlight_ID),
+    INDEX unit_feat_admin1 (Created_By),
+    INDEX unit_feat_admin2 (Last_Updated_By),
+    CONSTRAINT unit_feat_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
+    CONSTRAINT unit_feat_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table real_place_bank
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS real_place_bank (
+    Bank_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Bank_Name_TH VARCHAR(250) NOT NULL,
+    Bank_Name_EN VARCHAR(250) NOT NULL,
+    Branch_Name VARCHAR(250) NOT NULL,
+    Place_Latitude DOUBLE NOT NULL,
+    Place_Longitude DOUBLE NOT NULL,
+    PRIMARY KEY (Bank_ID),
+    INDEX bank_lat (Place_Latitude),
+    INDEX bank_long (Place_Longitude))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table real_place_convenience_store
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS real_place_convenience_store (
+    Store_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Store_Type VARCHAR(250) NOT NULL,
+    Branch_Name VARCHAR(250) NOT NULL,
+    Place_Latitude DOUBLE NOT NULL,
+    Place_Longitude DOUBLE NOT NULL,
+    PRIMARY KEY (Store_ID),
+    INDEX store_lat (Place_Latitude),
+    INDEX store_long (Place_Longitude))
 ENGINE = InnoDB;
