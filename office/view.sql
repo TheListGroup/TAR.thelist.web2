@@ -4,9 +4,15 @@
 -- source_office_image_carousel (unit)
 -- source_office_image_carousel_random (unit)
 -- source_office_unit_carousel_recommend
+-- source_office_project_highlight
+-- source_office_project_highlight_relationship
 -- source_office_project_carousel_recommend
--- view source_office_project_highlight
--- view source_office_project_highlight_relationship
+-- source_office_project_highlight_relationship_data
+-- source_office_project_data
+-- source_office_unit_highlight
+-- source_office_unit_highlight_relationship
+-- view source_office_around_convenience_store
+-- view source_office_around_bank
 
 
 -- view source_office_around_station
@@ -510,7 +516,7 @@ create or replace view source_office_project_highlight as
 select a.Project_ID
             , 'N' as 'Skywalk'
             , building.Parking_Ratio as 'Parking'
-            , if(building.Parking_Ratio >= 120, 'Y', if(building.Parking_Ratio >= 80, 'Y', 'N')) as 'Parking_Ratio'
+            , if(building.Parking_Ratio <= 120, 'Y', 'N')as 'Parking_Ratio'
             , if(building.Typical_Floor_Plate >= 1500, 'Y', 'N') as 'Typical_Floor_Plate'
             , if(a.F_Others_EV = 1, 'Y', 'N') as 'EV_Changers'
             , 'N' as 'Mall_Connect'
@@ -541,7 +547,7 @@ from (SELECT Project_ID, 1 AS Highlight, NULL as Extra_Text
         FROM source_office_project_highlight
         WHERE Skywalk <> 'N'
         UNION ALL
-        SELECT Project_ID, 2 AS Highlight, if(Parking >= 120, 120, if(Parking >= 80, 80, NULL)) as Extra_Text
+        SELECT Project_ID, 2 AS Highlight, Parking as Extra_Text
         FROM source_office_project_highlight
         WHERE Parking_Ratio <> 'N'
         UNION ALL
@@ -679,7 +685,8 @@ left join (WITH nearest_express_way AS (
                 SELECT Project_ID, Place_Name, Place_Type, Place_Category, Place_Latitude, Place_Longitude, Distance
                 FROM nearest_express_way
                 WHERE rn = 1)
-            SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Express_Way', CONCAT(REPLACE(Place_Name, 'ทางพิเศษ', Place_Type), ' (', Place_Category, ')'))) as Express_Way
+            SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Express_Way', CONCAT(REPLACE(Place_Name, 'ทางพิเศษ', Place_Type), ' (', Place_Category, ')')
+                                                        , 'Distance', Distance)) as Express_Way
             FROM (
                 SELECT *,
                     ROW_NUMBER() OVER (
@@ -706,14 +713,14 @@ left join (select Project_ID
 on a.Project_ID = building.Project_ID
 where a.Project_Status = '1';
 
-
+-- view source_office_project_highlight_relationship_data
 create or replace view source_office_project_highlight_relationship_data as
 SELECT Project_ID, group_concat(if(aaa.Highlight = 2, concat(b.Highlight_Name, ' 1:', aaa.Extra_Text), b.Highlight_Name) separator '\n') as Highlight
 from (SELECT Project_ID, 1 AS Highlight, NULL as Extra_Text
         FROM source_office_project_highlight
         WHERE Skywalk <> 'N'
         UNION ALL
-        SELECT Project_ID, 2 AS Highlight, if(Parking >= 120, 120, if(Parking >= 80, 80, NULL)) as Extra_Text
+        SELECT Project_ID, 2 AS Highlight, Parking as Extra_Text
         FROM source_office_project_highlight
         WHERE Parking_Ratio <> 'N'
         UNION ALL
@@ -764,6 +771,7 @@ join office_highlight b on aaa.Highlight = b.Highlight_ID
 where b.Highlight_Status = '1'
 group by aaa.Project_ID;
 
+-- view source_office_project_data
 create or replace view source_office_project_data as
 select u.Unit_ID
     , u.Unit_NO
@@ -951,3 +959,102 @@ on a.Project_ID = building.Project_ID
 where a.Project_Status = '1'
 and ob.Building_Status = '1'
 and u.Unit_Status = '1';
+
+-- view source_office_unit_highlight
+create or replace view source_office_unit_highlight as
+select a.Unit_ID
+        , if(a.Pantry_InUnit = 1, 'Y', 'N') as 'Pantry_InUnit'
+        , if(a.Bathroom_InUnit = 1, 'Y', 'N') as 'Bathroom_InUnit'
+        , if(a.Ceiling_Dropped >= 3, 'Y', 'N') as 'Ceiling'
+        , if((ifnull(a.View_N,0) + ifnull(a.View_E,0) + ifnull(a.View_S,0) + ifnull(a.View_W,0)) >= 2, 'Y', 'N') as 'Multiview'
+        , if(a.Column_InUnit = 1, 'Y', 'N') as 'Column_Free'
+        , if(a.Available <= CURRENT_DATE, 'Y', 'N') as 'Available'
+        , if(a.AC_Split_Type = 1, 'Y', 'N') as 'AC_Split_Type'
+from office_unit a
+where a.Unit_Status = '1';
+
+-- view source_office_unit_highlight_relationship
+create or replace view source_office_unit_highlight_relationship as
+SELECT Unit_ID, JSON_ARRAYAGG(JSON_OBJECT('Highlight_Name', b.Highlight_Name
+                                            , 'Highlight_Order', b.Highlight_Order)) as Highlight
+from (SELECT Unit_ID, 1 AS Highlight
+        FROM source_office_unit_highlight
+        WHERE Pantry_InUnit <> 'N'
+        UNION ALL
+        SELECT Unit_ID, 2 AS Highlight
+        FROM source_office_unit_highlight
+        WHERE Bathroom_InUnit <> 'N'
+        UNION ALL
+        SELECT Unit_ID, 3 AS Highlight
+        FROM source_office_unit_highlight
+        WHERE Ceiling <> 'N'
+        UNION ALL
+        SELECT Unit_ID, 4 AS Highlight
+        FROM source_office_unit_highlight
+        WHERE Multiview <> 'N'
+        UNION ALL
+        SELECT Unit_ID, 5 AS Highlight
+        FROM source_office_unit_highlight
+        WHERE Column_Free <> 'N'
+        UNION ALL
+        SELECT Unit_ID, 6 AS Highlight
+        FROM source_office_unit_highlight
+        WHERE Available <> 'N'
+        UNION ALL
+        SELECT Unit_ID, 7 AS Highlight
+        FROM source_office_unit_highlight
+        WHERE AC_Split_Type <> 'N') aaa
+join office_unit_highlight b on aaa.Highlight = b.Highlight_ID
+where b.Highlight_Status = '1'
+group by aaa.Unit_ID;
+
+
+-- view source_office_around_convenience_store
+create or replace view source_office_around_convenience_store as
+select Store_ID
+    , Store_Type
+    , Branch_Name
+    , Place_Latitude
+    , Place_Longitude
+    , Project_ID
+    , Distance
+from (SELECT e.Store_ID
+            , e.Store_Type
+            , e.Branch_Name
+            , e.Place_Latitude
+            , e.Place_Longitude
+            , o.Project_ID
+            , o.Latitude
+            , o.Longitude
+            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - e.Place_Latitude)) / 2), 2)
+                + COS(RADIANS(e.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                POWER(SIN((RADIANS(o.Longitude - e.Place_Longitude)) / 2), 2 )))) AS Distance
+        FROM real_place_convenience_store e
+        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+where Distance <= 0.8;
+
+-- view source_office_around_bank
+create or replace view source_office_around_bank as
+select Bank_ID
+    , Bank_Name_TH
+    , Bank_Name_EN
+    , Branch_Name
+    , Place_Latitude
+    , Place_Longitude
+    , Project_ID
+    , Distance
+from (SELECT e.Bank_ID
+            , e.Bank_Name_TH
+            , e.Bank_Name_EN
+            , e.Branch_Name
+            , e.Place_Latitude
+            , e.Place_Longitude
+            , o.Project_ID
+            , o.Latitude
+            , o.Longitude
+            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - e.Place_Latitude)) / 2), 2)
+                + COS(RADIANS(e.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                POWER(SIN((RADIANS(o.Longitude - e.Place_Longitude)) / 2), 2 )))) AS Distance
+        FROM real_place_bank e
+        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+where Distance <= 0.8;
