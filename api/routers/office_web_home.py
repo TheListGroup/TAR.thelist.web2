@@ -4,7 +4,8 @@ from auth import get_current_user  # << ใช้ตัวเดิม (รอ�
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
 from function_query_helper import _select_full_office_project_item, _get_project_card_data, _get_project_template_price_card_data, _get_project_template_area_card_data \
     , _get_project_building, _get_subdistrict_data, _get_district_data, _get_province_data, get_image, get_project_station, get_project_express_way, get_project_retail \
-    , get_project_hospital, get_project_education, _select_full_office_unit_item, _select_full_office_building_item, get_project_image, get_all_unit_carousel_images
+    , get_project_hospital, get_project_education, _select_full_office_unit_item, _select_full_office_building_item, get_project_image, get_all_unit_carousel_images \
+    , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_project_cover
 from typing import Optional, Tuple, Dict, Any, List
 import os
 import re
@@ -15,7 +16,7 @@ router = APIRouter()
 
 def check_int(num):
     try:
-        num = float(num)
+        num = float(round(num,2))
         return str(int(num)) if num.is_integer() else str(num)
     except (ValueError, TypeError):
         return None
@@ -230,7 +231,7 @@ def project_template_data(
         price_values = price_card_data if price_card_data else [None] * 2
         rent_price = price_values[1]
         if rent_price:
-            rent_price = rent_price + ' บาท / ตร.ม.'
+            rent_price = rent_price + ';บาท / ตร.ม.'
         else:
             rent_price = 'หากสนใจกรุณาติดต่อ'
         info["Rent_Price"] = rent_price
@@ -239,7 +240,7 @@ def project_template_data(
         area_values = area_card_data if area_card_data else [None] * 2
         area = area_values[1]
         if area:
-            area = area + ' ตร.ม.'
+            area = area + ';ตร.ม.'
         else:
             area = 'หากสนใจกรุณาติดต่อ'
         info["Area"] = area
@@ -329,7 +330,7 @@ def project_template_data(
             
             total_lift = sum(item.get("Total_Lift") or 0 for item in building_data)
             if total_lift > 0:
-                factsheet["Total_Lift"] = str(total_lift) + ' ตัว'
+                factsheet["Total_Lift"] = str(total_lift) + ';ตัว'
             else:
                 factsheet["Total_Lift"] = None
             
@@ -345,7 +346,7 @@ def project_template_data(
             factsheet["Usable_Area"] = None
             factsheet["Total_Lift"] = None
         
-        factsheet["Price"] = re.sub(' บาท / ตร.ม.', ' บ./ตร.ม.', rent_price)
+        factsheet["Price"] = re.sub(';บาท / ตร.ม.', ';บ./ตร.ม.', rent_price)
         
         rai = check_int(proj_data["Land_Rai"]) if proj_data["Land_Rai"] else 0
         ngan = check_int(proj_data["Land_Ngan"]) if proj_data["Land_Ngan"] else 0
@@ -353,11 +354,11 @@ def project_template_data(
         if rai == 0 and ngan == 0 and wa == 0:
             factsheet["Land"] = None
         else:
-            factsheet["Land"] = f"{rai}-{ngan}-{wa} ไร่"
+            factsheet["Land"] = f"{rai}-{ngan}-{wa};ไร่"
         
         parking = proj_data["Parking_Amount"]
         if parking:
-            factsheet["Parking"] = str('{:,}'.format(parking)) + ' คัน'
+            factsheet["Parking"] = str('{:,}'.format(parking)) + ';คัน'
         else:
             factsheet["Parking"] = None
         
@@ -413,6 +414,8 @@ def project_template_data(
         location = {}
         station = get_project_station(Project_ID)
         express_way = get_project_express_way(Project_ID)
+        convenience_store = get_project_convenience_store(Project_ID)
+        bank = get_project_bank(Project_ID)
         retail = get_project_retail(Project_ID)
         hospital = get_project_hospital(Project_ID)
         education = get_project_education(Project_ID)
@@ -424,6 +427,14 @@ def project_template_data(
             location["Express_Way"] = express_way
         else:
             location["Express_Way"] = None
+        if convenience_store:
+            location["Convenience_Store"] = convenience_store
+        else:
+            location["Convenience_Store"] = None
+        if bank:
+            location["Bank"] = bank
+        else:
+            location["Bank"] = None
         if retail:
             location["Retail"] = retail
         else:
@@ -466,7 +477,7 @@ def unit_template_data(
         if not unit_name:
             return to_problem(404, "Unit Name Not Found", "Unit Name is None.")
         else:
-            data.append({"Unit_Name": unit_name})
+            data.append({"Unit_Name": 'ห้อง ' + unit_name})
         
         project_name = project_data["Name_EN"]
         if not project_name:
@@ -474,9 +485,228 @@ def unit_template_data(
         else:
             data.append({"Project_Name": project_name})
         
-        unit_image = get_image(Unit_ID)
-        data.append({"Unit_Image": unit_image})
+        unit_gallery = {}
+        cover_image = get_project_cover(project_data["Project_ID"])
+        unit_gallery["Cover_Image"] = cover_image
         
-        return data
+        unit_image = get_image(Unit_ID)
+        unit_gallery["Unit_Image"] = unit_image
+        data.append({"Unit_Image": unit_gallery})
+        
+        overall = {}
+        overall["Description"] = unit_data["Unit_Description"]
+        overall["Highlight"] = get_unit_highlight(Unit_ID)
+        
+        data.append({"Overall": overall})
+        
+        building_in_proj = _get_project_building(project_data["Project_ID"])
+        
+        unit_info = get_unit_info_card(Unit_ID)
+        
+        floors = [safe_floor(item.get("Floor")) for item in building_in_proj]
+        floor = format_range(floors, check_int)
+        if floor:
+            unit_info["Floors"] = floor + ';ชั้น'
+        else:
+            unit_info["Floors"] = None
+        
+        finished_years_list = [item.get("Year_Built_Complete") for item in building_in_proj]
+        finished_years = [year for year in finished_years_list if year is not None]
+        finished_year = check_int(max(finished_years)) if finished_years else None
+        if finished_year:
+            unit_info["Finished_Year"] = 'ปีที่สร้างเสร็จ;' + finished_year
+        else:
+            unit_info["Finished_Year"] = None
+        data.append({"Info": unit_info})
+        
+        factsheet = {}
+        factsheet["Unit_Name"] = "ห้อง " + unit_name
+        factsheet["Building_Name"] = building_data["Building_Name"]
+        factsheet["Project_Name"] = project_data["Name_EN"]
+        factsheet["Floor"] = "ชั้น " + unit_data["Floor"]
+        
+        direction_text = []
+        direction_keys = ["เหนือ", "ใต้", "ตะวันออก", "ตะวันตก"]
+        direction_values = [unit_data["View_N"], unit_data["View_S"], unit_data["View_E"], unit_data["View_W"]]
+        for i, direction in enumerate(direction_values):
+            if direction == 1:
+                direction_text.append(direction_keys[i])
+        if direction_text:
+            factsheet["Direction"] = ", ".join(direction_text)
+        else:
+            factsheet["Direction"] = None
+        
+        factsheet["Unit_Size"] = unit_info["Unit_Size"]
+        
+        rent_price = unit_data["Rent_Price"]
+        if rent_price:
+            factsheet["Rent_Price"] = str('{:,}'.format(rent_price)) + ";บ. / ด."
+            if unit_data["Size"]:
+                rent_price_avg = rent_price / unit_data["Size"]
+                factsheet["Rent_Price_Avg"] = str('{:,.0f}'.format(rent_price_avg)) + ";บ. / ตร.ม."
+        else:
+            factsheet["Rent_Price"] = None
+            factsheet["Rent_Price_Avg"] = None
+        
+        key_list = ["Ceiling_Full_Structure", "Ceiling_Dropped"]
+        text_list = [";เมตร", ";เมตร"]
+        for i, data_key in enumerate(key_list):
+            if unit_data[data_key]:
+                factsheet[data_key] = check_int(unit_data[data_key]) + text_list[i]
+            else:
+                factsheet[data_key] = None
+        
+        factsheet["Furnish"] = unit_data["Furnish_Condition"]
+        
+        if unit_data["Column_InUnit"] == 1:
+            factsheet["Column_InUnit"] = "มี"
+        elif unit_data["Column_InUnit"] == 0:
+            factsheet["Column_InUnit"] = "ไม่มี"
+        else:
+            factsheet["Column_InUnit"] = None
+        
+        if unit_data["Combine_Divide"] == 1:
+            factsheet["Combine_Divide"] = "มี"
+            if unit_data["Min_Divide_Size"]:
+                factsheet["Min_Divide_Size"] = check_int(unit_data["Min_Divide_Size"]) + ';ตร.ม.'
+            else:
+                factsheet["Min_Divide_Size"] = None
+        elif unit_data["Combine_Divide"] == 0:
+            factsheet["Combine_Divide"] = "ไม่มี"
+            factsheet["Min_Divide_Size"] = None
+        else:
+            factsheet["Combine_Divide"] = None
+            factsheet["Min_Divide_Size"] = None
+        
+        factsheet["Project_Owner"] = building_data["Landlord"]
+        factsheet["Management"] = building_data["Management"]
+        
+        factsheet["Security_Type"] = project_data["Security_Type"]
+        
+        lift_list = ["Passenger_Lift", "Service_Lift", "Retail_Parking_Lift"]
+        for lift in lift_list:
+            lift_count = building_data[lift]
+            factsheet[lift] = check_int(lift_count) + ";ตัว"
+        
+        air_start = building_data["ACTime_Start"]
+        air_end = building_data["ACTime_End"]
+        if air_start and air_end:
+            factsheet["ACTime"] = air_start[:-3] + " - " + ":".join([str(int(air_end.split(":")[0]) + 12), air_end.split(":")[1]]) + ";น."
+        else:
+            factsheet["ACTime"] = None
+        
+        air_data = []
+        air_list = ["AC_OT_Weekday_by_Hour", "AC_OT_Weekend_by_Hour"]
+        for i, air in enumerate(air_list):
+            air_ot = building_data[air]
+            if air_ot:
+                if i == 0:
+                    air_ot_weekday = "จันทร์ - ศุกร์ " + check_int(air_ot) + ";บ./ชม."
+                    air_data.append(air_ot_weekday)
+                elif i == 1:
+                    air_ot_weekend = "เสาร์ - อาทิตย์ " + check_int(air_ot) + ";บ./ชม."
+                    air_data.append(air_ot_weekend)
+        if air_data:
+            factsheet["Air_OT"] = "\n".join(air_data)
+        else:
+            factsheet["Air_OT"] = None
+        
+        key_list = ["AC_OT_Min_Hour", "Bills_Electricity", "Bills_Water"]
+        text_list = [";ชม.", ";บ./หน่วย", ";บ./หน่วย"]
+        for i, data_key in enumerate(key_list):
+            if building_data[data_key]:
+                factsheet[data_key] = check_int(building_data[data_key]) + text_list[i]
+            else:
+                factsheet[data_key] = None
+        
+        factsheet["Parking_Ratio"] = building_data["Parking_Ratio"]
+        
+        if building_data["Parking_Ratio"] and unit_data["Size"]:
+            parking_ratio = building_data["Parking_Ratio"].split(":")[-1]
+            unit_size = unit_data["Size"]
+            factsheet["Parking"] =  math.floor(unit_size / int(parking_ratio))
+        else:
+            factsheet["Parking"] = None
+        
+        parking_fee = building_data["Parking_Fee_Car"]
+        if parking_fee:
+            factsheet["Parking_Fee_Car"] = str('{:,}'.format(parking_fee)) + ";บ./ด."
+        else:
+            factsheet["Parking_Fee_Car"] = None
+        
+        key_list = ["Rent_Term", "Rent_Deposit", "Rent_Advance"]
+        for i, data_key in enumerate(key_list):
+            if unit_data[data_key]:
+                factsheet[data_key] = check_int(unit_data[data_key]) + ";เดือน"
+            else:
+                factsheet[data_key] = None
+        
+        unit_status = unit_data["Unit_Status"]
+        if unit_status == '1':
+            factsheet["Unit_Status"] = "พร้อมเข้าอยู่"
+        elif unit_status == '2':
+            factsheet["Unit_Status"] = "มีผู้เช่าแล้ว"
+        else:
+            factsheet["Unit_Status"] = None
+        
+        amenities_columns = ["F_Common_Bathroom", "F_Common_Pantry", "F_Common_Garbageroom"]
+        amenities_list = [{column: bool(project_data.get(column)) for column in amenities_columns}]
+        factsheet["Amenities"] = amenities_list
+        data.append({"Factsheet": factsheet})
+        
+        images_by_unit_id = get_all_unit_carousel_images([unit_data["Unit_ID"]], [project_data["Project_ID"]])
+        if images_by_unit_id:
+            data.append({"Gallery": images_by_unit_id.get(unit_data['Unit_ID'])})
+        else:
+            data.append({"Gallery": None})
+        
+        location = {}
+        station = get_project_station(project_data["Project_ID"])
+        express_way = get_project_express_way(project_data["Project_ID"])
+        convenience_store = get_project_convenience_store(project_data["Project_ID"])
+        bank = get_project_bank(project_data["Project_ID"])
+        retail = get_project_retail(project_data["Project_ID"])
+        hospital = get_project_hospital(project_data["Project_ID"])
+        education = get_project_education(project_data["Project_ID"])
+        if station:
+            location["Station"] = station
+        else:
+            location["Station"] = None
+        if express_way:
+            location["Express_Way"] = express_way
+        else:
+            location["Express_Way"] = None
+        if convenience_store:
+            location["Convenience_Store"] = convenience_store
+        else:
+            location["Convenience_Store"] = None
+        if bank:
+            location["Bank"] = bank
+        else:
+            location["Bank"] = None
+        if retail:
+            location["Retail"] = retail
+        else:
+            location["Retail"] = None
+        if hospital:
+            location["Hospital"] = hospital
+        else:
+            location["Hospital"] = None
+        if education:
+            location["Education"] = education
+        else:
+            location["Education"] = None
+        data.append({"Location": location})
+        
+        return data    
     except Exception as e:
         return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
+
+# ----------------------------------------------------- Search Box --------------------------------------------------------------------------------------------
+@router.get("/search/{Text}", status_code=200)
+def search_box(
+    Text: str,
+    _ = Depends(get_current_user),
+):
+    data = []
+    
