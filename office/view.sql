@@ -454,7 +454,7 @@ left join (WITH nearest_station AS (
                     MTran_ShortName,
                     Distance,
                     ROW_NUMBER() OVER (
-                        PARTITION BY Project_ID, Station_THName_Display 
+                        PARTITION BY Project_ID, MTran_ShortName, Station_THName_Display 
                         ORDER BY Distance ASC
                     ) AS rn
                 FROM source_office_around_station
@@ -643,7 +643,7 @@ left join (WITH nearest_station AS (
                     MTran_ShortName,
                     Distance,
                     ROW_NUMBER() OVER (
-                        PARTITION BY Project_ID, Station_THName_Display 
+                        PARTITION BY Project_ID, MTran_ShortName, Station_THName_Display 
                         ORDER BY Distance ASC
                     ) AS rn
                 FROM source_office_around_station
@@ -858,7 +858,7 @@ left join (WITH nearest_station AS (
                     MTran_ShortName,
                     Distance,
                     ROW_NUMBER() OVER (
-                        PARTITION BY Project_ID, Station_THName_Display 
+                        PARTITION BY Project_ID, MTran_ShortName, Station_THName_Display 
                         ORDER BY Distance ASC
                     ) AS rn
                 FROM source_office_around_station
