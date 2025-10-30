@@ -363,13 +363,13 @@ def _insert_building_record(
                 , Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Building_Status
                 , Created_By, Last_Updated_By)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
-        cur.execute(sql, (proj_id, building_name, office_condo, price_min, price_max, lat, lng, building_area, lettable_area
-                        , floor_plate1, floor_plate2, floor_plate3, size_min, size_max, landlord, management
-                        , sole_agent, built_completed, last_renovate, floor_above, floor_basement, floor_office_only, ceiling_avg, parking_ratio, parking_fee, total_lift
-                        , passenger_lift, service_lift, retail_parking_lift, ac, ac_time_start, ac_time_end, ac_ot_weekday_by_hour, ac_ot_weekday_by_area
-                        , ac_ot_weekend_by_hour, ac_ot_weekend_by_area, ac_ot_min_hour, ac_ot_min_baht, bill_elec, bill_water
+        cur.execute(sql, (proj_id, building_name, office_condo, price_min, price_max, lat, lng, building_area, lettable_area, floor_plate1
+                        , floor_plate2, floor_plate3, size_min, size_max, landlord, management, sole_agent, built_completed, last_renovate, floor_above
+                        , floor_basement, floor_office_only, ceiling_avg, parking_ratio, parking_fee, total_lift, passenger_lift, service_lift, retail_parking_lift, ac
+                        , ac_time_start, ac_time_end, ac_ot_weekday_by_hour, ac_ot_weekday_by_area, ac_ot_weekend_by_hour
+                        , ac_ot_weekend_by_area, ac_ot_min_hour, ac_ot_min_baht, bill_elec, bill_water
                         , rent_term, rent_deposit, rent_advance, user_id, building_status, created_by, last_updated_by))
         conn.commit()
         new_id = cur.lastrowid
@@ -1309,6 +1309,30 @@ def get_project_bank(proj_id: int) -> Optional[str]:
         cur2.close()
         conn2.close()
 
-#def get_search_project(Text: str) -> dict:
-#    conn = get_db()
-#    cur = conn.cursor(dictionary=True)
+def get_search_project(Text: str) -> dict:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    text_list = f"%{Text}%" * 6
+    try:
+        cur.execute("""
+            SELECT 'project' AS location_type, 'โครงการ' AS type, Name_TH AS name_th, Name_EN AS name_en
+            FROM office_project
+            WHERE Project_Status = '1'
+            AND (Name_TH LIKE %s OR Name_EN LIKE %s)
+            union all
+            SELECT 'masstransit' AS location_type, 'สถานีรถไฟฟ้า' AS type, concat(d.MTran_ShortName, ' ', a.Station_THName_Display) AS name_th
+                , concat(d.MTran_ShortName, ' ', a.Station_ENName_Display) AS name_en
+            FROM mass_transit_station a
+            join mass_transit_route b on a.Route_Code = b.Route_Code and b.Route_Timeline = 'Completion'
+            join mass_transit_line c on b.Line_Code = c.Line_Code
+            join mass_transit d on c.MTrand_ID = d.MTran_ID
+            WHERE a.Station_Timeline = 'Completion'
+            AND (a.Station_THName_Display LIKE %s OR a.Station_ENName_Display LIKE %s)""", (f"%{Text}%", f"%{Text}%", f"%{Text}%", f"%{Text}%", f"%{Text}%", f"%{Text}%"))
+        row = cur.fetchall()
+        if len(row) >= 1:
+            return row
+        else:
+            return None
+    finally:
+        cur.close()
+        conn.close()
