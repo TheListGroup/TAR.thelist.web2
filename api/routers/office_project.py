@@ -288,7 +288,7 @@ def insert_office_project_and_return_full_record(
     try:
         if Building_Copy:
             row_building = _insert_building_record(new_id, Name_EN, 0, 0, None, Latitude, Longitude, None, Office_Lettable_Area, None, None, None,
-                            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
+                            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
                             None, None, None, None, None, None, None, None, None, None, None, None, User_ID, Project_Status, Created_By, Last_Updated_By)
             data.append({"building": row_building})
     except Exception as e:
