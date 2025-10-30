@@ -404,8 +404,10 @@ def project_template_data(
         if rows:
             project_data = rows[0]
             units = json.loads(project_data["Unit"])
+            unit_id_set = [unit["Unit_ID"] for unit in units]
+            unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID])
             for unit in units:
-                unit["Carousel_Image"] = get_image(unit["Unit_ID"])
+                unit["Carousel_Image"] = unit_carousel_image.get(unit['Unit_ID'])
             unit_available["Unit"] = units
         else:
             unit_available["Unit"] = None
@@ -489,7 +491,7 @@ def unit_template_data(
         cover_image = get_project_cover(project_data["Project_ID"])
         unit_gallery["Cover_Image"] = cover_image
         
-        unit_image = get_image(Unit_ID)
+        unit_image = get_image(Unit_ID, project_data["Project_ID"], "Unit")
         unit_gallery["Unit_Image"] = unit_image
         data.append({"Unit_Image": unit_gallery})
         
@@ -540,9 +542,9 @@ def unit_template_data(
         
         rent_price = unit_data["Rent_Price"]
         if rent_price:
-            factsheet["Rent_Price"] = str('{:,}'.format(rent_price)) + ";บ. / ด."
+            factsheet["Rent_Price"] = str('{:,}'.format((rent_price*unit_data["Size"]))) + ";บ. / ด."
             if unit_data["Size"]:
-                rent_price_avg = rent_price / unit_data["Size"]
+                rent_price_avg = rent_price
                 factsheet["Rent_Price_Avg"] = str('{:,.0f}'.format(rent_price_avg)) + ";บ. / ตร.ม."
         else:
             factsheet["Rent_Price"] = None
