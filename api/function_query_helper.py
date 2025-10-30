@@ -786,24 +786,60 @@ def _get_province_data(province_code : str) -> str:
         cur.close()
         conn.close()
 
-def get_image(ref_id: int) -> str:
+def get_image(unit_id: int, project_id: int, use_type: str) -> str:
     conn = get_db()
     cur = conn.cursor()
+    if use_type == 'Project':
+                image_url_expression = "REGEXP_REPLACE(Image_URL, '-H-\\\\d+', '-H-400')"
+    else:
+        image_url_expression = "Image_URL"
+        
     try:
-        cur.execute("""select Ref_ID
-                        , JSON_ARRAYAGG(JSON_OBJECT('Image_ID', Image_ID
-                                                    , 'Image_Name', Image_Name
-                                                    , 'Category_Order', Category_Order
-                                                    , 'Display_Order', Display_Order
-                                                    , 'Image_URL', Image_URL
-                                                    , 'Image_Type', Image_Type)) as Image_Set
-                    from source_office_image_all
-                    WHERE Ref_ID=%s
-                    AND Image_Type = 'Unit_Image'
-                    group by Ref_ID""", (ref_id,))
+        cur.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 
+                        FROM source_office_image_all 
+                        WHERE Ref_ID = %s AND Image_Type = 'Unit_Image'
+                        )
+                    """, (unit_id,))
+                    
+        unit_has_images = cur.fetchone()[0] == 1
+        
+        if unit_has_images:
+            sql = f"""
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'Image_ID', Image_ID, 'Image_Name', Image_Name, 'Category_Order', Category_Order,
+                        'Display_Order', Display_Order, 'Image_URL', {image_url_expression}, 
+                        'Image_Type', Image_Type
+                    )
+                ) AS Image_Set
+                FROM source_office_image_all
+                WHERE Ref_ID = %s AND Image_Type = 'Unit_Image';
+            """
+            params = (unit_id,)
+        else:
+            sql = f"""
+                SELECT JSON_ARRAYAGG(
+                    JSON_OBJECT(
+                        'Image_ID', Image_ID, 'Image_Name', Image_Name, 'Category_Order', Category_Order,
+                        'Display_Order', Display_Order, 
+                        'Image_URL', {image_url_expression},
+                        'Image_Type', 'Image_Type'
+                    )
+                ) AS Image_Set
+                FROM source_office_image_all
+                WHERE Ref_ID = %s 
+                    AND Image_Type IN ('Project_Image', 'Cover_Project')
+                    AND Section <> 'Floor Plan'
+                    AND Category_ID = 9;
+            """
+            params = (project_id,)
+        
+        cur.execute(sql, params)
         row = cur.fetchone()
-        if row:
-            return row[1]
+        if row and row[0]:
+            return row[0]        
         return None
     finally:
         cur.close()
@@ -847,6 +883,7 @@ def get_project_image(ref_id: int) -> str:
                     WHERE Ref_ID=%s
                     and Image_Type in ('Project_Image', 'Cover_Project')
                     and Section <> 'Floor Plan'
+                    and Category_ID <> 9
                     group by Ref_ID""", (ref_id,))
         row = cur.fetchone()
         if row:
@@ -874,11 +911,11 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
             CASE
                 WHEN img.Image_Type = 'Cover_Project'
                 THEN REPLACE(
-                        REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'), -- ใช้ \\d+ ที่ถูกต้อง
+                        REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'),
                         SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1),
                         LPAD(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1) AS UNSIGNED) + 2, LENGTH(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1)), '0')
                     )
-                ELSE REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400') -- ใช้ \\d+ ที่ถูกต้อง
+                ELSE REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400')
             END AS Modified_Image_URL,
 
             CASE
@@ -886,7 +923,15 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
                 ELSE img.Image_ID
             END AS Modified_Image_ID,
 
-            img.Image_Name, img.Category_Order, img.Display_Order, img.Image_Type
+            img.Image_Name, img.Category_Order, img.Display_Order, img.Image_Type,
+            img.Category_ID,
+
+            SUM(CASE WHEN img.Image_Type = 'Unit_Image' THEN 1 ELSE 0 END) OVER (PARTITION BY 
+                CASE 
+                    WHEN img.Image_Type = 'Unit_Image' THEN img.Ref_ID
+                    ELSE map.Unit_ID
+                END
+            ) AS unit_image_count
         FROM
             source_office_image_all AS img
         LEFT JOIN 
@@ -896,20 +941,30 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
             (img.Image_Type = 'Unit_Image' AND img.Ref_ID IN ({unit_placeholders}))
             OR
             (img.Image_Type IN ('Project_Image', 'Cover_Project') AND img.Ref_ID IN ({project_placeholders}) AND img.Section <> 'Floor Plan')
-            )
-                SELECT 
-                    Owning_Unit_ID,
-                    JSON_ARRAYAGG(JSON_OBJECT(
-                        'Image_ID', Modified_Image_ID,
-                        'Image_Name', Image_Name,
-                        'Category_Order', Category_Order,
-                        'Display_Order', Display_Order,
-                        'Image_URL', Modified_Image_URL,
-                        'Image_Type', Image_Type
-                    )) AS Image_Set
-                FROM ProcessedImages
-                WHERE Owning_Unit_ID IS NOT NULL
-                GROUP BY Owning_Unit_ID
+        ),
+        FilteredImages AS (
+            SELECT *
+            FROM ProcessedImages
+            WHERE 
+                (Image_Type = 'Unit_Image' OR (Image_Type <> 'Unit_Image' AND Category_ID <> 9))
+                OR (Image_Type <> 'Unit_Image' AND Category_ID = 9 AND unit_image_count = 0)
+        )
+        SELECT 
+            Owning_Unit_ID,
+            JSON_ARRAYAGG(JSON_OBJECT(
+                'Image_ID', Modified_Image_ID,
+                'Image_Name', Image_Name,
+                'Category_Order', Category_Order,
+                'Display_Order', Display_Order,
+                'Image_URL', Modified_Image_URL,
+                'Image_Type',   CASE 
+                                    WHEN Image_Type <> 'Unit_Image' AND Category_ID = 9 THEN 'Unit_Image' 
+                                    ELSE Image_Type 
+                                END
+            )) AS Image_Set
+        FROM FilteredImages
+        WHERE Owning_Unit_ID IS NOT NULL
+        GROUP BY Owning_Unit_ID
         """
         params = tuple(unit_ids) + tuple(project_ids)
         cur.execute(sql_query, params)
@@ -1129,7 +1184,7 @@ def get_unit_info_card(unit_id: int) -> Optional[str]:
         cur2.execute(
             f"""SELECT
                     /* a.Unit_ID
-                    ,*/ concat(format((a.Rent_Price/a.Size), 0), ';บ./ตร.ม./ด.') as Rent_Price
+                    ,*/ concat(format(a.Rent_Price, 0), ';บ./ตร.ม./ด.') as Rent_Price
                     , concat(format(a.Size, 0), ';ตร.ม.') as Unit_Size
                     , if(d.building > 1, b.Building_Name, NULL) as Building_Name
                     , c.Name_EN as Project_Name
