@@ -5,7 +5,7 @@ from function_utility import to_problem, apply_etag_and_return, etag_of, require
 from function_query_helper import _select_full_office_project_item, _get_project_card_data, _get_project_template_price_card_data, _get_project_template_area_card_data \
     , _get_project_building, _get_subdistrict_data, _get_district_data, _get_province_data, get_image, get_project_station, get_project_express_way, get_project_retail \
     , get_project_hospital, get_project_education, _select_full_office_unit_item, _select_full_office_building_item, get_project_image, get_all_unit_carousel_images \
-    , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_project_cover
+    , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_project_cover, get_search_project
 from typing import Optional, Tuple, Dict, Any, List
 import os
 import re
@@ -408,6 +408,8 @@ def project_template_data(
             unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID])
             for unit in units:
                 unit["Carousel_Image"] = unit_carousel_image.get(unit['Unit_ID'])
+                if 'near_by' in unit and unit['near_by'] is not None:
+                    unit['near_by'] = json.dumps(unit['near_by'], ensure_ascii=False)
             unit_available["Unit"] = units
         else:
             unit_available["Unit"] = None
@@ -711,4 +713,7 @@ def search_box(
     _ = Depends(get_current_user),
 ):
     data = []
-    
+    search = get_search_project(Text)
+    if search:
+        data.append(search)
+    return data
