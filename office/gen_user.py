@@ -3,6 +3,7 @@ import re
 import random
 import string
 import bcrypt
+import csv
 
 #host = '159.223.76.99'
 #user = 'real-research2'
@@ -11,6 +12,8 @@ import bcrypt
 host = '127.0.0.1'
 user = 'real-research'
 password = 'shA0Y69X06jkiAgaX&ng'
+
+user_file = r"/home/gitprod/ta_python/gen_office_user/user.csv"
 
 def generate_password(length=10):
     lowercase = string.ascii_lowercase
@@ -51,6 +54,7 @@ except Exception as e:
 
 if sql:
     try:
+        data_list = []
         connection.start_transaction()
         query = """
                 SELECT a.Project_ID, a.Name_EN, group_concat(b.Building_ID SEPARATOR ',') as Building_ID
@@ -73,6 +77,7 @@ if sql:
             for row in result:
                 username = re.sub(' ', '', row["Name_EN"]).lower().strip()
                 password = generate_password(10)
+                data_list.append((row['Project_ID'], row['Name_EN'], username, password))
                 password_bytes = password.encode('utf-8')
                 cost = 10
                 salt = bcrypt.gensalt(rounds=cost)
@@ -100,6 +105,11 @@ if sql:
                     cursor.executemany(relationship_query, relationship_list)
                     #print(f"Project {row['Project_ID']} have {len(relationship_list)} relationships")
             connection.commit()
+            with open(user_file, 'w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['Project_ID', 'Name_EN', 'Username', 'Password'])
+                writer.writerows(data_list)
+            
             print("DONE")
                 
     except Exception as e:
