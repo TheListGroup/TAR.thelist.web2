@@ -60,7 +60,6 @@ if sql:
                         where Building_Status = '1') b
                 on a.Project_ID = b.Project_ID
                 WHERE a.Project_Status = '1'
-                AND a.Project_ID = 1
                 group by a.Project_ID, a.Name_EN
                 """
         cursor.execute(query)
