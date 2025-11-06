@@ -161,6 +161,7 @@ def insert_office_building_and_return_full_record(
     Service_Lift: str = Form(None),
     Retail_Parking_Lift: str = Form(None),
     AC_System: str = Form(None),
+    AC_Split: str = Form(None),
     ACTime_Start: str = Form(None),
     ACTime_End: str = Form(None),
     AC_OT_Weekday_by_Hour: str = Form(None),
@@ -169,6 +170,10 @@ def insert_office_building_and_return_full_record(
     AC_OT_Weekend_by_Area: str = Form(None),
     AC_OT_Min_Hour: str = Form(None),
     AC_OT_Min_Baht: str = Form(None),
+    AC_OT_Avg_Weekday_by_Hour: str = Form(None),
+    AC_OT_Avg_Weekend_by_Hour: str = Form(None),
+    AC_OT_Avg_Weekday_by_Area: str = Form(None),
+    AC_OT_Avg_Weekend_by_Area: str = Form(None),
     Bills_Electricity: str = Form(None),
     Bills_Water: str = Form(None),
     Rent_Term: str = Form(None),
@@ -208,18 +213,23 @@ def insert_office_building_and_return_full_record(
         Service_Lift = None if not Service_Lift else int(Service_Lift)
         Retail_Parking_Lift = None if not Retail_Parking_Lift else int(Retail_Parking_Lift)
         AC_System = None if not AC_System else AC_System
+        AC_Split = None if not AC_Split else int(AC_Split)
         if ACTime_Start and ACTime_Start.count(':') == 1:
             ACTime_Start += ":00"
         ACTime_Start = None if not ACTime_Start else datetime.strptime(ACTime_Start, "%H:%M:%S").time()
         if ACTime_End and ACTime_End.count(':') == 1:
             ACTime_End += ":00"
         ACTime_End = None if not ACTime_End else datetime.strptime(ACTime_End, "%H:%M:%S").time()
-        AC_OT_Weekday_by_Hour = None if not AC_OT_Weekday_by_Hour else float(AC_OT_Weekday_by_Hour)
-        AC_OT_Weekday_by_Area = None if not AC_OT_Weekday_by_Area else float(AC_OT_Weekday_by_Area)
-        AC_OT_Weekend_by_Hour = None if not AC_OT_Weekend_by_Hour else float(AC_OT_Weekend_by_Hour)
-        AC_OT_Weekend_by_Area = None if not AC_OT_Weekend_by_Area else float(AC_OT_Weekend_by_Area)
+        AC_OT_Weekday_by_Hour = None if not AC_OT_Weekday_by_Hour else AC_OT_Weekday_by_Hour
+        AC_OT_Weekday_by_Area = None if not AC_OT_Weekday_by_Area else AC_OT_Weekday_by_Area
+        AC_OT_Weekend_by_Hour = None if not AC_OT_Weekend_by_Hour else AC_OT_Weekend_by_Hour
+        AC_OT_Weekend_by_Area = None if not AC_OT_Weekend_by_Area else AC_OT_Weekend_by_Area
         AC_OT_Min_Hour = None if not AC_OT_Min_Hour else float(AC_OT_Min_Hour)
         AC_OT_Min_Baht = None if not AC_OT_Min_Baht else float(AC_OT_Min_Baht)
+        AC_OT_Avg_Weekday_by_Hour = None if not AC_OT_Avg_Weekday_by_Hour else float(AC_OT_Avg_Weekday_by_Hour)
+        AC_OT_Avg_Weekend_by_Hour = None if not AC_OT_Avg_Weekend_by_Hour else float(AC_OT_Avg_Weekend_by_Hour)
+        AC_OT_Avg_Weekday_by_Area = None if not AC_OT_Avg_Weekday_by_Area else float(AC_OT_Avg_Weekday_by_Area)
+        AC_OT_Avg_Weekend_by_Area = None if not AC_OT_Avg_Weekend_by_Area else float(AC_OT_Avg_Weekend_by_Area)
         Bills_Electricity = None if not Bills_Electricity else float(Bills_Electricity)
         Bills_Water = None if not Bills_Water else float(Bills_Water)
         Rent_Term = None if not Rent_Term else int(Rent_Term)
@@ -234,9 +244,10 @@ def insert_office_building_and_return_full_record(
             Total_Building_Area, Lettable_Area, Typical_Floor_Plate_1, Typical_Floor_Plate_2, Typical_Floor_Plate_3, Unit_Size_Min, Unit_Size_Max,
             Landlord, Management, Sole_Agent, Built_Complete,
             Last_Renovate, Floor_Above, Floor_Basement, Floor_Office_Only, Ceiling_Avg,
-            Parking_Ratio, Parking_Fee_Car, Total_Lift, Passenger_Lift, Service_Lift, Retail_Parking_Lift, AC_System, ACTime_Start, ACTime_End,
+            Parking_Ratio, Parking_Fee_Car, Total_Lift, Passenger_Lift, Service_Lift, Retail_Parking_Lift, AC_System, AC_Split, ACTime_Start, ACTime_End,
             AC_OT_Weekday_by_Hour, AC_OT_Weekday_by_Area, AC_OT_Weekend_by_Hour, AC_OT_Weekend_by_Area, AC_OT_Min_Hour,
-            AC_OT_Min_Baht, Bills_Electricity, Bills_Water, Rent_Term, Rent_Deposit, Rent_Advance, User_ID,
+            AC_OT_Min_Baht, AC_OT_Avg_Weekday_by_Hour, AC_OT_Avg_Weekend_by_Hour, AC_OT_Avg_Weekday_by_Area, AC_OT_Avg_Weekend_by_Area,
+            Bills_Electricity, Bills_Water, Rent_Term, Rent_Deposit, Rent_Advance, User_ID,
             Building_Status, Created_By, Last_Updated_By)
     except Exception as e:
         return to_problem(409, "Conflict", f"Insert failed: {e}")
@@ -285,6 +296,7 @@ def update_office_building_and_return_full_record(
     Service_Lift: str = Form(None),
     Retail_Parking_Lift: str = Form(None),
     AC_System: str = Form(None),
+    AC_Split: str = Form(None),
     ACTime_Start: str = Form(None),
     ACTime_End: str = Form(None),
     AC_OT_Weekday_by_Hour: str = Form(None),
@@ -293,6 +305,10 @@ def update_office_building_and_return_full_record(
     AC_OT_Weekend_by_Area: str = Form(None),
     AC_OT_Min_Hour: str = Form(None),
     AC_OT_Min_Baht: str = Form(None),
+    AC_OT_Avg_Weekday_by_Hour: str = Form(None),
+    AC_OT_Avg_Weekend_by_Hour: str = Form(None),
+    AC_OT_Avg_Weekday_by_Area: str = Form(None),
+    AC_OT_Avg_Weekend_by_Area: str = Form(None),
     Bills_Electricity: str = Form(None),
     Bills_Water: str = Form(None),
     Rent_Term: str = Form(None),
@@ -332,18 +348,23 @@ def update_office_building_and_return_full_record(
         Service_Lift = None if not Service_Lift else int(Service_Lift)
         Retail_Parking_Lift = None if not Retail_Parking_Lift else int(Retail_Parking_Lift)
         AC_System = None if not AC_System else AC_System
+        AC_Split = None if not AC_Split else int(AC_Split)
         if ACTime_Start and ACTime_Start.count(':') == 1:
             ACTime_Start += ":00"
         ACTime_Start = None if not ACTime_Start else datetime.strptime(ACTime_Start, "%H:%M:%S").time()
         if ACTime_End and ACTime_End.count(':') == 1:
             ACTime_End += ":00"
         ACTime_End = None if not ACTime_End else datetime.strptime(ACTime_End, "%H:%M:%S").time()
-        AC_OT_Weekday_by_Hour = None if not AC_OT_Weekday_by_Hour else float(AC_OT_Weekday_by_Hour)
-        AC_OT_Weekday_by_Area = None if not AC_OT_Weekday_by_Area else float(AC_OT_Weekday_by_Area)
-        AC_OT_Weekend_by_Hour = None if not AC_OT_Weekend_by_Hour else float(AC_OT_Weekend_by_Hour)
-        AC_OT_Weekend_by_Area = None if not AC_OT_Weekend_by_Area else float(AC_OT_Weekend_by_Area)
+        AC_OT_Weekday_by_Hour = None if not AC_OT_Weekday_by_Hour else AC_OT_Weekday_by_Hour
+        AC_OT_Weekday_by_Area = None if not AC_OT_Weekday_by_Area else AC_OT_Weekday_by_Area
+        AC_OT_Weekend_by_Hour = None if not AC_OT_Weekend_by_Hour else AC_OT_Weekend_by_Hour
+        AC_OT_Weekend_by_Area = None if not AC_OT_Weekend_by_Area else AC_OT_Weekend_by_Area
         AC_OT_Min_Hour = None if not AC_OT_Min_Hour else float(AC_OT_Min_Hour)
         AC_OT_Min_Baht = None if not AC_OT_Min_Baht else float(AC_OT_Min_Baht)
+        AC_OT_Avg_Weekday_by_Hour = None if not AC_OT_Avg_Weekday_by_Hour else float(AC_OT_Avg_Weekday_by_Hour)
+        AC_OT_Avg_Weekend_by_Hour = None if not AC_OT_Avg_Weekend_by_Hour else float(AC_OT_Avg_Weekend_by_Hour)
+        AC_OT_Avg_Weekday_by_Area = None if not AC_OT_Avg_Weekday_by_Area else float(AC_OT_Avg_Weekday_by_Area)
+        AC_OT_Avg_Weekend_by_Area = None if not AC_OT_Avg_Weekend_by_Area else float(AC_OT_Avg_Weekend_by_Area)
         Bills_Electricity = None if not Bills_Electricity else float(Bills_Electricity)
         Bills_Water = None if not Bills_Water else float(Bills_Water)
         Rent_Term = None if not Rent_Term else int(Rent_Term)
@@ -397,6 +418,7 @@ def update_office_building_and_return_full_record(
                 Service_Lift=%s,
                 Retail_Parking_Lift=%s,
                 AC_System=%s,
+                AC_Split_Type=%s,
                 ACTime_Start=%s,
                 ACTime_End=%s,
                 AC_OT_Weekday_by_Hour=%s,
@@ -405,6 +427,10 @@ def update_office_building_and_return_full_record(
                 AC_OT_Weekend_by_Area=%s,
                 AC_OT_Min_Hour=%s,
                 AC_OT_Min_Baht=%s,
+                AC_OT_Average_Weekday_by_Hour=%s,
+                AC_OT_Average_Weekend_by_Hour=%s,
+                AC_OT_Average_Weekday_by_Area=%s,
+                AC_OT_Average_Weekend_by_Area=%s,
                 Bills_Electricity=%s,
                 Bills_Water=%s,
                 Rent_Term=%s,
@@ -420,9 +446,10 @@ def update_office_building_and_return_full_record(
                         , Total_Building_Area, Lettable_Area, Typical_Floor_Plate_1, Typical_Floor_Plate_2, Typical_Floor_Plate_3, Unit_Size_Min, Unit_Size_Max
                         , Landlord, Management, Sole_Agent, Built_Complete, Last_Renovate, Floor_Above, Floor_Basement, Floor_Office_Only, Ceiling_Avg
                         , Parking_Ratio, Parking_Fee_Car, Total_Lift, Passenger_Lift
-                        , Service_Lift, Retail_Parking_Lift, AC_System, ACTime_Start, ACTime_End
+                        , Service_Lift, Retail_Parking_Lift, AC_System, AC_Split, ACTime_Start, ACTime_End
                         , AC_OT_Weekday_by_Hour, AC_OT_Weekday_by_Area, AC_OT_Weekend_by_Hour, AC_OT_Weekend_by_Area, AC_OT_Min_Hour
-                        , AC_OT_Min_Baht, Bills_Electricity, Bills_Water
+                        , AC_OT_Min_Baht, AC_OT_Avg_Weekday_by_Hour, AC_OT_Avg_Weekend_by_Hour, AC_OT_Avg_Weekday_by_Area, AC_OT_Avg_Weekend_by_Area
+                        , Bills_Electricity, Bills_Water
                         , Rent_Term, Rent_Deposit, Rent_Advance, User_ID
                         , Building_Status, Last_Updated_By, Building_ID))
         conn.commit()
