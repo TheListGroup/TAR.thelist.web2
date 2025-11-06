@@ -7,6 +7,7 @@ from function_query_helper import _select_full_office_project_item, _get_provinc
     , _select_full_project, normalize_row, _delete_cover, _delete_image, _save_image_file, _update_cover_record
 from typing import Optional, Tuple, Dict, Any, List
 import os
+import re
 
 router = APIRouter()
 TABLE = "office_project"
@@ -148,7 +149,7 @@ def insert_tag_relationship(Project_ID: int, Tag_Text: str, Created_By: int):
 def insert_office_project_and_return_full_record(
     response: Response,
     Name_TH: str = Form(None),
-    Name_EN: str = Form(None),
+    Name_EN: str = Form(...),
     Latitude: str = Form(None),
     Longitude: str = Form(None),
     Road_Name: str = Form(None),
@@ -274,6 +275,15 @@ def insert_office_project_and_return_full_record(
             cur.execute(update_sql, (province, district, subdistrict, realist_district, realist_subdistrict, new_id))
             conn.commit()
         
+        pattern = r'[!@#$%^&*()_+{}\[\]:;<>,.?~\\|/`\'"-]'
+        if Name_EN:
+            project_url_tag = re.sub(r'\s+', '-', re.sub(pattern, '', Name_EN)) + '-' + str(new_id).rjust(4, '0')
+            update_sql = f"""UPDATE {TABLE}
+                            SET Project_URL_Tag=%s
+                            WHERE Project_ID=%s"""
+            cur.execute(update_sql, (project_url_tag, new_id))
+            conn.commit()
+        
         insert_tag_relationship(new_id, Tag_Text, Created_By)
         
         cur.close()
@@ -287,9 +297,12 @@ def insert_office_project_and_return_full_record(
     # ------------------------ Insert Building --------------------------------------------------------------------------------------------
     try:
         if Building_Copy:
-            row_building = _insert_building_record(new_id, Name_EN, 0, 0, None, Latitude, Longitude, None, Office_Lettable_Area, None, None, None,
-                            None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-                            None, None, None, None, None, None, None, None, None, None, None, None, User_ID, Project_Status, Created_By, Last_Updated_By)
+            row_building = _insert_building_record(new_id, Name_EN, 0, 0, None, Latitude, Longitude, None, Office_Lettable_Area, None, 
+                            None, None, None, None, None, None, None, None, None, None,
+                            None, None, None, None, None, None, None, None, None, None,
+                            None, None, None, None, None, None, None, None, None, None,
+                            None, None, None, None, None, None, None, None, User_ID, Project_Status,
+                            Created_By, Last_Updated_By)
             data.append({"building": row_building})
     except Exception as e:
         return to_problem(409, "Conflict", f"Insert Building from Project failed: {e}")
@@ -420,7 +433,10 @@ def update_office_project_and_return_full_record(
         if if_match and if_match != etag_of(current):
             raise HTTPException(status_code=status.HTTP_412_PRECONDITION_FAILED,
                             detail="ETag mismatch. Please GET latest and retry with If-Match.")
-    
+
+        pattern = r'[!@#$%^&*()_+{}\[\]:;<>,.?~\\|/`\'"-]'
+        project_url_tag = re.sub(r'\s+', '-', re.sub(pattern, '', Name_EN)) + '-' + str(Project_ID).rjust(4, '0')
+        
         conn = get_db()
         cur = conn.cursor()
         sql = f"""
@@ -464,6 +480,7 @@ def update_office_project_and_return_full_record(
                 F_Others_Conf_Meetingroom=%s,
                 Environment_Friendly=%s,
                 Project_Description=%s,
+                Project_URL_Tag=%s,
                 Building_Copy=%s,
                 User_ID=%s,
                 Project_Status=%s,
@@ -477,7 +494,7 @@ def update_office_project_and_return_full_record(
                         , F_Common_Bathroom, F_Common_Pantry, F_Common_Garbageroom, F_Retail_Conv_Store, F_Retail_Supermarket, F_Retail_Mall_Shop, F_Food_Market
                         , F_Food_Foodcourt, F_Food_Cafe, F_Food_Restaurant, F_Services_ATM, F_Services_Bank, F_Services_Pharma_Clinic, F_Services_Hair_Salon
                         , F_Services_Spa_Beauty, F_Others_Gym, F_Others_Valet, F_Others_EV, F_Others_Conf_Meetingroom, Environment_Friendly, Project_Description
-                        , Building_Copy, User_ID, Project_Status, Project_Redirect, Last_Updated_By, Project_ID))
+                        , project_url_tag, Building_Copy, User_ID, Project_Status, Project_Redirect, Last_Updated_By, Project_ID))
         conn.commit()
         
         if Project_Status == "1":
