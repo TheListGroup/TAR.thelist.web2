@@ -3,9 +3,9 @@ from db import get_db
 from auth import get_current_user  # << ใช้ตัวเดิม (รองรับ ADMIN_TOKEN หรือ JWT)
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
 from function_query_helper import _select_full_office_project_item, _get_project_card_data, _get_project_template_price_card_data, _get_project_template_area_card_data \
-    , _get_project_building, _get_subdistrict_data, _get_district_data, _get_province_data, get_image, get_project_station, get_project_express_way, get_project_retail \
+    , _get_project_building, _get_subdistrict_data, _get_district_data, _get_province_data, get_project_station, get_project_express_way, get_project_retail \
     , get_project_hospital, get_project_education, _select_full_office_unit_item, _select_full_office_building_item, get_project_image, get_all_unit_carousel_images \
-    , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_project_cover, get_search_project
+    , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_project_cover, get_search_project, get_all_project_carousel_images
 from typing import Optional, Tuple, Dict, Any, List
 import os
 import re
@@ -82,6 +82,28 @@ def format_data_display(list_data, dict_name, factsheet):
     
     return factsheet
 
+def get_projects_data_by_ids(cur, project_ids_tuple: tuple) -> list:
+    if not project_ids_tuple:
+        return []
+
+    placeholders = ','.join(['%s'] * len(project_ids_tuple))
+    
+    card_query = f"""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Project_URL_Tag
+                        , Latitude, Longitude
+                    FROM source_office_project_carousel_recommend 
+                    WHERE Project_ID IN ({placeholders})"""
+    
+    cur.execute(card_query, project_ids_tuple)
+    projects_data = cur.fetchall()
+    
+    if projects_data:
+        images_by_project_id = get_all_project_carousel_images(project_ids_tuple)
+        for project in projects_data:
+            project["Carousel_Image"] = images_by_project_id.get(project["Project_ID"])
+        return projects_data
+    else:
+        return []
+
 # ----------------------------------------------------- Recommand Unit Card --------------------------------------------------------------------------------------------
 @router.get("/recommand-card/{tags}", status_code=200)
 def recommand_card_data(
@@ -104,7 +126,7 @@ def recommand_card_data(
             WITH RankedUnits AS (
                 SELECT
                     u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
-                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID,
+                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL,
                     ROW_NUMBER() OVER (PARTITION BY jt.Found_Tag ORDER BY u.Unit_ID) as rn
                 FROM
                     source_office_unit_carousel_recommend u
@@ -118,7 +140,7 @@ def recommand_card_data(
             )
             SELECT DISTINCT
                 Unit_ID, Title, Project_Name, Project_Tag_Used, Project_Tag_All,
-                near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID
+                near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID, Unit_URL
             FROM
                 RankedUnits
             WHERE
@@ -135,10 +157,11 @@ def recommand_card_data(
         unit_ids = [unit['Unit_ID'] for unit in final_units]
         project_ids = [unit['Project_ID'] for unit in final_units]
         
-        images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids)
+        images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True)
         
         for unit in final_units:
             unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
+            unit['Unit_URL'] = unit['Unit_URL'] + '/' + str(unit['Unit_ID']).rjust(4, '0')
             
         return final_units
 
@@ -156,35 +179,18 @@ def recommand_project_card_data(
         conn = get_db()
         cur = conn.cursor(dictionary=True)
 
-        cur.execute("""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count
+        cur.execute("""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count, Project_URL_Tag
                         FROM source_office_project_carousel_recommend order by Unit_Count desc limit %s""", (MAX_TOTAL_PROJECTS,))
         rows = cur.fetchall()
         cur.close()
         conn.close()
         
         if rows:
-            for row in rows:
-                img_str = get_project_image(row["Project_ID"])
-                if img_str:
-                    img_data = json.loads(img_str)
-                    for img in img_data:
-                        if img:
-                            url = img['Image_URL']
-                            url = re.sub(r'-H-\d+', '-H-400', url)
-                            if img['Image_Type'] == 'Cover_Project':
-                                match = re.search(r'/(\d+)-H-\d+\.webp', url)
-                                if match:
-                                    image_num_str = match.group(1)
-                                    original_length = len(image_num_str)
-                                    new_image_num = int(image_num_str) + 2
-                                    img['Image_ID'] = new_image_num
-                                    new_image_num_str = str(new_image_num).zfill(original_length)
-                                    url = url.replace(image_num_str, new_image_num_str, 1)
-                            img['Image_URL'] = url
-                    final_compact_string = json.dumps(img_data, ensure_ascii=False, separators=(',', ':'))
-                    row['Project_Image'] = final_compact_string
-                else:
-                    row['Project_Image'] = None
+            project_ids = [project['Project_ID'] for project in rows]
+            images_by_project_id = get_all_project_carousel_images(project_ids)
+            
+            for project in rows:
+                project['Carousel_Image'] = images_by_project_id.get(project['Project_ID'])
             return rows
         else:
             return []
@@ -389,7 +395,8 @@ def project_template_data(
                                                                     , 'near_by', d.near_by
                                                                     , 'Rent_Price', d.Rent_Price
                                                                     , 'Rent_Price_Sqm', d.Rent_Price_Sqm
-                                                                    , 'Rent_Price_Status', d.Rent_Price_Status)) as Unit
+                                                                    , 'Rent_Price_Status', d.Rent_Price_Status
+                                                                    , 'Unit_URL', concat(d.Project_URL_Tag,'/',LPAD(d.Unit_ID, 4, '0')))) as Unit
                         FROM office_project a
                         join office_building b on a.Project_ID = b.Project_ID
                         join office_unit c on c.Building_ID = b.Building_ID
@@ -405,7 +412,7 @@ def project_template_data(
             project_data = rows[0]
             units = json.loads(project_data["Unit"])
             unit_id_set = [unit["Unit_ID"] for unit in units]
-            unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID])
+            unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID], True)
             for unit in units:
                 unit["Carousel_Image"] = unit_carousel_image.get(unit['Unit_ID'])
                 if 'near_by' in unit and unit['near_by'] is not None:
@@ -451,6 +458,14 @@ def project_template_data(
             location["Education"] = education
         else:
             location["Education"] = None
+        if project_data["Latitude"]:
+            location["Latitude"] = project_data["Latitude"]
+        else:
+            location["Latitude"] = None
+        if project_data["Longitude"]:
+            location["Longitude"] = project_data["Longitude"]
+        else:
+            location["Longitude"] = None
         data.append({"Location": location})
         
         return data
@@ -488,14 +503,23 @@ def unit_template_data(
             return to_problem(404, "Project Name Not Found", "Project Name is None.")
         else:
             data.append({"Project_Name": project_name})
+            data.append({"Project_URL": project_data["Project_URL_Tag"]})
+        
+        building_name = building_data["Building_Name"]
+        if not building_name:
+            return to_problem(404, "Building Name Not Found", "Building Name is None.")
+        else:
+            data.append({"Building_Name": 'อาคาร ' + building_name})
         
         unit_gallery = {}
         cover_image = get_project_cover(project_data["Project_ID"])
         unit_gallery["Cover_Image"] = cover_image
         
-        unit_image = get_image(Unit_ID, project_data["Project_ID"], "Unit")
-        unit_gallery["Unit_Image"] = unit_image
-        data.append({"Unit_Image": unit_gallery})
+        images_by_unit_id = get_all_unit_carousel_images([Unit_ID], [project_data["Project_ID"]], False)
+        if images_by_unit_id:
+            data.append({"Unit_Image": images_by_unit_id.get(Unit_ID)})
+        else:
+            data.append({"Unit_Image": None})
         
         overall = {}
         overall["Description"] = unit_data["Unit_Description"]
@@ -544,7 +568,7 @@ def unit_template_data(
         
         rent_price = unit_data["Rent_Price"]
         if rent_price:
-            factsheet["Rent_Price"] = str('{:,}'.format((rent_price*unit_data["Size"]))) + ";บ. / ด."
+            factsheet["Rent_Price"] = str('{:,.0f}'.format((rent_price*unit_data["Size"]))) + ";บ. / ด."
             if unit_data["Size"]:
                 rent_price_avg = rent_price
                 factsheet["Rent_Price_Avg"] = str('{:,.0f}'.format(rent_price_avg)) + ";บ. / ตร.ม."
@@ -590,12 +614,15 @@ def unit_template_data(
         lift_list = ["Passenger_Lift", "Service_Lift", "Retail_Parking_Lift"]
         for lift in lift_list:
             lift_count = building_data[lift]
-            factsheet[lift] = check_int(lift_count) + ";ตัว"
+            if lift_count:
+                factsheet[lift] = check_int(lift_count) + ";ตัว"
+            else:
+                factsheet[lift] = None
         
         air_start = building_data["ACTime_Start"]
         air_end = building_data["ACTime_End"]
         if air_start and air_end:
-            factsheet["ACTime"] = air_start[:-3] + " - " + ":".join([str(int(air_end.split(":")[0]) + 12), air_end.split(":")[1]]) + ";น."
+            factsheet["ACTime"] = air_start[:-3] + " - " + ":".join([str(int(air_end.split(":")[0])), air_end.split(":")[1]]) + ";น."
         else:
             factsheet["ACTime"] = None
         
@@ -605,10 +632,10 @@ def unit_template_data(
             air_ot = building_data[air]
             if air_ot:
                 if i == 0:
-                    air_ot_weekday = "จันทร์ - ศุกร์ " + check_int(air_ot) + ";บ./ชม."
+                    air_ot_weekday = "จันทร์ - ศุกร์ " + air_ot + ";บ./ชม."
                     air_data.append(air_ot_weekday)
                 elif i == 1:
-                    air_ot_weekend = "เสาร์ - อาทิตย์ " + check_int(air_ot) + ";บ./ชม."
+                    air_ot_weekend = "เสาร์ - อาทิตย์ " + air_ot + ";บ./ชม."
                     air_data.append(air_ot_weekend)
         if air_data:
             factsheet["Air_OT"] = "\n".join(air_data)
@@ -658,9 +685,9 @@ def unit_template_data(
         factsheet["Amenities"] = amenities_list
         data.append({"Factsheet": factsheet})
         
-        images_by_unit_id = get_all_unit_carousel_images([unit_data["Unit_ID"]], [project_data["Project_ID"]])
+        images_by_unit_id = get_all_unit_carousel_images([Unit_ID], [project_data["Project_ID"]], False)
         if images_by_unit_id:
-            data.append({"Gallery": images_by_unit_id.get(unit_data['Unit_ID'])})
+            data.append({"Gallery": images_by_unit_id.get(Unit_ID)})
         else:
             data.append({"Gallery": None})
         
@@ -700,6 +727,14 @@ def unit_template_data(
             location["Education"] = education
         else:
             location["Education"] = None
+        if project_data["Latitude"]:
+            location["Latitude"] = project_data["Latitude"]
+        else:
+            location["Latitude"] = None
+        if project_data["Longitude"]:
+            location["Longitude"] = project_data["Longitude"]
+        else:
+            location["Longitude"] = None
         data.append({"Location": location})
         
         return data    
@@ -712,8 +747,94 @@ def search_box(
     Text: str,
     _ = Depends(get_current_user),
 ):
+    if not Text:
+        return to_problem(404, "Search Not Found", "Not Have Input.")
     data = []
     search = get_search_project(Text)
     if search:
         data.append(search)
     return data
+
+# ----------------------------------------------------- Search MapResult --------------------------------------------------------------------------------------------
+@router.post("/map_result", status_code=200)
+def map_result(
+    Project_ids: str = Form(None),
+    Train_Stations: str = Form(None),
+    Tags: str = Form(None),
+    Locations: str = Form(None),
+    _ = Depends(get_current_user),
+):
+    def location_manage(column, location_list):
+        placeholders = ','.join(['%s'] * len(location_list))
+        query = f"""SELECT DISTINCT Project_ID FROM office_project WHERE {column} IN ({placeholders}) AND Project_Status = '1'"""
+        cur.execute(query, location_list)
+        rows = cur.fetchall()
+        if rows:
+            ids_from_location = tuple([row["Project_ID"] for row in rows])
+            return ids_from_location
+        
+    if not Project_ids and not Train_Stations and not Tags and not Locations:
+        return to_problem(404, "Search Not Found", "Not Have Input.")
+    
+    try:
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        
+        all_project_ids = set()
+        
+        if Project_ids:
+            project_ids_list = Project_ids.split(";") if Project_ids else []
+            project_ids_tuple = tuple(int(pid) for pid in project_ids_list if pid.isdigit())
+            all_project_ids.update(project_ids_tuple)
+        
+        if Train_Stations:
+            station_codes_tuple = tuple(Train_Stations.split(";")) if Train_Stations else []
+            if station_codes_tuple:
+                placeholders = ','.join(['%s'] * len(station_codes_tuple))
+                station_query = f"""SELECT DISTINCT Project_ID FROM source_office_around_station WHERE Station_Code IN ({placeholders})"""
+                cur.execute(station_query, station_codes_tuple)
+                rows = cur.fetchall()
+                if rows:
+                    ids_from_stations = tuple([row["Project_ID"] for row in rows])
+                    all_project_ids.update(ids_from_stations)
+        
+        if Tags:
+            tag_list = [tag.strip("'") for tag in Tags.split(";")] if Tags else []
+            if tag_list:
+                regex_pattern = "|".join(tag_list)
+                tag_query = """SELECT DISTINCT Project_ID FROM source_office_project_carousel_recommend WHERE Project_Tag_All REGEXP %s"""
+                cur.execute(tag_query, (regex_pattern,))
+                rows = cur.fetchall()
+                if rows:
+                    ids_from_tags = tuple([row["Project_ID"] for row in rows])
+                    all_project_ids.update(ids_from_tags)
+        
+        if Locations:
+            location_list = Locations.split(";") if Locations else []
+            if location_list:
+                district_codes = []
+                sub_district_codes = []
+                for location in location_list:
+                    if len(location) == 4:
+                        district_codes.append(location)
+                    elif len(location) == 6:
+                        sub_district_codes.append(location)
+                if district_codes:
+                    ids_from_districts = location_manage("District_ID", district_codes)
+                    all_project_ids.update(ids_from_districts)
+                if sub_district_codes:
+                    ids_from_sub_districts = location_manage("SubDistrict_ID", sub_district_codes)
+                    all_project_ids.update(ids_from_sub_districts)
+        
+        if not all_project_ids:
+            return []
+        
+        final_id_tuple = tuple(all_project_ids)
+        data_rows = get_projects_data_by_ids(cur, final_id_tuple)
+        
+        return data_rows
+    except Exception as e:
+        return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
+    finally:
+        cur.close()
+        conn.close()
