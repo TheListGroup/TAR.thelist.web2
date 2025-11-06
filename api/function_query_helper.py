@@ -280,7 +280,7 @@ def _select_full_office_project_item(new_id: int) -> dict | None:
             , a.Total_Usable_Area, a.Parking_Amount, a.Security_Type, a.F_Common_Bathroom, a.F_Common_Pantry, a.F_Common_Garbageroom, a.F_Retail_Conv_Store, a.F_Retail_Supermarket
             , a.F_Retail_Mall_Shop, a.F_Food_Market, a.F_Food_Foodcourt, a.F_Food_Cafe, a.F_Food_Restaurant, a.F_Services_ATM, a.F_Services_Bank, a.F_Services_Pharma_Clinic
             , a.F_Services_Hair_Salon, a.F_Services_Spa_Beauty, a.F_Others_Gym, a.F_Others_Valet, a.F_Others_EV, a.F_Others_Conf_Meetingroom, a.Environment_Friendly, a.Project_Description
-            , a.Building_Copy, a.User_ID, a.Project_Status, a.Project_Redirect, a.Created_By, a.Created_Date, a.Last_Updated_By, a.Last_Updated_Date
+            , a.Project_URL_Tag, a.Building_Copy, a.User_ID, a.Project_Status, a.Project_Redirect, a.Created_By, a.Created_Date, a.Last_Updated_By, a.Last_Updated_Date
             , b.Tags, floor_plan.Floor_Plan
             FROM office_project a
             left join (select a.Project_ID, group_concat(b.Tag_Name ORDER BY Relationship_Order SEPARATOR ';') as Tags
@@ -342,8 +342,9 @@ def _insert_building_record(
     built_completed: str|None, last_renovate: str|None, floor_above: float|None, floor_basement: float|None, floor_office_only: float|None,
     ceiling_avg: float|None,
     parking_ratio: str|None, parking_fee: int|None, total_lift: int|None, passenger_lift: int|None, service_lift: int|None, retail_parking_lift: int|None,
-    ac: str|None, ac_time_start: str|None, ac_time_end: str|None, ac_ot_weekday_by_hour: float|None, ac_ot_weekday_by_area: float|None,
-    ac_ot_weekend_by_hour: float|None, ac_ot_weekend_by_area: float|None, ac_ot_min_hour: float|None, ac_ot_min_baht: float|None,
+    ac: str|None, ac_split_type: int|None, ac_time_start: str|None, ac_time_end: str|None, ac_ot_weekday_by_hour: str|None, ac_ot_weekday_by_area: str|None,
+    ac_ot_weekend_by_hour: str|None, ac_ot_weekend_by_area: str|None, ac_ot_min_hour: float|None, ac_ot_min_baht: float|None,
+    ac_ot_avg_weekday_by_hour: float|None, ac_ot_avg_weekend_by_hour: float|None, ac_ot_avg_weekday_by_area: float|None, ac_ot_avg_weekend_by_area: float|None,
     bill_elec: float|None, bill_water: float|None, rent_term: int|None, rent_deposit: int|None, rent_advance: int|None, user_id: int, building_status: str,
     created_by: int, last_updated_by: int
 ) -> dict:
@@ -357,19 +358,23 @@ def _insert_building_record(
                 , Sole_Agent, Built_Complete, Last_Renovate, Floor_Above, Floor_Basement, Floor_Office_Only
                 , Ceiling_Avg
                 , Parking_Ratio, Parking_Fee_Car
-                , Total_Lift, Passenger_Lift, Service_Lift, Retail_Parking_Lift, AC_System, ACTime_Start, ACTime_End
+                , Total_Lift, Passenger_Lift, Service_Lift, Retail_Parking_Lift, AC_System, AC_Split_Type, ACTime_Start, ACTime_End
                 , AC_OT_Weekday_by_Hour, AC_OT_Weekday_by_Area, AC_OT_Weekend_by_Hour, AC_OT_Weekend_by_Area, AC_OT_Min_Hour, AC_OT_Min_Baht
+                , AC_OT_Average_Weekday_by_Hour, AC_OT_Average_Weekend_by_Hour, AC_OT_Average_Weekday_by_Area, AC_OT_Average_Weekend_by_Area
                 , Bills_Electricity, Bills_Water
                 , Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Building_Status
                 , Created_By, Last_Updated_By)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
-            , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            , %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cur.execute(sql, (proj_id, building_name, office_condo, price_min, price_max, lat, lng, building_area, lettable_area, floor_plate1
                         , floor_plate2, floor_plate3, size_min, size_max, landlord, management, sole_agent, built_completed, last_renovate, floor_above
                         , floor_basement, floor_office_only, ceiling_avg, parking_ratio, parking_fee, total_lift, passenger_lift, service_lift, retail_parking_lift, ac
-                        , ac_time_start, ac_time_end, ac_ot_weekday_by_hour, ac_ot_weekday_by_area, ac_ot_weekend_by_hour
-                        , ac_ot_weekend_by_area, ac_ot_min_hour, ac_ot_min_baht, bill_elec, bill_water
+                        , ac_split_type, ac_time_start, ac_time_end, ac_ot_weekday_by_hour, ac_ot_weekday_by_area, ac_ot_weekend_by_hour
+                        , ac_ot_weekend_by_area, ac_ot_min_hour, ac_ot_min_baht, ac_ot_avg_weekday_by_hour, ac_ot_avg_weekend_by_hour, ac_ot_avg_weekday_by_area
+                        , ac_ot_avg_weekend_by_area
+                        , bill_elec, bill_water
                         , rent_term, rent_deposit, rent_advance, user_id, building_status, created_by, last_updated_by))
         conn.commit()
         new_id = cur.lastrowid
@@ -786,65 +791,6 @@ def _get_province_data(province_code : str) -> str:
         cur.close()
         conn.close()
 
-def get_image(unit_id: int, project_id: int, use_type: str) -> str:
-    conn = get_db()
-    cur = conn.cursor()
-    if use_type == 'Project':
-                image_url_expression = "REGEXP_REPLACE(Image_URL, '-H-\\\\d+', '-H-400')"
-    else:
-        image_url_expression = "Image_URL"
-        
-    try:
-        cur.execute("""
-                    SELECT EXISTS (
-                        SELECT 1 
-                        FROM source_office_image_all 
-                        WHERE Ref_ID = %s AND Image_Type = 'Unit_Image'
-                        )
-                    """, (unit_id,))
-                    
-        unit_has_images = cur.fetchone()[0] == 1
-        
-        if unit_has_images:
-            sql = f"""
-                SELECT JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'Image_ID', Image_ID, 'Image_Name', Image_Name, 'Category_Order', Category_Order,
-                        'Display_Order', Display_Order, 'Image_URL', {image_url_expression}, 
-                        'Image_Type', Image_Type
-                    )
-                ) AS Image_Set
-                FROM source_office_image_all
-                WHERE Ref_ID = %s AND Image_Type = 'Unit_Image';
-            """
-            params = (unit_id,)
-        else:
-            sql = f"""
-                SELECT JSON_ARRAYAGG(
-                    JSON_OBJECT(
-                        'Image_ID', Image_ID, 'Image_Name', Image_Name, 'Category_Order', Category_Order,
-                        'Display_Order', Display_Order, 
-                        'Image_URL', {image_url_expression},
-                        'Image_Type', 'Image_Type'
-                    )
-                ) AS Image_Set
-                FROM source_office_image_all
-                WHERE Ref_ID = %s 
-                    AND Image_Type IN ('Project_Image', 'Cover_Project')
-                    AND Section <> 'Floor Plan'
-                    AND Category_ID = 9;
-            """
-            params = (project_id,)
-        
-        cur.execute(sql, params)
-        row = cur.fetchone()
-        if row and row[0]:
-            return row[0]        
-        return None
-    finally:
-        cur.close()
-        conn.close()
-
 def get_project_cover(ref_id: int) -> str:
     conn = get_db()
     cur = conn.cursor()
@@ -893,13 +839,14 @@ def get_project_image(ref_id: int) -> str:
         cur.close()
         conn.close()
 
-def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
+def get_all_unit_carousel_images(unit_ids: list, project_ids: list, use_carousel_logic: bool = True) -> dict:
     conn = get_db()
     cur = conn.cursor(dictionary=True)
     unit_placeholders = ', '.join(['%s'] * len(unit_ids))
     project_placeholders = ', '.join(['%s'] * len(project_ids))
     
     try:
+        cur.execute("SET @use_carousel_logic = %s", (use_carousel_logic,))
         sql_query = f"""
         WITH ProcessedImages AS (
         SELECT
@@ -909,7 +856,8 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
             END AS Owning_Unit_ID,
 
             CASE
-                WHEN img.Image_Type = 'Cover_Project'
+                WHEN @use_carousel_logic = 0 THEN img.Image_URL
+                WHEN @use_carousel_logic = 1 AND img.Image_Type = 'Cover_Project'
                 THEN REPLACE(
                         REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'),
                         SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1),
@@ -919,7 +867,8 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
             END AS Modified_Image_URL,
 
             CASE
-                WHEN img.Image_Type = 'Cover_Project' THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
+                WHEN @use_carousel_logic = 1 AND img.Image_Type = 'Cover_Project' 
+                THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
                 ELSE img.Image_ID
             END AS Modified_Image_ID,
 
@@ -935,7 +884,7 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
         FROM
             source_office_image_all AS img
         LEFT JOIN 
-            (SELECT DISTINCT Unit_ID, Project_ID FROM source_office_unit_carousel_recommend) AS map
+            (SELECT DISTINCT Unit_ID, Project_ID FROM source_office_unit_carousel_recommend WHERE Unit_ID in ({unit_placeholders})) AS map
             ON img.Ref_ID = map.Project_ID AND img.Image_Type IN ('Project_Image', 'Cover_Project')
         WHERE
             (img.Image_Type = 'Unit_Image' AND img.Ref_ID IN ({unit_placeholders}))
@@ -946,7 +895,7 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
             SELECT *
             FROM ProcessedImages
             WHERE 
-                (Image_Type = 'Unit_Image' OR (Image_Type <> 'Unit_Image' AND Category_ID <> 9))
+                (Image_Type IN ('Unit_Image', 'Cover_Project'))
                 OR (Image_Type <> 'Unit_Image' AND Category_ID = 9 AND unit_image_count = 0)
         )
         SELECT 
@@ -966,7 +915,7 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list) -> dict:
         WHERE Owning_Unit_ID IS NOT NULL
         GROUP BY Owning_Unit_ID
         """
-        params = tuple(unit_ids) + tuple(project_ids)
+        params = tuple(unit_ids) + tuple(unit_ids) + tuple(project_ids)
         cur.execute(sql_query, params)
         rows = cur.fetchall()
         return {row['Owning_Unit_ID']: row['Image_Set'] for row in rows}
@@ -1312,27 +1261,101 @@ def get_project_bank(proj_id: int) -> Optional[str]:
 def get_search_project(Text: str) -> dict:
     conn = get_db()
     cur = conn.cursor(dictionary=True)
-    text_list = f"%{Text}%" * 6
+    text = f"'%{Text}%'"
     try:
-        cur.execute("""
-            SELECT 'project' AS location_type, 'โครงการ' AS type, Name_TH AS name_th, Name_EN AS name_en
+        query = f"""
+            SELECT 'project' AS location_type, 'โครงการ' AS type, Project_ID as 'code', Name_EN AS name_th, Name_EN AS name_en
             FROM office_project
             WHERE Project_Status = '1'
-            AND (Name_TH LIKE %s OR Name_EN LIKE %s)
+            AND (Name_TH LIKE {text} OR Name_EN LIKE {text})
             union all
-            SELECT 'masstransit' AS location_type, 'สถานีรถไฟฟ้า' AS type, concat(d.MTran_ShortName, ' ', a.Station_THName_Display) AS name_th
+            SELECT 'masstransit' AS location_type, 'สถานีรถไฟฟ้า' AS type, a.Station_Code as 'code', concat(d.MTran_ShortName, ' ', a.Station_THName_Display) AS name_th
                 , concat(d.MTran_ShortName, ' ', a.Station_ENName_Display) AS name_en
             FROM mass_transit_station a
             join mass_transit_route b on a.Route_Code = b.Route_Code and b.Route_Timeline = 'Completion'
             join mass_transit_line c on b.Line_Code = c.Line_Code
             join mass_transit d on c.MTrand_ID = d.MTran_ID
             WHERE a.Station_Timeline = 'Completion'
-            AND (a.Station_THName_Display LIKE %s OR a.Station_ENName_Display LIKE %s)""", (f"%{Text}%", f"%{Text}%", f"%{Text}%", f"%{Text}%", f"%{Text}%", f"%{Text}%"))
+            AND (a.Station_THName_Display LIKE {text} OR a.Station_ENName_Display LIKE {text})
+            union all
+            SELECT 'tag' AS location_type, 'ย่าน' AS type, Tag_ID as 'code', Tag_Name AS name_th, null AS name_en
+            FROM office_project_tag
+            WHERE Tag_Name LIKE {text}
+            union all
+            SELECT 'thailand' AS location_type, 'เขต/อำเภอ' AS type, district_code as 'code', full_name_th AS name_th, full_name_en AS name_en
+            FROM thailand_district
+            WHERE province_id in (10,11,12,13,73,74)
+            AND (full_name_th LIKE {text} OR full_name_en LIKE {text})
+            union all
+            SELECT 'thailand' AS location_type, 'แขวง/ตำบล' AS type, a.subdistrict_code as 'code', if(b.province_id = 10, a.full_name_th, concat('ตำบล', a.full_name_th)) AS name_th
+                , if(b.province_id = 10, a.full_name_en, concat('Tambon ', a.full_name_en)) AS name_en
+            FROM thailand_subdistrict a
+            join thailand_district b on a.district_id = b.district_code
+            WHERE b.province_id in (10,11,12,13,73,74)
+            AND (a.full_name_th LIKE {text} OR a.full_name_en LIKE {text})
+            """
+        
+        cur.execute(query)
         row = cur.fetchall()
         if len(row) >= 1:
             return row
         else:
             return None
+    finally:
+        cur.close()
+        conn.close()
+
+def get_all_project_carousel_images(project_ids: list) -> dict:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    project_placeholders = ', '.join(['%s'] * len(project_ids))
+    
+    try:
+        sql_query = f"""
+        WITH ProcessedImages AS (
+        SELECT
+				img.Ref_ID AS Owning_Project_ID,
+
+            CASE
+                WHEN img.Image_Type = 'Cover_Project'
+                THEN REPLACE(
+                        REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'),
+                        SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1),
+                        LPAD(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1) AS UNSIGNED) + 2, LENGTH(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1)), '0')
+                    )
+                ELSE REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400')
+            END AS Modified_Image_URL,
+
+            CASE
+                WHEN img.Image_Type = 'Cover_Project' THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
+                ELSE img.Image_ID
+            END AS Modified_Image_ID,
+
+            img.Image_Name, img.Category_Order, img.Display_Order, img.Image_Type,
+            img.Category_ID
+        FROM
+            source_office_image_all AS img
+        WHERE
+            (img.Image_Type IN ('Project_Image', 'Cover_Project') AND img.Ref_ID IN ({project_placeholders}) AND img.Section <> 'Floor Plan')
+		AND img.Category_ID <> 9)
+        SELECT 
+            Owning_Project_ID,
+            JSON_ARRAYAGG(JSON_OBJECT(
+                'Image_ID', Modified_Image_ID,
+                'Image_Name', Image_Name,
+                'Category_Order', Category_Order,
+                'Display_Order', Display_Order,
+                'Image_URL', Modified_Image_URL,
+                'Image_Type',   Image_Type
+            )) AS Image_Set
+        FROM ProcessedImages
+        WHERE Owning_Project_ID IS NOT NULL
+        GROUP BY Owning_Project_ID
+        """
+        params = tuple(project_ids)
+        cur.execute(sql_query, params)
+        rows = cur.fetchall()
+        return {row['Owning_Project_ID']: row['Image_Set'] for row in rows}
     finally:
         cur.close()
         conn.close()
