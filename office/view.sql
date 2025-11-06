@@ -414,7 +414,7 @@ GROUP BY u.Unit_ID;
 -- view source_office_unit_carousel_recommend
 create or replace view source_office_unit_carousel_recommend as
 select u.Unit_ID
-    , concat_ws(' ',concat(format(u.Size,0),' ตร.ม.'), u.Unit_NO, concat('ชั้น ', u.Floor)) as Title
+    , concat_ws(' ',concat(format(u.Size,0),' ตร.ม.'), concat('ชั้น ', u.Floor)) as Title
     , p.Name_EN as Project_Name
     , project_tag_used.Tags as Project_Tag_Used
     , project_tag_all.Tags as Project_Tag_All
@@ -423,6 +423,7 @@ select u.Unit_ID
     , concat(format(u.Size,0),' ตร.ม. X ', format(u.Rent_Price,0), ' บ./ตร.ม./ด.') as Rent_Price_Sqm
     , if(u.Rent_Price is not null,1,0) as Rent_Price_Status
     , p.Project_ID
+    , p.Project_URL_Tag
     /*, img_carousel.Image_Set as Carousel_Image
     , img_random.Image_Set as Carousel_Image_Random*/
 from office_unit u
@@ -608,6 +609,9 @@ select a.Project_ID
     , highlight.Highlight as Highlight
     , concat(building.Rent_Price,' บ./ตร.ม./ด.') as Rent_Price
     , countunit.Unit_Count as Unit_Count
+    , a.Project_URL_Tag
+    , a.Latitude
+    , a.Longitude
 from office_project a
 left join source_office_project_highlight_relationship highlight on a.Project_ID = highlight.Project_ID
 left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count
