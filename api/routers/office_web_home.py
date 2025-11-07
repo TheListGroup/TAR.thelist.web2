@@ -458,12 +458,12 @@ def project_template_data(
             location["Education"] = education
         else:
             location["Education"] = None
-        if project_data["Latitude"]:
-            location["Latitude"] = project_data["Latitude"]
+        if proj_data["Latitude"]:
+            location["Latitude"] = proj_data["Latitude"]
         else:
             location["Latitude"] = None
-        if project_data["Longitude"]:
-            location["Longitude"] = project_data["Longitude"]
+        if proj_data["Longitude"]:
+            location["Longitude"] = proj_data["Longitude"]
         else:
             location["Longitude"] = None
         data.append({"Location": location})
