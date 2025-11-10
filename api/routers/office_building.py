@@ -156,7 +156,6 @@ def insert_office_building_and_return_full_record(
     Ceiling_Avg: str = Form(None),
     Parking_Ratio: str = Form(None),
     Parking_Fee_Car: str = Form(None),
-    Total_Lift: str = Form(None),
     Passenger_Lift: str = Form(None),
     Service_Lift: str = Form(None),
     Retail_Parking_Lift: str = Form(None),
@@ -208,10 +207,16 @@ def insert_office_building_and_return_full_record(
         Ceiling_Avg = None if not Ceiling_Avg else float(Ceiling_Avg)
         Parking_Ratio = None if not Parking_Ratio else Parking_Ratio
         Parking_Fee_Car = None if not Parking_Fee_Car else int(Parking_Fee_Car)
-        Total_Lift = None if not Total_Lift else int(Total_Lift)
         Passenger_Lift = None if not Passenger_Lift else int(Passenger_Lift)
         Service_Lift = None if not Service_Lift else int(Service_Lift)
         Retail_Parking_Lift = None if not Retail_Parking_Lift else int(Retail_Parking_Lift)
+        if Passenger_Lift != None or Service_Lift != None or Retail_Parking_Lift != None:
+            pl = 0 if Passenger_Lift == None else Passenger_Lift
+            sl = 0 if Service_Lift == None else Service_Lift
+            rl = 0 if Retail_Parking_Lift == None else Retail_Parking_Lift
+            Total_Lift = pl + sl + rl
+        else:
+            Total_Lift = None
         AC_System = None if not AC_System else AC_System
         AC_Split = None if not AC_Split else int(AC_Split)
         if ACTime_Start and ACTime_Start.count(':') == 1:
@@ -291,7 +296,6 @@ def update_office_building_and_return_full_record(
     Ceiling_Avg: str = Form(None),
     Parking_Ratio: str = Form(None),
     Parking_Fee_Car: str = Form(None),
-    Total_Lift: str = Form(None),
     Passenger_Lift: str = Form(None),
     Service_Lift: str = Form(None),
     Retail_Parking_Lift: str = Form(None),
@@ -343,10 +347,16 @@ def update_office_building_and_return_full_record(
         Ceiling_Avg = None if not Ceiling_Avg else float(Ceiling_Avg)
         Parking_Ratio = None if not Parking_Ratio else Parking_Ratio
         Parking_Fee_Car = None if not Parking_Fee_Car else int(Parking_Fee_Car)
-        Total_Lift = None if not Total_Lift else int(Total_Lift)
         Passenger_Lift = None if not Passenger_Lift else int(Passenger_Lift)
         Service_Lift = None if not Service_Lift else int(Service_Lift)
         Retail_Parking_Lift = None if not Retail_Parking_Lift else int(Retail_Parking_Lift)
+        if Passenger_Lift != None or Service_Lift != None or Retail_Parking_Lift != None:
+            pl = 0 if Passenger_Lift == None else Passenger_Lift
+            sl = 0 if Service_Lift == None else Service_Lift
+            rl = 0 if Retail_Parking_Lift == None else Retail_Parking_Lift
+            Total_Lift = pl + sl + rl
+        else:
+            Total_Lift = None
         AC_System = None if not AC_System else AC_System
         AC_Split = None if not AC_Split else int(AC_Split)
         if ACTime_Start and ACTime_Start.count(':') == 1:
