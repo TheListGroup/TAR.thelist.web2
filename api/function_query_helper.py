@@ -932,6 +932,8 @@ def get_project_station(proj_id: int) -> Optional[str]:
                                                     , 'Route_Code', Route_Code
                                                     , 'Line_Code', Line_Code
                                                     , 'MTran_ShortName', MTran_ShortName
+                                                    , 'Place_Latitude', Station_Latitude
+                                                    , 'Place_Longitude', Station_Longitude
                                                     , 'Project_ID', Project_ID
                                                     , 'Distance', Distance)) as Station
                         from (SELECT mtsmr.Station_Code
