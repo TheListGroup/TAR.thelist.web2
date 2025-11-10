@@ -731,8 +731,8 @@ def _get_project_building(proj_id: int) -> Dict[str, Any] | None:
                         , IF(MOD(ROUND(a.Ceiling_Avg, 1), 1) = 0
                             , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 0), ';ม.')
                             , concat(FORMAT(ROUND(a.Ceiling_Avg, 1), 1), ';ม.')) as Ceiling
-                        , Total_Lift as Total_Lift
-                        , AC_System as AC_System
+                        , ifnull(a.Total_Lift,0) as Total_Lift
+                        , a.AC_System as AC_System
                     FROM office_building a
                     left join office_cover b on a.Building_ID = b.Ref_ID and b.Project_or_Building = 'Building' AND b.Cover_Size = 800 AND b.Cover_Status = '1'
                     WHERE a.Project_ID=%s
