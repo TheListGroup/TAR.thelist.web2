@@ -151,7 +151,9 @@ CREATE TABLE IF NOT EXISTS office_building (
     Passenger_Lift SMALLINT UNSIGNED NULL,
     Service_Lift SMALLINT UNSIGNED NULL,
     Retail_Parking_Lift SMALLINT UNSIGNED NULL,
-    AC_System ENUM( 'Split Type', 'Water Cooled Chiller', 'Central Chilled Water VAV', 'Water Cooled Package + Split Type', 'Water Cooled Package', 'Magnatic Cooling Chiller', 'Central Chilled Water', 'Central Chilled Water + Split Type', 'Cooling Tower', 'Central Air', 'Variable Air Volume', 'Split Type + VRV', 'Chiller System', 'Variable Refrigerant Volume (VRV)', 'Water Cooled Chiller + Split Type', 'Air Cooled Package', 'Air Cooled Package + Split Type', 'Central Chiller Water', 'Air Cooled Package VRV', 'Central Chiller Water VAV', 'Central Chiller Water AHU', 'Central Chiller Water VRV', 'Variable Air volume (VAV)', 'Cooling Tower + VAV', 'Central Chilled Water VRV') NULL,
+    AC_System ENUM('Split Type', 'Water Cooled Chiller', 'Central Chilled Water VAV', 'Water Cooled Package', 'Magnatic Cooling Chiller', 'Central Chilled Water'
+                    , 'Cooling Tower', 'Central Air', 'Chiller System', 'Air Cooled Package', 'Variable Air volume (VAV)', 'Variable Refrigerant Volume (VRV)'
+                    , 'Central Chilled Water VRV') NULL,
     AC_Split_Type BOOLEAN NULL,
     ACTime_Start TIME NULL,
     ACTime_End TIME NULL,
@@ -162,8 +164,8 @@ CREATE TABLE IF NOT EXISTS office_building (
     AC_OT_Min_Hour FLOAT NULL,
     AC_OT_Min_Baht FLOAT NULL,
     AC_OT_Average_Weekday_by_Hour FLOAT NULL,
-    AC_OT_Average_Weekend_by_Hour FLOAT NULL,
     AC_OT_Average_Weekday_by_Area FLOAT NULL,
+    AC_OT_Average_Weekend_by_Hour FLOAT NULL,
     AC_OT_Average_Weekend_by_Area FLOAT NULL,
     Bills_Electricity FLOAT NULL,
     Bills_Water FLOAT NULL,
