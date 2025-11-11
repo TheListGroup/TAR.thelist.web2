@@ -895,8 +895,9 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list, use_carousel
             SELECT *
             FROM ProcessedImages
             WHERE 
-                (Image_Type IN ('Unit_Image', 'Cover_Project'))
-                OR (Image_Type <> 'Unit_Image' AND Category_ID = 9 AND unit_image_count = 0)
+                (@use_carousel_logic = 1 AND ((unit_image_count > 0 AND (Image_Type IN ('Unit_Image', 'Cover_Project') OR (Image_Type = 'Project_Image' AND Category_ID <> 9)))
+                OR (unit_image_count = 0 AND Image_Type IN ('Project_Image', 'Cover_Project'))))
+            OR (@use_carousel_logic = 0 AND (Image_Type IN ('Unit_Image', 'Cover_Project') OR (unit_image_count = 0 AND Image_Type = 'Project_Image' AND Category_ID = 9)))
         )
         SELECT 
             Owning_Unit_ID,
@@ -975,6 +976,8 @@ def get_project_express_way(proj_id: int) -> Optional[str]:
                                                     , 'Place_Type', Place_Type
                                                     , 'Place_Category', Place_Category
                                                     , 'Place_Name', Place_Name
+                                                    , 'Place_Attribute_1', Place_Attribute_1
+                                                    , 'Place_Attribute_2', Place_Attribute_2
                                                     , 'Place_Latitude', Place_Latitude
                                                     , 'Place_Longitude', Place_Longitude
                                                     , 'Project_ID', Project_ID
@@ -983,6 +986,8 @@ def get_project_express_way(proj_id: int) -> Optional[str]:
                                     , ew.Place_Type
                                     , ew.Place_Category
                                     , ew.Place_Name
+                                    , ew.Place_Attribute_1
+                                    , ew.Place_Attribute_2
                                     , ew.Place_Latitude
                                     , ew.Place_Longitude
                                     , o.Project_ID
