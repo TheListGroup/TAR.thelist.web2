@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS office_project (
     Office_Lettable_Area FLOAT NULL,
     Total_Usable_Area FLOAT NULL,
     Parking_Amount INT UNSIGNED NULL,
-    Security_Type ENUM('Guard Personels', 'Keycard', 'Turnstiles', 'Face Scan', 'QR / Mobile') NULL,
+    Security_Type ENUM('Guard Personel', 'Keycard', 'Turnstiles', 'Face Scan', 'QR / Mobile') NULL,
     F_Common_Bathroom BOOLEAN NULL,
     F_Common_Pantry BOOLEAN NULL,
     F_Common_Garbageroom BOOLEAN NULL,
