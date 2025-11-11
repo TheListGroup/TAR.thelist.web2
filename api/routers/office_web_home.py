@@ -511,10 +511,6 @@ def unit_template_data(
         else:
             data.append({"Building_Name": 'อาคาร ' + building_name})
         
-        unit_gallery = {}
-        cover_image = get_project_cover(project_data["Project_ID"])
-        unit_gallery["Cover_Image"] = cover_image
-        
         images_by_unit_id = get_all_unit_carousel_images([Unit_ID], [project_data["Project_ID"]], False)
         if images_by_unit_id:
             data.append({"Unit_Image": images_by_unit_id.get(Unit_ID)})
