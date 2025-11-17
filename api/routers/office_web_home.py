@@ -141,7 +141,7 @@ def recommand_card_data(
             )
             SELECT DISTINCT
                 Unit_ID, Title, Project_Name, Project_Tag_Used, Project_Tag_All,
-                near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID, Unit_URL
+                near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID, Unit_URL, Last_Updated_Date
             FROM
                 RankedUnits
             WHERE
@@ -575,7 +575,10 @@ def unit_template_data(
         factsheet["Unit_Name"] = "ห้อง " + unit_name
         factsheet["Building_Name"] = building_name
         factsheet["Project_Name"] = project_name
-        factsheet["Floor"] = "ชั้น " + unit_data["Floor"]
+        if unit_data["Floor"]:
+            factsheet["Floor"] = "ชั้น " + unit_data["Floor"]
+        else:
+            factsheet["Floor"] = None
         
         direction_text = []
         direction_keys = ["เหนือ", "ใต้", "ตะวันออก", "ตะวันตก"]
