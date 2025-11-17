@@ -183,12 +183,14 @@ def insert_office_unit_and_return_full_record(
     Min_Divide_Size: str = Form(None),
     Floor_Zone: str = Form(None),
     Floor: str = Form(None),
+    Floor_Replacement: str = Form(None),
     View_N: str = Form(None),
     View_E: str = Form(None),
     View_S: str = Form(None),
     View_W: str = Form(None),
     Ceiling_Dropped: str = Form(None),
     Ceiling_Full_Structure: str = Form(None),
+    Ceiling_Replacement: str = Form(None),
     Column_InUnit: str = Form(None),
     AC_Split_Type: str = Form(None),
     Pantry_InUnit: str = Form(None),
@@ -212,6 +214,7 @@ def insert_office_unit_and_return_full_record(
         Rent_Advance = None if not Rent_Advance else int(Rent_Advance)
         Furnish_Condition = Furnish_Condition if Furnish_Condition else 'Standard'
         Floor = Floor if Floor else None
+        Floor_Replacement = None if not Floor_Replacement else int(Floor_Replacement)
         Combine_Divide = None if not Combine_Divide else int(Combine_Divide)
         Min_Divide_Size = None if not Min_Divide_Size else float(Min_Divide_Size)
         Floor_Zone = Floor_Zone if Floor_Zone else None
@@ -221,6 +224,7 @@ def insert_office_unit_and_return_full_record(
         View_W = None if not View_W else int(View_W)
         Ceiling_Dropped = None if not Ceiling_Dropped else float(Ceiling_Dropped)
         Ceiling_Full_Structure = None if not Ceiling_Full_Structure else float(Ceiling_Full_Structure)
+        Ceiling_Replacement = None if not Ceiling_Replacement else int(Ceiling_Replacement)
         Column_InUnit = None if not Column_InUnit else int(Column_InUnit)
         AC_Split_Type = None if not AC_Split_Type else int(AC_Split_Type)
         Pantry_InUnit = None if not Pantry_InUnit else int(Pantry_InUnit)
@@ -233,19 +237,19 @@ def insert_office_unit_and_return_full_record(
         sql = f"""
             INSERT INTO {TABLE}
             (Building_ID, Unit_NO, Rent_Price, Size, Unit_Status, Available, Furnish_Condition, Combine_Divide, Min_Divide_Size, Floor_Zone
-            , Floor, View_N, View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Column_InUnit, AC_Split_Type, Pantry_InUnit
-            , Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Created_By, Last_Updated_By)
+            , Floor, Floor_Replacement, View_N, View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit
+            , AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Created_By, Last_Updated_By)
             VALUES (%s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
-            , %s, %s)
+            , %s, %s, %s, %s)
         """
         cur.execute(sql, (
             Building, Unit_NO, Rent_Price, Size, Unit_Status, Available, Furnish_Condition, Combine_Divide, Min_Divide_Size, Floor_Zone
-            , Floor, View_N, View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Column_InUnit, AC_Split_Type, Pantry_InUnit
-            , Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Created_By, Last_Updated_By
+            , Floor, Floor_Replacement, View_N, View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit
+            , AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Created_By, Last_Updated_By
         ))
         conn.commit()
         new_id = cur.lastrowid
@@ -278,12 +282,14 @@ def update_office_unit_and_return_full_record(
     Min_Divide_Size: str = Form(None),
     Floor_Zone: str = Form(None),
     Floor: str = Form(None),
+    Floor_Replacement: str = Form(None),
     View_N: str = Form(None),
     View_E: str = Form(None),
     View_S: str = Form(None),
     View_W: str = Form(None),
     Ceiling_Dropped: str = Form(None),
     Ceiling_Full_Structure: str = Form(None),
+    Ceiling_Replacement: str = Form(None),
     Column_InUnit: str = Form(None),
     AC_Split_Type: str = Form(None),
     Pantry_InUnit: str = Form(None),
@@ -307,6 +313,7 @@ def update_office_unit_and_return_full_record(
         Rent_Advance = None if not Rent_Advance else int(Rent_Advance)
         Furnish_Condition = Furnish_Condition if Furnish_Condition else 'Standard'
         Floor = Floor if Floor else None
+        Floor_Replacement = None if not Floor_Replacement else int(Floor_Replacement)
         Combine_Divide = None if not Combine_Divide else int(Combine_Divide)
         Min_Divide_Size = None if not Min_Divide_Size else float(Min_Divide_Size)
         Floor_Zone = Floor_Zone if Floor_Zone else None
@@ -316,6 +323,7 @@ def update_office_unit_and_return_full_record(
         View_W = None if not View_W else int(View_W)
         Ceiling_Dropped = None if not Ceiling_Dropped else float(Ceiling_Dropped)
         Ceiling_Full_Structure = None if not Ceiling_Full_Structure else float(Ceiling_Full_Structure)
+        Ceiling_Replacement = None if not Ceiling_Replacement else int(Ceiling_Replacement)
         Column_InUnit = None if not Column_InUnit else int(Column_InUnit)
         AC_Split_Type = None if not AC_Split_Type else int(AC_Split_Type)
         Pantry_InUnit = None if not Pantry_InUnit else int(Pantry_InUnit)
@@ -345,12 +353,14 @@ def update_office_unit_and_return_full_record(
                 Min_Divide_Size=%s,
                 Floor_Zone=%s,
                 Floor=%s,
+                Floor_Replacement=%s,
                 View_N=%s,
                 View_E=%s,
                 View_S=%s,
                 View_W=%s,
                 Ceiling_Dropped=%s,
                 Ceiling_Full_Structure=%s,
+                Ceiling_Replacement=%s,
                 Column_InUnit=%s,
                 AC_Split_Type=%s,
                 Pantry_InUnit=%s,
@@ -366,8 +376,8 @@ def update_office_unit_and_return_full_record(
             WHERE Unit_ID=%s
         """
         cur.execute(sql, (
-            Building, Unit_NO, Rent_Price, Size, Furnish_Condition, Combine_Divide, Min_Divide_Size, Floor_Zone, Floor, View_N
-            , View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Column_InUnit, AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term
+            Building, Unit_NO, Rent_Price, Size, Furnish_Condition, Combine_Divide, Min_Divide_Size, Floor_Zone, Floor, Floor_Replacement, View_N
+            , View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit, AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term
             , Rent_Deposit, Rent_Advance, Available, User_ID, Unit_Status, Last_Updated_By, Unit_ID
         ))
         conn.commit()
