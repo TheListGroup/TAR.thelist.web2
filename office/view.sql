@@ -1,5 +1,8 @@
 -- source_office_around_station
 -- source_office_around_express_way
+-- source_office_around_retail
+-- source_office_around_hospital
+-- source_office_around_education
 -- source_office_image_all
 -- source_office_image_carousel (unit)
 -- source_office_image_carousel_random (unit)
@@ -13,6 +16,7 @@
 -- source_office_unit_highlight_relationship
 -- view source_office_around_convenience_store
 -- view source_office_around_bank
+-- view source_office_around_office_project
 
 
 -- view source_office_around_station
@@ -24,6 +28,8 @@ select Station_Code
     , MTran_ShortName
     , Project_ID
     , Distance
+    , Station_Latitude
+    , Station_Longitude
 from (SELECT mtsmr.Station_Code
             , mtsmr.Station_THName_Display
             , mtsmr.Route_Code
@@ -51,6 +57,8 @@ select Place_ID
     , Place_Type
     , Place_Category
     , Place_Name
+    , Place_Attribute_1
+    , Place_Attribute_2
     , Place_Latitude
     , Place_Longitude
     , Project_ID
@@ -59,6 +67,8 @@ from (SELECT ew.Place_ID
             , ew.Place_Type
             , ew.Place_Category
             , ew.Place_Name
+            , ew.Place_Attribute_1
+            , ew.Place_Attribute_2
             , ew.Place_Latitude
             , ew.Place_Longitude
             , o.Project_ID
@@ -70,6 +80,76 @@ from (SELECT ew.Place_ID
         FROM real_place_express_way ew
         cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
 where Distance <= 2.0;
+
+-- view source_office_around_retail
+create or replace view source_office_around_retail as
+select Place_ID
+    , Place_Name
+    , Place_Latitude
+    , Place_Longitude
+    , Project_ID
+    , Distance
+from (SELECT re.Place_ID
+            , re.Place_Name
+            , re.Place_Latitude
+            , re.Place_Longitude
+            , o.Project_ID
+            , o.Latitude
+            , o.Longitude
+            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - re.Place_Latitude)) / 2), 2)
+                + COS(RADIANS(re.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                POWER(SIN((RADIANS(o.Longitude - re.Place_Longitude)) / 2), 2 )))) AS Distance
+        FROM real_place_retail re
+        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+where Distance <= 0.8;
+
+-- view source_office_around_hospital
+create or replace view source_office_around_hospital as
+select Place_ID
+    , Place_Name
+    , Place_Short_Name
+    , Place_Latitude
+    , Place_Longitude
+    , Project_ID
+    , Distance
+from (SELECT h.Place_ID
+            , h.Place_Name
+            , h.Place_Short_Name
+            , h.Place_Latitude
+            , h.Place_Longitude
+            , o.Project_ID
+            , o.Latitude
+            , o.Longitude
+            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - h.Place_Latitude)) / 2), 2)
+                + COS(RADIANS(h.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                POWER(SIN((RADIANS(o.Longitude - h.Place_Longitude)) / 2), 2 )))) AS Distance
+        FROM real_place_hospital h
+        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+where Distance <= 0.8;
+
+-- view source_office_around_education
+create or replace view source_office_around_education as
+select Place_ID
+    , Place_Name
+    , Place_Short_Name
+    , Place_Latitude
+    , Place_Longitude
+    , Project_ID
+    , Distance
+from (SELECT e.Place_ID
+            , e.Place_Name
+            , e.Place_Short_Name
+            , e.Place_Latitude
+            , e.Place_Longitude
+            , o.Project_ID
+            , o.Latitude
+            , o.Longitude
+            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - e.Place_Latitude)) / 2), 2)
+                + COS(RADIANS(e.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
+                POWER(SIN((RADIANS(o.Longitude - e.Place_Longitude)) / 2), 2 )))) AS Distance
+        FROM real_place_education e
+        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
+where Distance <= 0.8;
 
 -- view source_office_image_all
 create or replace view source_office_image_all as
@@ -424,6 +504,9 @@ select u.Unit_ID
     , if(u.Rent_Price is not null,1,0) as Rent_Price_Status
     , p.Project_ID
     , p.Project_URL_Tag
+    , p.Latitude
+    , p.Longitude
+    , u.Last_Updated_Date
     /*, img_carousel.Image_Set as Carousel_Image
     , img_random.Image_Set as Carousel_Image_Random*/
 from office_unit u
@@ -612,6 +695,7 @@ select a.Project_ID
     , a.Project_URL_Tag
     , a.Latitude
     , a.Longitude
+    , a.Last_Updated_Date
 from office_project a
 left join source_office_project_highlight_relationship highlight on a.Project_ID = highlight.Project_ID
 left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count
@@ -1062,3 +1146,56 @@ from (SELECT e.Bank_ID
         FROM real_place_bank e
         cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
 where Distance <= 0.8;
+
+-- view source_office_around_office_project
+create or replace view source_office_around_office_project as
+select Project_ID1
+    , Latitude1
+    , Longitude1
+    , Project_ID2
+    , Latitude2
+    , Longitude2
+    , Distance
+from (SELECT a.Project_ID as Project_ID1
+            , a.Latitude as Latitude1
+            , a.Longitude as Longitude1
+            , b.Project_ID as Project_ID2
+            , b.Latitude as Latitude2
+            , b.Longitude as Longitude2
+            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(b.Latitude - a.Latitude)) / 2), 2)
+                + COS(RADIANS(a.Latitude)) * COS(RADIANS(b.Latitude)) *
+                POWER(SIN((RADIANS(b.Longitude - a.Longitude)) / 2), 2 )))) AS Distance
+        FROM office_project a
+        cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) b
+        where a.Project_Status = '1'
+        and a.Latitude is not null
+        and a.Longitude is not null) aaa
+where Distance <= 10
+and Project_ID1 <> Project_ID2
+order by Project_ID1, Distance;
+
+-- view source_office_around_office_unit
+create or replace view source_office_around_office_unit as
+select Unit_ID1
+    , Latitude1
+    , Longitude1
+    , Unit_ID2
+    , Latitude2
+    , Longitude2
+    , Distance
+from (SELECT a.Unit_ID as Unit_ID1
+            , a.Latitude as Latitude1
+            , a.Longitude as Longitude1
+            , b.Unit_ID as Unit_ID2
+            , b.Latitude as Latitude2
+            , b.Longitude as Longitude2
+            , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(b.Latitude - a.Latitude)) / 2), 2)
+                + COS(RADIANS(a.Latitude)) * COS(RADIANS(b.Latitude)) *
+                POWER(SIN((RADIANS(b.Longitude - a.Longitude)) / 2), 2 )))) AS Distance
+        FROM source_office_unit_carousel_recommend a
+        cross join (select * from source_office_unit_carousel_recommend where Latitude is not null AND Longitude is not null) b
+        where a.Latitude is not null
+        and a.Longitude is not null) aaa
+where Distance <= 10
+and Unit_ID1 <> Unit_ID2
+order by Unit_ID1, Distance;
