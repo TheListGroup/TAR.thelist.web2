@@ -5,7 +5,8 @@ from function_utility import to_problem, apply_etag_and_return, etag_of, require
 from function_query_helper import _select_full_office_project_item, _get_project_card_data, _get_project_template_price_card_data, _get_project_template_area_card_data \
     , _get_project_building, _get_subdistrict_data, _get_district_data, _get_province_data, get_project_station, get_project_express_way, get_project_retail \
     , get_project_hospital, get_project_education, _select_full_office_unit_item, _select_full_office_building_item, get_project_image, get_all_unit_carousel_images \
-    , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_project_cover, get_search_project, get_all_project_carousel_images
+    , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_search_project, get_all_project_carousel_images, _get_project_carousel_data \
+    , _get_project_youtube
 from typing import Optional, Tuple, Dict, Any, List
 import os
 import re
@@ -126,7 +127,7 @@ def recommand_card_data(
             WITH RankedUnits AS (
                 SELECT
                     u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
-                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL,
+                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL, Last_Updated_Date,
                     ROW_NUMBER() OVER (PARTITION BY jt.Found_Tag ORDER BY u.Unit_ID) as rn
                 FROM
                     source_office_unit_carousel_recommend u
@@ -145,6 +146,7 @@ def recommand_card_data(
                 RankedUnits
             WHERE
                 rn <= %s
+            ORDER BY Last_Updated_Date DESC
             LIMIT %s
         """
         params = tuple(tag_list) + (UNITS_PER_TAG, MAX_TOTAL_UNITS)
@@ -176,14 +178,7 @@ def recommand_project_card_data(
 ):
     try:
         MAX_TOTAL_PROJECTS = 20
-        conn = get_db()
-        cur = conn.cursor(dictionary=True)
-
-        cur.execute("""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count, Project_URL_Tag
-                        FROM source_office_project_carousel_recommend order by Unit_Count desc limit %s""", (MAX_TOTAL_PROJECTS,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
+        rows = _get_project_carousel_data(None, MAX_TOTAL_PROJECTS, 'carousel_home')
         
         if rows:
             project_ids = [project['Project_ID'] for project in rows]
@@ -228,8 +223,17 @@ def project_template_data(
             {fields[2]: project_image_all},
         ])
         
+        youtube_url = _get_project_youtube(Project_ID)
+        if youtube_url:
+            data.append({"Youtube_URL": youtube_url})
+        else:
+            data.append({"Youtube_URL": None})
+        
         overall = {}
-        overall["Description"] = proj_data["Project_Description"]
+        if proj_data["Project_Description"]:
+            overall["Description"] = proj_data["Project_Description"]
+        else:
+            overall["Description"] = 'โครงการ ' + proj_name
         overall["Highlight"] = card_values[3]
         
         info = {}
@@ -237,7 +241,7 @@ def project_template_data(
         price_values = price_card_data if price_card_data else [None] * 2
         rent_price = price_values[1]
         if rent_price:
-            rent_price = rent_price + ';บาท / ตร.ม.'
+            rent_price = rent_price + ';บ./ตร.ม./ด.'
         else:
             rent_price = 'หากสนใจกรุณาติดต่อ'
         info["Rent_Price"] = rent_price
@@ -352,7 +356,7 @@ def project_template_data(
             factsheet["Usable_Area"] = None
             factsheet["Total_Lift"] = None
         
-        factsheet["Price"] = re.sub(';บาท / ตร.ม.', ';บ./ตร.ม.', rent_price)
+        factsheet["Price"] = rent_price
         
         rai = check_int(proj_data["Land_Rai"]) if proj_data["Land_Rai"] else 0
         ngan = check_int(proj_data["Land_Ngan"]) if proj_data["Land_Ngan"] else 0
@@ -468,6 +472,26 @@ def project_template_data(
             location["Longitude"] = None
         data.append({"Location": location})
         
+        project_around = {}
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""select Project_ID2 as Project_ID from source_office_around_office_project where Project_ID1 = %s order by Distance limit 20""", (Project_ID,))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        if rows:
+            carousel_rows = _get_project_carousel_data([row["Project_ID"] for row in rows], None, "carousel_around")
+            if carousel_rows:
+                project_ids = [project['Project_ID'] for project in carousel_rows]
+                images_by_project_id = get_all_project_carousel_images(project_ids)
+                for project in carousel_rows:
+                    project['Carousel_Image'] = images_by_project_id.get(project['Project_ID'])
+                project_around['Near_Project'] = carousel_rows
+                data.append(project_around)
+        else:
+            data.append({"Near_Project": None})
+        
         return data
     except Exception as e:
         return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
@@ -496,7 +520,7 @@ def unit_template_data(
         if not unit_name:
             return to_problem(404, "Unit Name Not Found", "Unit Name is None.")
         else:
-            data.append({"Unit_Name": 'ห้อง ' + unit_name})
+            data.append({"Unit_Name": 'UNIT ' + unit_name})
         
         project_name = project_data["Name_EN"]
         if not project_name:
@@ -505,9 +529,11 @@ def unit_template_data(
             data.append({"Project_Name": project_name})
             data.append({"Project_URL": project_data["Project_URL_Tag"]})
         
-        building_name = building_data["Building_Name"]
+        unit_info = get_unit_info_card(Unit_ID)
+        
+        building_name = unit_info["Building_Name"]
         if not building_name:
-            return to_problem(404, "Building Name Not Found", "Building Name is None.")
+            data.append({"Building_Name": None})
         else:
             data.append({"Building_Name": 'อาคาร ' + building_name})
         
@@ -518,35 +544,37 @@ def unit_template_data(
             data.append({"Unit_Image": None})
         
         overall = {}
-        overall["Description"] = unit_data["Unit_Description"]
+        if unit_data["Unit_Description"]:
+            overall["Description"] = unit_data["Unit_Description"]
+        else:
+            overall["Description"] = 'UNIT ' + unit_name + ' โครงการ ' + project_name
+        
         overall["Highlight"] = get_unit_highlight(Unit_ID)
         
         data.append({"Overall": overall})
         
         building_in_proj = _get_project_building(project_data["Project_ID"])
-        
-        unit_info = get_unit_info_card(Unit_ID)
-        
-        floors = [safe_floor(item.get("Floor")) for item in building_in_proj]
-        floor = format_range(floors, check_int)
-        if floor:
-            unit_info["Floors"] = floor + ';ชั้น'
-        else:
-            unit_info["Floors"] = None
-        
-        finished_years_list = [item.get("Year_Built_Complete") for item in building_in_proj]
-        finished_years = [year for year in finished_years_list if year is not None]
-        finished_year = check_int(max(finished_years)) if finished_years else None
-        if finished_year:
-            unit_info["Finished_Year"] = 'ปีที่สร้างเสร็จ;' + finished_year
-        else:
-            unit_info["Finished_Year"] = None
+        if building_in_proj:
+            floors = [safe_floor(item.get("Floor")) for item in building_in_proj]
+            floor = format_range(floors, check_int)
+            if floor:
+                unit_info["Floors"] = floor + ';ชั้น'
+            else:
+                unit_info["Floors"] = None
+            
+            finished_years_list = [item.get("Year_Built_Complete") for item in building_in_proj]
+            finished_years = [year for year in finished_years_list if year is not None]
+            finished_year = check_int(max(finished_years)) if finished_years else None
+            if finished_year:
+                unit_info["Finished_Year"] = 'ปีที่สร้างเสร็จ;' + finished_year
+            else:
+                unit_info["Finished_Year"] = None
         data.append({"Info": unit_info})
         
         factsheet = {}
         factsheet["Unit_Name"] = "ห้อง " + unit_name
-        factsheet["Building_Name"] = building_data["Building_Name"]
-        factsheet["Project_Name"] = project_data["Name_EN"]
+        factsheet["Building_Name"] = building_name
+        factsheet["Project_Name"] = project_name
         factsheet["Floor"] = "ชั้น " + unit_data["Floor"]
         
         direction_text = []
@@ -564,10 +592,10 @@ def unit_template_data(
         
         rent_price = unit_data["Rent_Price"]
         if rent_price:
-            factsheet["Rent_Price"] = str('{:,.0f}'.format((rent_price*unit_data["Size"]))) + ";บ. / ด."
+            factsheet["Rent_Price"] = str('{:,.0f}'.format((rent_price*unit_data["Size"]))) + ";บ./ด."
             if unit_data["Size"]:
                 rent_price_avg = rent_price
-                factsheet["Rent_Price_Avg"] = str('{:,.0f}'.format(rent_price_avg)) + ";บ. / ตร.ม."
+                factsheet["Rent_Price_Avg"] = str('{:,.0f}'.format(rent_price_avg)) + ";บ./ตร.ม./ด."
         else:
             factsheet["Rent_Price"] = None
             factsheet["Rent_Price_Avg"] = None
@@ -584,21 +612,17 @@ def unit_template_data(
         
         if unit_data["Column_InUnit"] == 1:
             factsheet["Column_InUnit"] = "มี"
-        elif unit_data["Column_InUnit"] == 0:
-            factsheet["Column_InUnit"] = "ไม่มี"
+            if unit_data["Combine_Divide"] == 1:
+                factsheet["Combine_Divide"] = "มี"
+                if unit_data["Min_Divide_Size"]:
+                    factsheet["Min_Divide_Size"] = check_int(unit_data["Min_Divide_Size"]) + ';ตร.ม.'
+                else:
+                    factsheet["Min_Divide_Size"] = None
+            else:
+                factsheet["Combine_Divide"] = None
+                factsheet["Min_Divide_Size"] = None
         else:
             factsheet["Column_InUnit"] = None
-        
-        if unit_data["Combine_Divide"] == 1:
-            factsheet["Combine_Divide"] = "มี"
-            if unit_data["Min_Divide_Size"]:
-                factsheet["Min_Divide_Size"] = check_int(unit_data["Min_Divide_Size"]) + ';ตร.ม.'
-            else:
-                factsheet["Min_Divide_Size"] = None
-        elif unit_data["Combine_Divide"] == 0:
-            factsheet["Combine_Divide"] = "ไม่มี"
-            factsheet["Min_Divide_Size"] = None
-        else:
             factsheet["Combine_Divide"] = None
             factsheet["Min_Divide_Size"] = None
         
@@ -732,6 +756,37 @@ def unit_template_data(
         else:
             location["Longitude"] = None
         data.append({"Location": location})
+        
+        unit_around = {}
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        cur.execute("""select Unit_ID2 as Unit_ID from source_office_around_office_unit where Unit_ID1 = %s order by Distance limit 20""", (Unit_ID,))
+        rows = cur.fetchall()
+        
+        if rows:
+            unit_ids = [row["Unit_ID"] for row in rows]
+            unit_placeholders = ', '.join(['%s'] * len(unit_ids))
+            query = f"""SELECT Unit_ID, Title, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID
+                            , Project_URL_Tag as Unit_URL
+                        FROM source_office_unit_carousel_recommend where Unit_ID in ({unit_placeholders}) order by Last_Updated_Date desc"""
+            params = tuple(unit_ids)
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            if rows:
+                unit_ids = [unit['Unit_ID'] for unit in rows]
+                project_ids = [unit['Project_ID'] for unit in rows]
+                images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True)
+                
+                for unit in rows:
+                    unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
+                    unit['Unit_URL'] = unit['Unit_URL'] + '/' + str(unit['Unit_ID']).rjust(4, '0')
+                unit_around['Near_Unit'] = rows
+                data.append(unit_around)
+        else:
+            data.append({"Near_Unit": None})
+        
+        cur.close()
+        conn.close()
         
         return data    
     except Exception as e:
