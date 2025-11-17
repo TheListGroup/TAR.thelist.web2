@@ -717,9 +717,9 @@ def _get_project_building(proj_id: int) -> Dict[str, Any] | None:
                             , concat(format(ifnull(a.Unit_Size_Max,a.Unit_Size_Min),0), ';ตร.ม.')) as Area
                         , if(a.Rent_Price_Min is not null and a.Rent_Price_Max is not null
                             , if(a.Rent_Price_Min = a.Rent_Price_Max
-                                , concat(format(a.Rent_Price_Min,0), ';บ./ตร.ม.')
-                                , concat(format(a.Rent_Price_Min,0),' - ',format(a.Rent_Price_Max,0), ';บ./ตร.ม.'))
-                            , concat(format(ifnull(a.Rent_Price_Max,a.Rent_Price_Min),0), ';บ./ตร.ม.')) as Rent_Price
+                                , concat(format(a.Rent_Price_Min,0), ';บ./ตร.ม./ด.')
+                                , concat(format(a.Rent_Price_Min,0),' - ',format(a.Rent_Price_Max,0), ';บ./ตร.ม./ด.'))
+                            , concat(format(ifnull(a.Rent_Price_Max,a.Rent_Price_Min),0), ';บ./ตร.ม./ด.')) as Rent_Price
                         , b.Cover_Url as Cover
                         , YEAR(a.Built_Complete) as Year_Built_Complete
                         , YEAR(a.Last_Renovate) as Year_Last_Renovate
@@ -928,38 +928,45 @@ def get_project_station(proj_id: int) -> Optional[str]:
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Station_Code', Station_Code
-                                                    , 'Station_THName_Display', Station_THName_Display
-                                                    , 'Route_Code', Route_Code
-                                                    , 'Line_Code', Line_Code
-                                                    , 'MTran_ShortName', MTran_ShortName
-                                                    , 'Place_Latitude', Station_Latitude
-                                                    , 'Place_Longitude', Station_Longitude
-                                                    , 'Project_ID', Project_ID
-                                                    , 'Distance', Distance)) as Station
-                        from (SELECT mtsmr.Station_Code
-                                    , mtsmr.Station_THName_Display
-                                    , mtsmr.Route_Code
-                                    , mtr.Line_Code
-                                    , mtsmr.Station_Latitude
-                                    , mtsmr.Station_Longitude
-                                    , o.Project_ID
-                                    , o.Latitude
-                                    , o.Longitude
-                                    , mt.MTran_ShortName
-                                    , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - mtsmr.Station_Latitude)) / 2), 2)
-                                        + COS(RADIANS(mtsmr.Station_Latitude)) * COS(RADIANS(o.Latitude)) *
-                                        POWER(SIN((RADIANS(o.Longitude - mtsmr.Station_Longitude)) / 2), 2 )))) AS Distance
-                                FROM mass_transit_station_match_route mtsmr
-                                left join mass_transit_route mtr on mtsmr.Route_Code = mtr.Route_Code
-                                left join mass_transit_line mtl on mtr.Line_Code = mtl.Line_Code
-                                left join mass_transit mt on mtl.MTrand_ID = mt.MTran_ID
-                                cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o
-                                where mtsmr.Route_Timeline = 'Completion') aaa
-                        where Distance <= 0.8
-                        and Project_ID = %s
-                        order by Distance
-                        limit 2""", (proj_id,))
+        cur.execute("""WITH nearest_station AS (
+                            SELECT 
+                                Project_ID,
+                                Route_Code,
+                                Line_Code,
+                                Station_Code,
+                                Station_THName_Display,
+                                MTran_ShortName,
+                                Station_Latitude,
+                                Station_Longitude,
+                                Distance,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY Project_ID, MTran_ShortName, Station_THName_Display 
+                                    ORDER BY Distance ASC
+                                ) AS rn
+                            FROM source_office_around_station
+                            WHERE MTran_ShortName is not null)
+                        , distinct_station AS (
+                            SELECT Project_ID, Route_Code, Line_Code, Station_Code, Station_THName_Display, MTran_ShortName, Station_Latitude, Station_Longitude, Distance
+                            FROM nearest_station
+                            WHERE rn = 1
+                            AND Project_ID = %s
+                            ORDER BY Distance
+                            Limit 2)
+                        SELECT JSON_ARRAYAGG(JSON_OBJECT('Station_Code', Station_Code
+                                                        , 'Station_THName_Display', Station_THName_Display
+                                                        , 'Route_Code', Route_Code
+                                                        , 'Line_Code', Line_Code
+                                                        , 'MTran_ShortName', MTran_ShortName
+                                                        , 'Place_Latitude', Station_Latitude
+                                                        , 'Place_Longitude', Station_Longitude
+                                                        , 'Project_ID', Project_ID
+                                                        , 'Distance', Distance)) as Station
+                        FROM (
+                            SELECT *,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY Project_ID ORDER BY Distance ASC
+                                ) AS rn2
+                            FROM distinct_station) t""", (proj_id,))
         row = cur.fetchone()
         if row and row[0]:
             return row[0]
@@ -972,36 +979,39 @@ def get_project_express_way(proj_id: int) -> Optional[str]:
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+        cur.execute("""WITH nearest_express_way AS (
+                        SELECT Place_ID,
+                            Project_ID,
+                            Place_Name,
+                            Place_Type,
+                            Place_Category,
+                            Place_Attribute_1,
+                            Place_Attribute_2,
+                            Place_Latitude,
+                            Place_Longitude,
+                            Distance,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID, Place_Name, Place_Attribute_2 ORDER BY Distance ASC) AS rn
+                        FROM source_office_around_express_way)
+                    , distinct_express_way AS (
+                        SELECT Project_ID, Place_ID, replace(Place_Name, 'ทางพิเศษ', '') as Place_Name, Place_Type, Place_Category, Place_Attribute_1, Place_Attribute_2, Place_Latitude, Place_Longitude, Distance
+                        FROM nearest_express_way
+                        WHERE rn = 1
+                        AND Project_ID = %s
+                        ORDER BY Distance
+                        Limit 2)
+                    SELECT JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
                                                     , 'Place_Type', Place_Type
                                                     , 'Place_Category', Place_Category
                                                     , 'Place_Name', Place_Name
                                                     , 'Place_Attribute_1', Place_Attribute_1
-                                                    , 'Place_Attribute_2', Place_Attribute_2
+                                                    , 'Place_Attribute_2', concat('(', Place_Attribute_2, ')')
                                                     , 'Place_Latitude', Place_Latitude
                                                     , 'Place_Longitude', Place_Longitude
                                                     , 'Project_ID', Project_ID
-                                                    , 'Distance', Distance)) as Express_Way_Set
-                        from (SELECT ew.Place_ID 
-                                    , ew.Place_Type
-                                    , ew.Place_Category
-                                    , ew.Place_Name
-                                    , ew.Place_Attribute_1
-                                    , ew.Place_Attribute_2
-                                    , ew.Place_Latitude
-                                    , ew.Place_Longitude
-                                    , o.Project_ID
-                                    , o.Latitude
-                                    , o.Longitude
-                                    , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - ew.Place_Latitude)) / 2), 2)
-                                        + COS(RADIANS(ew.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
-                                        POWER(SIN((RADIANS(o.Longitude - ew.Place_Longitude)) / 2), 2 )))) AS Distance
-                                FROM real_place_express_way ew
-                                cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
-                        where Distance <= 2.0
-                        and Project_ID = %s
-                        order by Distance
-                        limit 2""", (proj_id,))
+                                                    , 'Distance', Distance)) as Express_Way
+                    FROM (SELECT *,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID ORDER BY Distance ASC) AS rn2
+                        FROM distinct_express_way) t""", (proj_id,))
         row = cur.fetchone()
         if row and row[0]:
             return row[0]
@@ -1014,28 +1024,31 @@ def get_project_retail(proj_id: int) -> Optional[str]:
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+        cur.execute("""WITH nearest_retail AS (
+                        SELECT Place_ID,
+                            Project_ID,
+                            Place_Name,
+                            Place_Latitude,
+                            Place_Longitude,
+                            Distance,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID, Place_Name ORDER BY Distance ASC) AS rn
+                        FROM source_office_around_retail)
+                    , distinct_retail AS (
+                        SELECT Project_ID, Place_ID, Place_Name, Place_Latitude, Place_Longitude, Distance
+                        FROM nearest_retail
+                        WHERE rn = 1
+                        AND Project_ID = %s
+                        ORDER BY Distance
+                        Limit 2)
+                    SELECT JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
                                                     , 'Place_Name', Place_Name
                                                     , 'Place_Latitude', Place_Latitude
                                                     , 'Place_Longitude', Place_Longitude
                                                     , 'Project_ID', Project_ID
                                                     , 'Distance', Distance)) as Retail_Set
-                        from (SELECT r.Place_ID
-                                , r.Place_Name
-                                , r.Place_Latitude
-                                , r.Place_Longitude
-                                , o.Project_ID
-                                , o.Latitude
-                                , o.Longitude
-                                , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - r.Place_Latitude)) / 2), 2)
-                                    + COS(RADIANS(r.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
-                                    POWER(SIN((RADIANS(o.Longitude - r.Place_Longitude)) / 2), 2 )))) AS Distance
-                            FROM real_place_retail r
-                            cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
-                            where Distance <= 0.8
-                            and Project_ID = %s
-                            order by Distance
-                            limit 2""", (proj_id,))
+                    FROM (SELECT *,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID ORDER BY Distance ASC) AS rn2
+                        FROM distinct_retail) t""", (proj_id,))
         row = cur.fetchone()
         if row and row[0]:
             return row[0]
@@ -1048,29 +1061,32 @@ def get_project_hospital(proj_id: int) -> Optional[str]:
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
-                                                    , 'Place_Name', CONCAT(Place_Category, Place_Name)
+        cur.execute("""WITH nearest_hospital AS (
+                        SELECT Place_ID,
+                            Project_ID,
+                            Place_Name,
+                            Place_Short_Name,
+                            Place_Latitude,
+                            Place_Longitude,
+                            Distance,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID, Place_Name ORDER BY Distance ASC) AS rn
+                        FROM source_office_around_hospital)
+                    , distinct_hospital AS (
+                        SELECT Project_ID, Place_ID, Place_Name, Place_Short_Name, Place_Latitude, Place_Longitude, Distance
+                        FROM nearest_hospital
+                        WHERE rn = 1
+                        AND Project_ID = %s
+                        ORDER BY Distance
+                        Limit 2)
+                    SELECT JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+                                                    , 'Place_Name', trim(concat(Place_Short_Name, Place_Name))
                                                     , 'Place_Latitude', Place_Latitude
                                                     , 'Place_Longitude', Place_Longitude
                                                     , 'Project_ID', Project_ID
-                                                    , 'Distance', Distance)) as Hospital
-                        from (SELECT h.Place_ID
-                                , h.Place_Category
-                                , h.Place_Name
-                                , h.Place_Latitude
-                                , h.Place_Longitude
-                                , o.Project_ID
-                                , o.Latitude
-                                , o.Longitude
-                                , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - h.Place_Latitude)) / 2), 2)
-                                    + COS(RADIANS(h.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
-                                    POWER(SIN((RADIANS(o.Longitude - h.Place_Longitude)) / 2), 2 )))) AS Distance
-                            FROM real_place_hospital h
-                            cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
-                            where Distance <= 0.8
-                            and Project_ID = %s
-                            order by Distance
-                            limit 2""", (proj_id,))
+                                                    , 'Distance', Distance)) as Retail_Set
+                    FROM (SELECT *,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID ORDER BY Distance ASC) AS rn2
+                        FROM distinct_hospital) t""", (proj_id,))
         row = cur.fetchone()
         if row and row[0]:
             return row[0]
@@ -1083,29 +1099,32 @@ def get_project_education(proj_id: int) -> Optional[str]:
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""select JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
-                                                    , 'Place_Name', CONCAT(Place_Category, Place_Name)
+        cur.execute("""WITH nearest_education AS (
+                        SELECT Place_ID,
+                            Project_ID,
+                            Place_Name,
+                            Place_Short_Name,
+                            Place_Latitude,
+                            Place_Longitude,
+                            Distance,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID, Place_Name ORDER BY Distance ASC) AS rn
+                        FROM source_office_around_education)
+                    , distinct_education AS (
+                        SELECT Project_ID, Place_ID, Place_Name, Place_Short_Name, Place_Latitude, Place_Longitude, Distance
+                        FROM nearest_education
+                        WHERE rn = 1
+                        AND Project_ID = %s
+                        ORDER BY Distance
+                        Limit 2)
+                    SELECT JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Place_ID
+                                                    , 'Place_Name', trim(concat(Place_Short_Name, Place_Name))
                                                     , 'Place_Latitude', Place_Latitude
                                                     , 'Place_Longitude', Place_Longitude
                                                     , 'Project_ID', Project_ID
-                                                    , 'Distance', Distance)) as Education
-                        from (SELECT e.Place_ID
-                                , e.Place_Category
-                                , e.Place_Name
-                                , e.Place_Latitude
-                                , e.Place_Longitude
-                                , o.Project_ID
-                                , o.Latitude
-                                , o.Longitude
-                                , (6371 * 2 * ASIN(SQRT(POWER(SIN((RADIANS(o.Latitude - e.Place_Latitude)) / 2), 2)
-                                    + COS(RADIANS(e.Place_Latitude)) * COS(RADIANS(o.Latitude)) *
-                                    POWER(SIN((RADIANS(o.Longitude - e.Place_Longitude)) / 2), 2 )))) AS Distance
-                            FROM real_place_education e
-                            cross join (select * from office_project where Project_Status = '1' and Latitude is not null AND Longitude is not null) o) aaa
-                            where Distance <= 0.8
-                            and Project_ID = %s
-                            order by Distance
-                            limit 2""", (proj_id,))
+                                                    , 'Distance', Distance)) as Education_Set
+                    FROM (SELECT *,
+                            ROW_NUMBER() OVER (PARTITION BY Project_ID ORDER BY Distance ASC) AS rn2
+                        FROM distinct_education) t""", (proj_id,))
         row = cur.fetchone()
         if row and row[0]:
             return row[0]
@@ -1193,7 +1212,7 @@ def get_project_convenience_store(proj_id: int) -> Optional[str]:
                     WHERE rn = 1)
                 SELECT Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Place_ID', Store_ID
                                                             , 'Store_Type', Store_Type
-                                                            , 'Branch_Name', Branch_Name
+                                                            , 'Branch_Name', if(Store_Type = '7-11', concat('7-11 ', Branch_Name), Branch_Name)
                                                             , 'Place_Latitude', Place_Latitude
                                                             , 'Place_Longitude', Place_Longitude
                                                             , 'Distance', Distance)) as Convenience_Store
@@ -1363,6 +1382,53 @@ def get_all_project_carousel_images(project_ids: list) -> dict:
         cur.execute(sql_query, params)
         rows = cur.fetchall()
         return {row['Owning_Project_ID']: row['Image_Set'] for row in rows}
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_project_carousel_data(proj_ids: list, total_proj: int, place_use: str) -> dict:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        if place_use == 'carousel_home':   
+            cur.execute("""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count, Project_URL_Tag
+                            FROM source_office_project_carousel_recommend order by Last_Updated_Date desc limit %s""", (total_proj,))
+        else:
+            proj_placeholders = ', '.join(['%s'] * len(proj_ids))
+            query = f"""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count, Project_URL_Tag
+                            FROM source_office_project_carousel_recommend where Project_ID in ({proj_placeholders}) order by Last_Updated_Date desc"""
+            params = tuple(proj_ids)
+            cur.execute(query, params)
+        
+        rows = cur.fetchall()
+        if rows:
+            return rows
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_project_youtube(Project_ID: int) -> str:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""WITH RankedVideos AS (
+                        SELECT
+                            ID,
+                            Project_ID,
+                            Youtube_URL,
+                            Publish_Date,
+                            ROW_NUMBER() OVER(PARTITION BY Project_ID ORDER BY Publish_Date DESC) AS rn
+                        FROM office_project_youtube)
+                    SELECT Project_ID
+                        , Youtube_URL
+                    FROM RankedVideos
+                    WHERE rn = 1
+                    and Project_ID = %s""", (Project_ID,))
+        row = cur.fetchone()
+        if row:
+            return row['Youtube_URL']
+        return None
     finally:
         cur.close()
         conn.close()
