@@ -13,6 +13,7 @@ CREATE TABLE `real_contact_dev_agent` (
     `Contact_Name` varchar(250) NULL,
     `Dev_or_Agent` ENUM('D','A') NOT NULL,
     `Email` TEXT NOT NULL,
+    `Developer_Code` varchar(20) NULL,
     `Created_By` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `Created_Date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `Last_Updated_By` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
@@ -20,6 +21,7 @@ CREATE TABLE `real_contact_dev_agent` (
     PRIMARY KEY (`Dev_Agent_Contact_ID`),
     INDEX dev_agent_admin1 (Created_By),
     INDEX dev_agent_admin2 (Last_Updated_By),
+    INDEX dev_agent_developer (Developer_Code),
     CONSTRAINT dev_agent_admin1 FOREIGN KEY (Created_By) REFERENCES user_admin(User_ID),
     CONSTRAINT dev_agent_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES user_admin(User_ID)
 ) ENGINE=InnoDB;
@@ -101,10 +103,9 @@ left join (select Condo_Code, Dev_Agent_Contact_ID
                                 where rda.Dev_or_Agent = 'D') sw
                     on rc.Condo_Code = sw.Condo_Code) swd
             union all select Condo_Code, Dev_Agent_Contact_ID 
-                        from (select rc.Condo_Code
+                        from (select sw.Condo_Code
                                     , sw.Dev_Agent_Contact_ID
-                                from real_condo rc
-                                left join real_contact_condo_send_to_who sw on rc.Condo_Code = sw.Condo_Code
+                                from real_contact_condo_send_to_who sw
                                 left join real_contact_dev_agent rda on sw.Dev_Agent_Contact_ID = rda.Dev_Agent_Contact_ID
                                 where rda.Dev_or_Agent = 'A') swa) sw
 on rc.Condo_Code = sw.Condo_Code
