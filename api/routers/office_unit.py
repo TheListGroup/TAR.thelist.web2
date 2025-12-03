@@ -11,7 +11,9 @@ from PIL import Image
 import re
 from wand.image import Image as WandImage
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, date
+from collections import defaultdict
+import itertools
 
 router = APIRouter()
 TABLE = "office_unit"
@@ -168,6 +170,315 @@ def _delete_unit_image(image_id: int, action: str):
         cur.close()
         conn.close()
 
+def _process_virtual_room_additive(cur, new_unit_data: dict, virtual_room_str: Optional[str], created_by: Optional[int], work_state: str):   
+    virtual_room_mapping_query = """select Virtual_ID from office_unit_virtual_room_mapping where Unit_ID=%s"""
+    cur.execute(virtual_room_mapping_query, (new_unit_data['Unit_ID'],))
+    rows = cur.fetchall()
+    
+    if rows:
+        for row in rows:
+            cur.execute("delete from office_unit_virtual_room_mapping where Virtual_ID=%s", (row['Virtual_ID'],))
+            cur.execute("delete from office_unit_virtual_room where Virtual_ID=%s", (row['Virtual_ID'],))
+            cur.execute("delete from office_unit_adjacency where Unit_ID_A=%s or Unit_ID_B=%s", (new_unit_data['Unit_ID'], new_unit_data['Unit_ID']))
+    
+    if work_state != 'delete':
+        new_pairs_added = _insert_new_adjacencies_and_return(cur, new_unit_data['Unit_ID'], virtual_room_str, created_by)
+    
+        if not new_pairs_added:
+            return
+
+        # 2. สร้าง Virtual Rooms ใหม่
+        _find_and_create_new_virtual_rooms(
+            cur=cur, 
+            new_pairs_added=new_pairs_added, 
+            new_unit_data=new_unit_data, # <--- ส่งข้อมูลห้องใหม่
+            created_by=created_by)
+
+def _insert_new_adjacencies_and_return(cur, new_unit_id: int, virtual_room_str: str, created_by: int) -> list:
+    existing_pairs = set()
+    cur.execute("SELECT Unit_ID_A, Unit_ID_B FROM office_unit_adjacency")
+    for row in cur.fetchall():
+        pair = tuple(sorted((int(row['Unit_ID_A']), int(row['Unit_ID_B']))))
+        existing_pairs.add(pair)
+        
+    new_rows_to_insert = []
+    new_pairs_for_logic = []
+    try:
+        virtual_id_list = [int(v.strip()) for v in virtual_room_str.split(';') if v.strip()]
+    except ValueError:
+        raise Exception("Invalid Virtual_Room IDs (non-integer).")
+
+    for vid in virtual_id_list:
+        pair = tuple(sorted((new_unit_id, vid)))
+        
+        if pair not in existing_pairs:
+            new_rows_to_insert.append((pair[0], pair[1], created_by))
+            new_pairs_for_logic.append(pair)
+            existing_pairs.add(pair) 
+
+    if new_rows_to_insert:
+        sql = """
+            INSERT INTO office_unit_adjacency (Unit_ID_A, Unit_ID_B, Created_By) 
+            VALUES (%s, %s, %s)
+        """
+        cur.executemany(sql, new_rows_to_insert)
+        
+    return new_pairs_for_logic
+
+def _find_and_create_new_virtual_rooms(cur, new_pairs_added: list, new_unit_data: dict, created_by: int):
+    """
+    (Worker 2 - Universal Topology Logic)
+    รองรับทุกรูปทรง (เส้นตรง, ตัว T, สี่เหลี่ยม, ฯลฯ)
+    """
+    # --- 1. สร้าง Graph และ Cache (เหมือนเดิม) ---
+    graph = defaultdict(list)
+    cur.execute("SELECT Unit_ID_A, Unit_ID_B FROM office_unit_adjacency")
+    rows = cur.fetchall()
+    for row in rows:
+        u, v = int(row['Unit_ID_A']), int(row['Unit_ID_B']) 
+        graph[u].append(v); graph[v].append(u)
+
+    existing_virtual_names = set()
+    cur.execute("SELECT Virtual_Name FROM office_unit_virtual_room")
+    for row in cur.fetchall():
+        existing_virtual_names.add(row['Virtual_Name'])
+
+    transient_unit_cache = {new_unit_data['Unit_ID']: new_unit_data }
+
+    # --- 2. ค้นหา "กลุ่มก้อน" (Connected Components) ที่ได้รับผลกระทบ ---
+    nodes_impacted = set(uid for pair in new_pairs_added for uid in pair) # {25,26}
+    visited_nodes_in_search = set()
+    
+    for start_node in nodes_impacted:
+        if start_node in visited_nodes_in_search or start_node not in graph:
+            continue
+            
+        # 2.1 หา "เพื่อนทั้งหมดที่เชื่อมถึงกัน" (Component)
+        # ไม่สนรูปทรง จะเป็นตัว T หรือดาว ก็เก็บมาให้หมด
+        component = []
+        stack = [start_node]
+        visited_in_component = set()
+
+        while stack:
+            current_node = stack.pop()
+            if current_node in visited_in_component or current_node in visited_nodes_in_search:
+                continue
+            visited_in_component.add(current_node)
+            component.append(current_node)
+            for neighbor in graph[current_node]:
+                stack.append(neighbor)
+        
+        # Mark ว่ากลุ่มนี้ทำแล้ว
+        visited_nodes_in_search.update(component)
+
+        # --- 3. สร้าง Virtual Rooms จากกลุ่มนี้ (Logic ใหม่!) ---
+        # เรามี component เช่น [25, 26, 27, 28] (อาจจะเป็นตัว T)
+        # Loop ขนาด (size) ตั้งแต่ 2 ถึง จำนวนในกลุ่ม
+        # (ระวัง: ถ้ากลุ่มใหญ่มาก เช่น 20 ห้อง combination จะเยอะมหาศาล 
+        n_limit = len(component) 
+
+        for r in range(2, n_limit + 1):
+            # สร้าง Combination ทั้งหมดของขนาด r
+            # เช่น r=3: (25,26,27), (25,26,28), (26,27,28), ...
+            for subset in itertools.combinations(component, r):
+                # *** 3.1 หัวใจสำคัญ: เช็คว่า Subset นี้เชื่อมต่อกันหรือไม่ ***
+                if not _is_subgraph_connected(subset, graph):
+                    continue # ถ้าไม่เชื่อมกัน (เช่น เอา 25 คู่ 28 แต่ตรงกลางโหว่) -> ข้าม
+                # 3.2 ถ้าเชื่อมกัน -> สร้าง Virtual Room (เหมือนเดิม)
+                v_room_data = _calculate_virtual_room_details_optimized(
+                    unit_ids=list(subset),
+                    transient_cache=transient_unit_cache)
+                
+                combined_name = v_room_data['Virtual_Name']
+                
+                if combined_name not in existing_virtual_names:
+                    # INSERT Virtual Room
+                    v_sql = """
+                        INSERT INTO office_unit_virtual_room 
+                        (Virtual_Name, Size, Rent_Price, Building_ID, Available_Date, Min_Divide_Size, Floor_Replacement, View_N, View_E, View_S, View_W, Ceiling_Dropped
+                        , Furnish_Condition, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit, AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term
+                        , Rent_Deposit, Rent_Advance) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """
+                    cur.execute(v_sql, (
+                        v_room_data['Virtual_Name'], v_room_data['Size'],
+                        v_room_data['Price'], v_room_data['Building_ID'], v_room_data['Available_Date'], v_room_data['Min_Divide_Size'], v_room_data['Floor_Replacement'],
+                        v_room_data['View_N'], v_room_data['View_E'], v_room_data['View_S'], v_room_data['View_W'], v_room_data['Ceiling_Dropped'],
+                        v_room_data['Furnish_Condition'], v_room_data['Ceiling_Full_Structure'], v_room_data['Ceiling_Replacement'], v_room_data['Column_InUnit'],
+                        v_room_data['AC_Split_Type'], v_room_data['Pantry_InUnit'], v_room_data['Bathroom_InUnit'], v_room_data['Rent_Term'], v_room_data['Rent_Deposit'],
+                        v_room_data['Rent_Advance']
+                    ))
+                    new_vid = cur.lastrowid
+                    
+                    # INSERT Mapping
+                    map_vals = [(new_vid, uid) for uid in subset]
+                    cur.executemany("INSERT INTO office_unit_virtual_room_mapping (Virtual_ID, Unit_ID) VALUES (%s, %s)", map_vals)
+                    
+                    existing_virtual_names.add(combined_name)
+
+def _calculate_virtual_room_details_optimized(unit_ids: list, transient_cache: dict) -> dict:
+    all_details = []
+    # --- 1. รวบรวมข้อมูลของทุก Unit ใน list ---
+    for uid in unit_ids:
+        if uid in transient_cache:
+            # กรณี A: มีข้อมูลใน Cache แล้ว (เช่น เป็นห้องใหม่ที่เพิ่ง Insert หรือห้องที่เคยดึงมาแล้ว)
+            all_details.append(transient_cache[uid])
+        else:
+            # กรณี B: ยังไม่มีข้อมูล -> ต้องไปดึงจาก DB
+            # (เรียกใช้ Helper _select_full_office_unit_item ที่คุณมี)
+            details = _select_full_office_unit_item(uid)
+            
+            if not details:
+                # ป้องกันกรณีข้อมูลผิดพลาด (Database Inconsistency)
+                raise Exception(f"Critical Error: Unit_ID {uid} not found in database during calculation.")
+                
+            # แปลงข้อมูลตัวเลขให้ชัวร์ว่าเป็น float (ป้องกัน Error ตอนคำนวณ)
+            for key in ['Size', 'Rent_Price', 'Min_Divide_Size', 'Ceiling_Dropped', 'Ceiling_Full_Structure']:
+                details[key] = float(details.get(key, 0) or 0)
+            
+            for key in ['Rent_Term', 'Rent_Deposit', 'Rent_Advance']:
+                details[key] = int(details.get(key, 0) or 0)
+            
+            raw_date = details.get('Available')
+            available_date_lastest = datetime.strptime(raw_date, "%Y-%m-%d").date()
+            details['Available_Date'] = available_date_lastest
+            
+            details['Furnish_Condition'] = get_furnish_index(details.get('Furnish_Condition'))
+            
+            for key in ['Floor_Replacement', 'View_N', 'View_E', 'View_S', 'View_W', 'Ceiling_Replacement', 'Column_InUnit'
+                        , 'AC_Split_Type', 'Pantry_InUnit', 'Bathroom_InUnit']:
+                details[key] = details.get(key)
+            
+            # เก็บใส่ Cache ไว้ด้วย เผื่อรอบหน้าต้องใช้ ID นี้อีก
+            transient_cache[uid] = details
+            all_details.append(details)
+
+    # --- 2. เรียงลำดับข้อมูล (สำคัญมากสำหรับชื่อ) ---
+    # เรียงตาม Unit_ID เพื่อให้ชื่อออกมาเป็น "25+26" เสมอ ไม่ใช่ "26+25"
+    sorted_details = sorted(all_details, key=lambda d: d['Unit_ID'])
+    
+    # --- 3. คำนวณค่าต่างๆ ---
+    # 3.1 สร้างชื่อห้องรวม (String Join)
+    combined_id = "".join([str(d['Unit_ID']) for d in sorted_details])
+    combined_no = "+".join([d['Unit_NO'] for d in sorted_details])
+    combined_name = combined_id + " " + combined_no
+    
+    # 3.2 Building ID (สมมติว่าห้องติดกันต้องอยู่ตึกเดียวกัน ใช้ของห้องแรก)
+    building_id = sorted_details[0]['Building_ID']
+    
+    # 3.3 รวมขนาด (Sum Size)
+    combined_size = sum(d['Size'] for d in all_details)
+    
+    # 3.4 คำนวณราคาเฉลี่ยถ่วงน้ำหนัก (Weighted Average Price)
+    # สูตร: (Price1*Size1 + Price2*Size2 + ...) / Total_Size
+    # ถ้า Size เป็น 0 (เช่นห้องเปล่า) จะได้ราคาเฉลี่ย 0 เพื่อกัน Error หารด้วยศูนย์
+    total_price_size = sum(d['Rent_Price'] * d['Size'] for d in all_details)
+    weighted_price = 0.0
+    if combined_size > 0:
+        weighted_price = round(total_price_size / combined_size)
+    
+    valid_dates = [d['Available_Date'] for d in all_details if d['Available_Date']]
+    available_date_latest = max(valid_dates)
+    
+    furnish = max((d['Furnish_Condition'] for d in all_details if d['Furnish_Condition'] is not None), default=0)
+    
+    keys_to_check = ['Min_Divide_Size', 'Ceiling_Dropped', 'Ceiling_Full_Structure', 'Rent_Term', 'Rent_Deposit', 'Rent_Advance']
+    specs = {}
+    for key in keys_to_check:
+        max_value = max((d[key] for d in all_details), default=0)
+        specs[key] = max_value or None
+    
+    replace_keys = ['Floor_Replacement', 'Ceiling_Replacement', 'Column_InUnit', 'AC_Split_Type', 'Pantry_InUnit', 'Bathroom_InUnit']
+    replace_specs = {}
+    for key in replace_keys:
+        valid_values = [d[key] for d in all_details if d[key] is not None]
+        replace_specs[key] = max(valid_values, default=None)
+    
+    view_n, view_e, view_s, view_w = None, None, None, None
+    view_key_list = ['View_N', 'View_E', 'View_S', 'View_W']
+    value_list = [view_n, view_e, view_s, view_w]
+    for i, key in enumerate(view_key_list):
+        view_values = [d[key] for d in all_details]
+        if 1 in view_values:
+            value_list[i] = 1
+        elif 0 in view_values:
+            value_list[i] = 0
+        else:
+            value_list[i] = None
+    view_n, view_e, view_s, view_w = value_list 
+    
+    # --- 4. ส่งค่ากลับ ---
+    return {
+        'Virtual_Name': combined_name,
+        'Building_ID': building_id,
+        'Size': combined_size,
+        'Price': weighted_price,
+        'Available_Date': available_date_latest,
+        'Min_Divide_Size': specs['Min_Divide_Size'],
+        'Floor_Replacement': replace_specs['Floor_Replacement'],
+        'View_N': view_n,
+        'View_E': view_e,
+        'View_S': view_s,
+        'View_W': view_w,
+        'Ceiling_Dropped': specs['Ceiling_Dropped'],
+        'Furnish_Condition': furnish,
+        'Ceiling_Full_Structure': specs['Ceiling_Full_Structure'],
+        'Ceiling_Replacement': replace_specs['Ceiling_Replacement'],
+        'Column_InUnit': replace_specs['Column_InUnit'],
+        'AC_Split_Type': replace_specs['AC_Split_Type'],
+        'Pantry_InUnit': replace_specs['Pantry_InUnit'],
+        'Bathroom_InUnit': replace_specs['Bathroom_InUnit'],
+        'Rent_Term': specs['Rent_Term'],
+        'Rent_Deposit': specs['Rent_Deposit'],
+        'Rent_Advance': specs['Rent_Advance']
+    }
+
+def _is_subgraph_connected(nodes: tuple, full_graph: dict) -> bool:
+    """
+    Helper: เช็คว่ากลุ่มของ Node (nodes) เชื่อมต่อกันเองหรือไม่
+    โดยใช้เส้นทางที่มีอยู่ใน full_graph
+    """
+    if not nodes: return False
+    if len(nodes) == 1: return True
+    
+    # แปลง nodes เป็น set เพื่อให้ค้นหาเร็ว
+    node_set = set(nodes)
+    start_node = nodes[0]
+    
+    # ใช้ BFS/DFS เดินจากจุดแรก
+    # แต่เดินไปหาได้ "เฉพาะเพื่อนที่อยู่ใน node_set" เท่านั้น
+    visited = set()
+    stack = [start_node]
+    visited.add(start_node)
+    count = 0
+    
+    while stack:
+        curr = stack.pop()
+        count += 1
+        
+        # ดูเพื่อนของ curr ในกราฟใหญ่
+        for neighbor in full_graph[curr]:
+            # เงื่อนไขสำคัญ: เพื่อนต้องอยู่ในกลุ่ม node_set ที่เราสนใจ
+            if neighbor in node_set and neighbor not in visited:
+                visited.add(neighbor)
+                stack.append(neighbor)
+    
+    # ถ้าจำนวนที่เดินไปถึง เท่ากับ จำนวนทั้งหมดในกลุ่ม -> แสดงว่าเชื่อมถึงกันหมด
+    return count == len(nodes)
+
+def get_furnish_index(furnish: str) -> Optional[int]:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        if furnish == None:
+            return 2
+        cur.execute("""select Furnish_Condition + 0 as Furnish_Index from office_unit where Furnish_Condition = %s limit 1""", (furnish,))
+        row = cur.fetchone()
+        return row['Furnish_Index']
+    finally:
+        cur.close()
+        conn.close()
+
 # ----------------------------------------------------- INSERT --------------------------------------------------------------------------------------------
 @router.post("/insert", status_code=201)
 def insert_office_unit_and_return_full_record(
@@ -198,9 +509,11 @@ def insert_office_unit_and_return_full_record(
     Rent_Term: str = Form(None),
     Rent_Deposit: str = Form(None),
     Rent_Advance: str = Form(None),
+    Unit_Description: str = Form(None),
     User_ID: int = Form(...),         # <- DB เป็น INT
     Created_By: int = Form(...),          # <- DB เป็น INT
-    Last_Updated_By: int = Form(...),     # <- DB เป็น INT   
+    Last_Updated_By: int = Form(...),     # <- DB เป็น INT
+    Virtual_Room: str = Form(None),
     _ = Depends(get_current_user),
 ):
     try:
@@ -228,35 +541,67 @@ def insert_office_unit_and_return_full_record(
         Column_InUnit = None if not Column_InUnit else int(Column_InUnit)
         AC_Split_Type = None if not AC_Split_Type else int(AC_Split_Type)
         Pantry_InUnit = None if not Pantry_InUnit else int(Pantry_InUnit)
+        Unit_Description = Unit_Description if Unit_Description else None
     except ValueError:
         return to_problem(422, "Validation Error", "Invalid number format for a numeric field.")
     
     try:
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(dictionary=True)
         sql = f"""
             INSERT INTO {TABLE}
             (Building_ID, Unit_NO, Rent_Price, Size, Unit_Status, Available, Furnish_Condition, Combine_Divide, Min_Divide_Size, Floor_Zone
             , Floor, Floor_Replacement, View_N, View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit
-            , AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Created_By, Last_Updated_By)
+            , AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, Unit_Description, User_ID, Created_By, Last_Updated_By)
             VALUES (%s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
             , %s, %s, %s, %s, %s
-            , %s, %s, %s, %s)
+            , %s, %s, %s, %s, %s)
         """
         cur.execute(sql, (
             Building, Unit_NO, Rent_Price, Size, Unit_Status, Available, Furnish_Condition, Combine_Divide, Min_Divide_Size, Floor_Zone
             , Floor, Floor_Replacement, View_N, View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit
-            , AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, User_ID, Created_By, Last_Updated_By
+            , AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term, Rent_Deposit, Rent_Advance, Unit_Description, User_ID, Created_By, Last_Updated_By
         ))
-        conn.commit()
         new_id = cur.lastrowid
+        
+        furnish_index = get_furnish_index(Furnish_Condition)
+        if Virtual_Room:
+            new_unit_data = {
+            'Unit_ID': new_id,
+            'Unit_NO': Unit_NO,
+            'Building_ID': Building,
+            'Size': Size if Size is not None else 0.0,
+            'Rent_Price': Rent_Price if Rent_Price is not None else 0.0,
+            'Available_Date': Available.date() if Available is not None else None,
+            'Min_Divide_Size': Min_Divide_Size if Min_Divide_Size is not None else 0.0,
+            'Floor_Replacement': Floor_Replacement,
+            'View_N': View_N,
+            'View_E': View_E,
+            'View_S': View_S,
+            'View_W': View_W,
+            'Ceiling_Dropped': Ceiling_Dropped if Ceiling_Dropped is not None else 0.0,
+            'Furnish_Condition': furnish_index,
+            'Ceiling_Full_Structure': Ceiling_Full_Structure if Ceiling_Full_Structure is not None else 0.0,
+            'Ceiling_Replacement': Ceiling_Replacement,
+            'Column_InUnit': Column_InUnit,
+            'AC_Split_Type': AC_Split_Type,
+            'Pantry_InUnit': Pantry_InUnit,
+            'Bathroom_InUnit': Bathroom_InUnit,
+            'Rent_Term': Rent_Term if Rent_Term is not None else 0,
+            'Rent_Deposit': Rent_Deposit if Rent_Deposit is not None else 0,
+            'Rent_Advance': Rent_Advance if Rent_Advance is not None else 0
+            }
+            _process_virtual_room_additive(cur=cur,new_unit_data=new_unit_data,virtual_room_str=Virtual_Room, created_by=Created_By, work_state='create')
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Insert failed: {e}")
+    finally:
         cur.close()
         conn.close()
-    except Exception as e:
-        return to_problem(409, "Conflict", f"Insert failed: {e}")
 
     row = _select_full_office_unit_item(new_id)
     if not row:
@@ -297,8 +642,10 @@ def update_office_unit_and_return_full_record(
     Rent_Term: str = Form(None),
     Rent_Deposit: str = Form(None),
     Rent_Advance: str = Form(None),
+    Unit_Description: str = Form(None),
     User_ID: int = Form(...),         # <- DB เป็น INT
     Last_Updated_By: int = Form(...),     # <- DB เป็น INT  
+    Virtual_Room: str = Form(None),
     if_match: Optional[str] = Header(None, alias="If-Match"),
     _ = Depends(get_current_user),
 ):
@@ -327,6 +674,7 @@ def update_office_unit_and_return_full_record(
         Column_InUnit = None if not Column_InUnit else int(Column_InUnit)
         AC_Split_Type = None if not AC_Split_Type else int(AC_Split_Type)
         Pantry_InUnit = None if not Pantry_InUnit else int(Pantry_InUnit)
+        Unit_Description = Unit_Description if Unit_Description else None
     except ValueError:
         return to_problem(422, "Validation Error", "Invalid number format for a numeric field.")
 
@@ -341,7 +689,7 @@ def update_office_unit_and_return_full_record(
                             detail="ETag mismatch. Please GET latest and retry with If-Match.")
     
         conn = get_db()
-        cur = conn.cursor()
+        cur = conn.cursor(dictionary=True)
         sql = f"""
             UPDATE {TABLE}
             SET Building_ID=%s,
@@ -368,6 +716,7 @@ def update_office_unit_and_return_full_record(
                 Rent_Term=%s,
                 Rent_Deposit=%s,
                 Rent_Advance=%s,
+                Unit_Description=%s,
                 Available=%s,
                 User_ID=%s,
                 Unit_Status=%s,
@@ -378,23 +727,53 @@ def update_office_unit_and_return_full_record(
         cur.execute(sql, (
             Building, Unit_NO, Rent_Price, Size, Furnish_Condition, Combine_Divide, Min_Divide_Size, Floor_Zone, Floor, Floor_Replacement, View_N
             , View_E, View_S, View_W, Ceiling_Dropped, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit, AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term
-            , Rent_Deposit, Rent_Advance, Available, User_ID, Unit_Status, Last_Updated_By, Unit_ID
-        ))
-        conn.commit()
+            , Rent_Deposit, Rent_Advance, Unit_Description, Available, User_ID, Unit_Status, Last_Updated_By, Unit_ID))
         
         if Unit_Status == "1":
             sql = f"""UPDATE office_unit_image SET Image_Status='1' WHERE Unit_ID=%s"""
             cur.execute(sql, (Unit_ID,))
-            conn.commit()
         
-        cur.close()
-        conn.close()
+        furnish_index = get_furnish_index(Furnish_Condition)
+        new_unit_data = {
+            'Unit_ID': Unit_ID,
+            'Unit_NO': Unit_NO,
+            'Building_ID': Building,
+            'Size': Size if Size is not None else 0.0,
+            'Rent_Price': Rent_Price if Rent_Price is not None else 0.0,
+            'Available_Date': Available.date() if Available is not None else None,
+            'Min_Divide_Size': Min_Divide_Size if Min_Divide_Size is not None else 0.0,
+            'Floor_Replacement': Floor_Replacement,
+            'View_N': View_N,
+            'View_E': View_E,
+            'View_S': View_S,
+            'View_W': View_W,
+            'Ceiling_Dropped': Ceiling_Dropped if Ceiling_Dropped is not None else 0.0,
+            'Furnish_Condition': furnish_index,
+            'Ceiling_Full_Structure': Ceiling_Full_Structure if Ceiling_Full_Structure is not None else 0.0,
+            'Ceiling_Replacement': Ceiling_Replacement,
+            'Column_InUnit': Column_InUnit,
+            'AC_Split_Type': AC_Split_Type,
+            'Pantry_InUnit': Pantry_InUnit,
+            'Bathroom_InUnit': Bathroom_InUnit,
+            'Rent_Term': Rent_Term if Rent_Term is not None else 0,
+            'Rent_Deposit': Rent_Deposit if Rent_Deposit is not None else 0,
+            'Rent_Advance': Rent_Advance if Rent_Advance is not None else 0
+            }
+        if Virtual_Room and Unit_Status == "1":
+            _process_virtual_room_additive(cur=cur,new_unit_data=new_unit_data,virtual_room_str=Virtual_Room, created_by=Last_Updated_By, work_state='update')
+        if Unit_Status != "1" or not Virtual_Room:
+            _process_virtual_room_additive(cur=cur,new_unit_data=new_unit_data,virtual_room_str=None, created_by=None, work_state='delete')
+        
+        conn.commit()
     except HTTPException as he:
     # สำคัญ: ส่ง 404/412 ออกไปตรง ๆ
         raise he
-
     except Exception as e:
+        conn.rollback()
         return to_problem(409, "Conflict", f"Update failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
     row = _select_full(Unit_ID)
     return apply_etag_and_return(response, row)
@@ -406,19 +785,27 @@ def delete_office_unit(
     Unit_ID: int,
     _ = Depends(get_current_user),
 ):
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(f"UPDATE {TABLE} SET Unit_Status='2' WHERE Unit_ID=%s", (Unit_ID,))
-    affected = cur.rowcount
-    conn.commit()
-    
-    cur.execute(f"SELECT Unit_Image_ID FROM office_unit_image WHERE Unit_ID=%s", (Unit_ID,))
-    rows = cur.fetchall()
-    for row in rows:
-        _delete_unit_image(row[0], "Delete_Unit")
-    
-    cur.close()
-    conn.close()
+    try:
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        cur.execute(f"UPDATE {TABLE} SET Unit_Status='2' WHERE Unit_ID=%s", (Unit_ID,))
+        affected = cur.rowcount
+        conn.commit()
+        
+        cur.execute(f"SELECT Unit_Image_ID FROM office_unit_image WHERE Unit_ID=%s", (Unit_ID,))
+        rows = cur.fetchall()
+        for row in rows:
+            _delete_unit_image(row['Unit_Image_ID'], "Delete_Unit")
+        
+        new_unit_data = {'Unit_ID': Unit_ID}
+        _process_virtual_room_additive(cur=cur,new_unit_data=new_unit_data,virtual_room_str=None, created_by=None, work_state='delete')
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Delete failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
 
     if affected == 0:
         # 404 แบบ problem+json
@@ -659,3 +1046,127 @@ def select_all_office_unit_images(
     finally:
         cur.close()
         conn.close()
+
+# ====================== SELECT ALL unit_adjacency ======================
+@router.put("/select/unit_adjacency/all", status_code=200)
+@router.post("/select/unit_adjacency/all", status_code=200)
+def select_all_unit_adjacency(
+    Floor: str = Form(...),
+    Building: str = Form(...),
+    State: str = Form(...),
+    Unit_ID: str = Form(None),
+    _ = Depends(get_current_user),
+):
+    try:
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        
+        Floor = None if not Floor else int(Floor)
+        Building = None if not Building else int(Building)
+        Unit_ID = None if not Unit_ID else int(Unit_ID)
+        
+        checked_unit_ids = set()
+        
+        if State == 'update':
+            virtual_room_query = """
+                SELECT Virtual_ID 
+                FROM office_unit_virtual_room_mapping
+                WHERE Unit_ID = %s"""
+            cur.execute(virtual_room_query, (Unit_ID,))
+            virtual_room_row = cur.fetchall()
+
+            if virtual_room_row:
+                virtual_ids = [r['Virtual_ID'] for r in virtual_room_row]
+                placeholders = ', '.join(['%s'] * len(virtual_ids))
+                select_max_query = f"""
+                                    SELECT Virtual_ID
+                                    FROM office_unit_virtual_room_mapping
+                                    WHERE Virtual_ID IN ({placeholders})
+                                    GROUP BY Virtual_ID
+                                    ORDER BY COUNT(*) DESC
+                                    LIMIT 1"""
+                cur.execute(select_max_query, tuple(virtual_ids))
+                best_room = cur.fetchone()
+                
+                ids_query = "SELECT Unit_ID FROM office_unit_virtual_room_mapping WHERE Virtual_ID = %s"
+                cur.execute(ids_query, (best_room['Virtual_ID'],))
+                checked_unit_ids = {row['Unit_ID'] for row in cur.fetchall()}
+
+        base_query = """
+            SELECT Unit_ID, Unit_NO 
+            FROM office_unit
+            WHERE Building_ID = %s AND Floor = %s 
+            AND Unit_Status = '1' AND Combine_Divide = 1"""
+        params = [Building, Floor]
+
+        if State == 'update':
+            base_query += " AND Unit_ID != %s"
+            params.append(Unit_ID)
+
+        cur.execute(base_query, tuple(params))
+        adjacency_rows = cur.fetchall()
+
+        for unit in adjacency_rows:
+            unit['Check'] = 1 if unit['Unit_ID'] in checked_unit_ids else 0
+
+        return adjacency_rows
+
+    finally:
+        cur.close()
+        conn.close()
+        
+        
+#@router.put("/select/unit_adjacency/all", status_code=200)
+#@router.post("/select/unit_adjacency/all", status_code=200)
+#def select_all_unit_adjacency(
+#    Floor: int,
+#    BUilding: int,
+#    State: str,
+#    Unit_ID: Optional[int] = None,
+#    _ = Depends(get_current_user),
+#):
+#    try:
+#        conn = get_db()
+#        cur = conn.cursor(dictionary=True)
+#        
+#        if state == 'update':
+#            virtual_room_mapping = """SELECT Virtual_ID, COUNT(*) as Total_Rows
+#                                        FROM office_unit_virtual_room_mapping
+#                                        WHERE Virtual_ID IN (
+#                                            SELECT Virtual_ID
+#                                            FROM office_unit_virtual_room_mapping
+#                                            WHERE Unit_ID = %s)
+#                                        GROUP BY Virtual_ID
+#                                        ORDER BY Total_Rows DESC
+#                                        LIMIT 1"""
+#            cur.execute(virtual_room_mapping, (Unit_ID,))
+#            virtual_room_row = cur.fetchone()
+#            
+#            unit_in_virtual_room_row_list= []
+#            if virtual_room_row:
+#                unit_in_virtual_room = """SELECT Unit_ID FROM `office_unit_virtual_room_mapping` where Virtual_ID = %s"""
+#                cur.execute(unit_in_virtual_room, (virtual_room_row['Virtual_ID'],))
+#                unit_in_virtual_room_row = cur.fetchall()
+#                unit_in_virtual_room_row_list = [unit['Unit_ID'] for unit in unit_in_virtual_room_row]
+#            
+#            base_unit = """SELECT Building_ID, Floor FROM office_unit
+#                            WHERE Unit_ID = %s"""
+#            cur.execute(base_unit, (Unit_ID,))
+#            row = cur.fetchone()
+#            
+#            adjacency_unit_query = """select Unit_ID, Unit_NO from office_unit
+#                                        where Building_ID = %s and Floor = %s 
+#                                        and Unit_Status = '1' and Combine_Divide = 1
+#                                        and Unit_ID != %s"""
+#            cur.execute(adjacency_unit_query, (row["Building_ID"], row["Floor"], Unit_ID))
+#            adjacency_rows = cur.fetchall()
+#            for unit in adjacency_rows:
+#                if unit['Unit_ID'] not in unit_in_virtual_room_row_list:
+#                    unit['Check'] = 0
+#                else:
+#                    unit['Check'] = 1
+#            
+#            return adjacency_rows
+#    finally:
+#        cur.close()
+#        conn.close()
