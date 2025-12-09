@@ -25,6 +25,11 @@
 -- office_unit_highlight
 -- real_place_bank
 -- real_place_convenience_store
+-- login_logs
+-- office_project_youtube
+-- office_unit_adjacency
+-- office_unit_virtual_room
+-- office_unit_virtual_room_mapping
 
 
 -- -----------------------------------------------------
@@ -208,12 +213,14 @@ CREATE TABLE IF NOT EXISTS office_unit (
     Min_Divide_Size FLOAT NULL,
     Floor_Zone VARCHAR(20) NULL,
     Floor VARCHAR(20) NULL,
+    Floor_Replacement BOOLEAN NULL,
     View_N BOOLEAN NULL,
     View_E BOOLEAN NULL,
     View_S BOOLEAN NULL,
     View_W BOOLEAN NULL,
     Ceiling_Dropped FLOAT NULL,
     Ceiling_Full_Structure FLOAT NULL,
+    Ceiling_Replacement BOOLEAN NULL,
     Column_InUnit BOOLEAN NULL,
     AC_Split_Type BOOLEAN NULL,
     Pantry_InUnit BOOLEAN NULL,
@@ -706,4 +713,104 @@ CREATE TABLE IF NOT EXISTS real_place_convenience_store (
     PRIMARY KEY (Store_ID),
     INDEX store_lat (Place_Latitude),
     INDEX store_long (Place_Longitude))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table login_logs
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS login_logs (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    User_ID INT UNSIGNED NULL,
+    User_User_Name VARCHAR(50) NULL,
+    Login_Status ENUM('success', 'failed'),
+    Failure_Reason TEXT NULL,
+    IP_Address VARCHAR(50) NOT NULL,
+    User_Agent TEXT NULL,
+    Created_DateTime TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (ID),
+    INDEX login_logs_user (User_ID),
+    INDEX login_logs_date (Created_DateTime))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table office_project_youtube
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_project_youtube (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Project_ID INT UNSIGNED NOT NULL,
+    Youtube_URL TEXT NOT NULL,
+    Publish_Date DATE NOT NULL,
+    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (ID),
+    INDEX youtube_admin1 (Created_By),
+    INDEX youtube_admin2 (Last_Updated_By),
+    INDEX proj_youtube (Project_ID),
+    CONSTRAINT youtube_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
+    CONSTRAINT youtube_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID),
+    CONSTRAINT proj_youtube FOREIGN KEY (Project_ID) REFERENCES office_project(Project_ID))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table office_unit_adjacency
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_unit_adjacency (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Unit_ID_A INT UNSIGNED NULL,
+    Unit_ID_B INT UNSIGNED NULL,
+    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (ID),
+    INDEX unit_adja (Unit_ID_A),
+    INDEX unit_adjb (Unit_ID_B),
+    INDEX unit_adj_admin1 (Created_By),
+    CONSTRAINT unit_adja FOREIGN KEY (Unit_ID_A) REFERENCES office_unit(Unit_ID),
+    CONSTRAINT unit_adjb FOREIGN KEY (Unit_ID_B) REFERENCES office_unit(Unit_ID),
+    CONSTRAINT unit_adj_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table office_unit_virtual_room
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_unit_virtual_room (
+    Virtual_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Virtual_Name VARCHAR(100) NOT NULL,
+    Size FLOAT NOT NULL,
+    Rent_Price FLOAT NOT NULL,
+    Building_ID INT UNSIGNED NOT NULL,
+    Available_Date DATE NOT NULL,
+    Furnish_Condition ENUM('Furnished','Standard','As Is','Bareshell') NULL,
+    Min_Divide_Size FLOAT NULL,
+    Floor_Replacement BOOLEAN NULL,
+    View_N BOOLEAN NULL,
+    View_E BOOLEAN NULL,
+    View_S BOOLEAN NULL,
+    View_W BOOLEAN NULL,
+    Ceiling_Dropped FLOAT NULL,
+    Ceiling_Full_Structure FLOAT NULL,
+    Ceiling_Replacement BOOLEAN NULL,
+    Column_InUnit BOOLEAN NULL,
+    AC_Split_Type BOOLEAN NULL,
+    Pantry_InUnit BOOLEAN NULL,
+    Bathroom_InUnit BOOLEAN NULL,
+    Rent_Term SMALLINT UNSIGNED NULL,
+    Rent_Deposit SMALLINT UNSIGNED NULL,
+    Rent_Advance SMALLINT UNSIGNED NULL,
+    PRIMARY KEY (Virtual_ID)
+) ENGINE = InnoDB AUTO_INCREMENT = 100001;
+
+-- -----------------------------------------------------
+-- Table office_unit_virtual_room_mapping
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_unit_virtual_room_mapping (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Virtual_ID INT UNSIGNED NOT NULL,
+    Unit_ID INT UNSIGNED NOT NULL,
+    PRIMARY KEY (ID),
+    INDEX virtual_room_mapping (Virtual_ID),
+    INDEX unit_virtual_room_mapping (Unit_ID),
+    CONSTRAINT virtual_room_mapping FOREIGN KEY (Virtual_ID) REFERENCES office_unit_virtual_room(Virtual_ID),
+    CONSTRAINT unit_virtual_room_mapping FOREIGN KEY (Unit_ID) REFERENCES office_unit(Unit_ID))
 ENGINE = InnoDB;
