@@ -260,7 +260,7 @@ def project_template_data(
         if rent_price:
             rent_price = rent_price + ';บ./ตร.ม./ด.'
         else:
-            rent_price = 'N/A บ./ตร.ม./ด.'
+            rent_price = 'N/A;บ./ตร.ม./ด. (หากสนใจกรุณาติดต่อ)'
         info["Rent_Price"] = rent_price
         
         area_card_data = _get_project_template_area_card_data(Project_ID)
