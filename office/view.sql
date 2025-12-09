@@ -494,12 +494,12 @@ GROUP BY u.Unit_ID;
 -- view source_office_unit_carousel_recommend
 create or replace view source_office_unit_carousel_recommend as
 select u.Unit_ID
-    , concat_ws(' ',concat(format(u.Size,0),' ตร.ม.'), concat('ชั้น ', u.Floor)) as Title
+    , concat_ws(' ',concat('UNIT ', format(u.Size,0),' ตร.ม.'), concat('ชั้น ', u.Floor)) as Title
     , p.Name_EN as Project_Name
     , project_tag_used.Tags as Project_Tag_Used
     , project_tag_all.Tags as Project_Tag_All
     , ifnull(station.Station,express_way.Express_Way) as near_by
-    , concat(format(u.Rent_Price*u.Size,0), ' บ./ด.') as Rent_Price
+    , concat(format(round(u.Rent_Price*u.Size,-2),0), ' บ./ด.') as Rent_Price
     , concat(format(u.Size,0),' ตร.ม. X ', format(u.Rent_Price,0), ' บ./ตร.ม./ด.') as Rent_Price_Sqm
     , if(u.Rent_Price is not null,1,0) as Rent_Price_Status
     , p.Project_ID
@@ -696,9 +696,11 @@ select a.Project_ID
     , a.Latitude
     , a.Longitude
     , a.Last_Updated_Date
+    , ifnull(countunit.Pantry_InUnit,0) as Pantry_InUnit
+    , ifnull(countunit.Bathroom_InUnit,0) as Bathroom_InUnit
 from office_project a
 left join source_office_project_highlight_relationship highlight on a.Project_ID = highlight.Project_ID
-left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count
+left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count, max(u.Pantry_InUnit) as Pantry_InUnit , max(u.Bathroom_InUnit) as Bathroom_InUnit
             from office_project a
             left join office_building b on a.Project_ID = b.Project_ID
             left join office_unit u on b.Building_ID = u.Building_ID
