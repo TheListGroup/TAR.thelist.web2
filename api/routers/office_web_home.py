@@ -89,16 +89,23 @@ def get_projects_data_by_ids(cur, project_ids_tuple: tuple) -> list:
 
     placeholders = ','.join(['%s'] * len(project_ids_tuple))
     
-    card_query = f"""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Project_URL_Tag
-                        , Latitude, Longitude
-                    FROM source_office_project_carousel_recommend 
-                    WHERE Project_ID IN ({placeholders})"""
+    card_query = f"""SELECT a.Project_ID, a.Project_Name, a.Project_Tag_Used, a.Project_Tag_All, a.near_by, a.Highlight, a.Rent_Price, a.Project_URL_Tag
+                            , a.Latitude, a.Longitude, if(bts.Project_ID is not null,1,0) as BTS, if(mrt.Project_ID is not null,1,0) as MRT
+                            , if(express_way.Project_ID is not null,1,0) as Express_Way
+                            , if(b.Parking_Amount is not null and b.Parking_Amount > 0,1,0) as Parking
+                            , a.Pantry_InUnit, a.Bathroom_InUnit, ifnull(b.F_Food_Foodcourt,0) as Foodcourt
+                    FROM source_office_project_carousel_recommend a
+                    left join (select Project_ID from source_office_around_station where MTran_shortName = 'BTS' group by Project_ID) bts on a.Project_ID = bts.Project_ID
+                    left join (select Project_ID from source_office_around_station where MTran_shortName = 'MRT' group by Project_ID) mrt on a.Project_ID = mrt.Project_ID
+                    left join (select Project_ID from source_office_around_express_way group by Project_ID) express_way on a.Project_ID = express_way.Project_ID
+                    left join office_project b on a.Project_ID = b.Project_ID
+                    WHERE a.Project_ID IN ({placeholders})"""
     
     cur.execute(card_query, project_ids_tuple)
     projects_data = cur.fetchall()
     
     if projects_data:
-        images_by_project_id = get_all_project_carousel_images(project_ids_tuple)
+        images_by_project_id = get_all_project_carousel_images(project_ids_tuple, True)
         for project in projects_data:
             project["Carousel_Image"] = images_by_project_id.get(project["Project_ID"])
         return projects_data
@@ -106,7 +113,7 @@ def get_projects_data_by_ids(cur, project_ids_tuple: tuple) -> list:
         return []
 
 # ----------------------------------------------------- Recommand Unit Card --------------------------------------------------------------------------------------------
-@router.get("/recommand-card/{tags}", status_code=200)
+@router.get("/recommand-card-unit/{tags}", status_code=200)
 def recommand_card_data(
     tags: str,
     _ = Depends(get_current_user),
@@ -159,7 +166,7 @@ def recommand_card_data(
         unit_ids = [unit['Unit_ID'] for unit in final_units]
         project_ids = [unit['Project_ID'] for unit in final_units]
         
-        images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True)
+        images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True, True)
         
         for unit in final_units:
             unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
@@ -182,7 +189,7 @@ def recommand_project_card_data(
         
         if rows:
             project_ids = [project['Project_ID'] for project in rows]
-            images_by_project_id = get_all_project_carousel_images(project_ids)
+            images_by_project_id = get_all_project_carousel_images(project_ids, True)
             
             for project in rows:
                 project['Carousel_Image'] = images_by_project_id.get(project['Project_ID'])
@@ -215,12 +222,22 @@ def project_template_data(
         card_data = _get_project_card_data(Project_ID)
         fields = ["Project_Tag", "Near_By", "Project_Image_All", "Highlight"]
         card_values = card_data if card_data else [None] * 4
-        project_image_all = get_project_image(Project_ID)
+        project_image_all_400 = get_all_project_carousel_images([Project_ID], True)
+        if project_image_all_400 is not None:
+            image_400 = project_image_all_400.get(Project_ID)
+        else:
+            image_400 = None
+        project_image_all = get_all_project_carousel_images([Project_ID], False)
+        if project_image_all is not None:
+            image_all = project_image_all.get(Project_ID)
+        else:
+            image_all = None
 
         data.extend([
             {fields[0]: card_values[0]},
             {fields[1]: card_values[2]},
-            {fields[2]: project_image_all},
+            {fields[2] + '_400': image_400},
+            {fields[2]: image_all},
         ])
         
         youtube_url = _get_project_youtube(Project_ID)
@@ -243,7 +260,7 @@ def project_template_data(
         if rent_price:
             rent_price = rent_price + ';บ./ตร.ม./ด.'
         else:
-            rent_price = 'หากสนใจกรุณาติดต่อ'
+            rent_price = 'N/A บ./ตร.ม./ด.'
         info["Rent_Price"] = rent_price
         
         area_card_data = _get_project_template_area_card_data(Project_ID)
@@ -252,7 +269,7 @@ def project_template_data(
         if area:
             area = area + ';ตร.ม.'
         else:
-            area = 'หากสนใจกรุณาติดต่อ'
+            area = 'N/A;ตร.ม.'
         info["Area"] = area
         info["Near_By"] = card_values[2]
         data.append({"Info": info})
@@ -386,7 +403,10 @@ def project_template_data(
             floor_plan = None
         data.append({"Floor_Plan": floor_plan})
         
-        data.append({"Gallery": {fields[2]: project_image_all}})
+        gallery = {}
+        gallery[f"{fields[2]}_400"] = image_400
+        gallery[fields[2]] = image_all
+        data.append({"Gallery": gallery})
         
         unit_available = {}
         conn = get_db()
@@ -416,7 +436,7 @@ def project_template_data(
             project_data = rows[0]
             units = json.loads(project_data["Unit"])
             unit_id_set = [unit["Unit_ID"] for unit in units]
-            unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID], True)
+            unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID], True, True)
             for unit in units:
                 unit["Carousel_Image"] = unit_carousel_image.get(unit['Unit_ID'])
                 if 'near_by' in unit and unit['near_by'] is not None:
@@ -484,9 +504,9 @@ def project_template_data(
             carousel_rows = _get_project_carousel_data([row["Project_ID"] for row in rows], None, "carousel_around")
             if carousel_rows:
                 project_ids = [project['Project_ID'] for project in carousel_rows]
-                images_by_project_id = get_all_project_carousel_images(project_ids)
+                images_by_project_id = get_all_project_carousel_images(project_ids, True)
                 for project in carousel_rows:
-                    project['Carousel_Image'] = images_by_project_id.get(project['Project_ID'])
+                    project['Carousel_Image'] = images_by_project_id.get(project['Project_ID']) if images_by_project_id else None
                 project_around['Near_Project'] = carousel_rows
                 data.append(project_around)
         else:
@@ -531,17 +551,24 @@ def unit_template_data(
         
         unit_info = get_unit_info_card(Unit_ID)
         
-        building_name = unit_info["Building_Name"]
-        if not building_name:
-            data.append({"Building_Name": None})
-        else:
-            data.append({"Building_Name": 'อาคาร ' + building_name})
+        project_tag = unit_info["Project_Tag_Used"]
+        data.append({"Project_Tag": project_tag})
         
-        images_by_unit_id = get_all_unit_carousel_images([Unit_ID], [project_data["Project_ID"]], False)
-        if images_by_unit_id:
-            data.append({"Unit_Image": images_by_unit_id.get(Unit_ID)})
+        Nearby = unit_info["Nearby"]
+        data.append({"Nearby": Nearby})
+        
+        images_by_unit_id_400 = get_all_unit_carousel_images([Unit_ID], [project_data["Project_ID"]], False, True)
+        if images_by_unit_id_400 is not None:
+            image_400 = images_by_unit_id_400.get(Unit_ID)
         else:
-            data.append({"Unit_Image": None})
+            image_400 = None
+        images_by_unit_id = get_all_unit_carousel_images([Unit_ID], [project_data["Project_ID"]], False, False)
+        if images_by_unit_id is not None:
+            image_all = images_by_unit_id.get(Unit_ID)
+        else:
+            image_all = None
+        data.append({"Unit_Image_400": image_400})
+        data.append({"Unit_Image": image_all})
         
         overall = {}
         if unit_data["Unit_Description"]:
@@ -573,7 +600,7 @@ def unit_template_data(
         
         factsheet = {}
         factsheet["Unit_Name"] = "ห้อง " + unit_name
-        factsheet["Building_Name"] = building_name
+        factsheet["Building_Name"] = unit_info["Building_Name"]
         factsheet["Project_Name"] = project_name
         if unit_data["Floor"]:
             factsheet["Floor"] = "ชั้น " + unit_data["Floor"]
@@ -595,7 +622,7 @@ def unit_template_data(
         
         rent_price = unit_data["Rent_Price"]
         if rent_price:
-            factsheet["Rent_Price"] = str('{:,.0f}'.format((rent_price*unit_data["Size"]))) + ";บ./ด."
+            factsheet["Rent_Price"] = str('{:,.0f}'.format(round(rent_price*unit_data["Size"],-2))) + ";บ./ด."
             if unit_data["Size"]:
                 rent_price_avg = rent_price
                 factsheet["Rent_Price_Avg"] = str('{:,.0f}'.format(rent_price_avg)) + ";บ./ตร.ม./ด."
@@ -708,11 +735,10 @@ def unit_template_data(
         factsheet["Amenities"] = amenities_list
         data.append({"Factsheet": factsheet})
         
-        images_by_unit_id = get_all_unit_carousel_images([Unit_ID], [project_data["Project_ID"]], False)
-        if images_by_unit_id:
-            data.append({"Gallery": images_by_unit_id.get(Unit_ID)})
-        else:
-            data.append({"Gallery": None})
+        gallery = {}
+        gallery["Unit_Image_400"] = image_400
+        gallery["Unit_Image"] = image_all
+        data.append({"Gallery": gallery})
         
         location = {}
         station = get_project_station(project_data["Project_ID"])
@@ -778,7 +804,7 @@ def unit_template_data(
             if rows:
                 unit_ids = [unit['Unit_ID'] for unit in rows]
                 project_ids = [unit['Project_ID'] for unit in rows]
-                images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True)
+                images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True, True)
                 
                 for unit in rows:
                     unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
@@ -875,10 +901,12 @@ def map_result(
                         sub_district_codes.append(location)
                 if district_codes:
                     ids_from_districts = location_manage("District_ID", district_codes)
-                    all_project_ids.update(ids_from_districts)
+                    if ids_from_districts:
+                        all_project_ids.update(ids_from_districts)
                 if sub_district_codes:
                     ids_from_sub_districts = location_manage("SubDistrict_ID", sub_district_codes)
-                    all_project_ids.update(ids_from_sub_districts)
+                    if ids_from_sub_districts:
+                        all_project_ids.update(ids_from_sub_districts)
         
         if not all_project_ids:
             return []

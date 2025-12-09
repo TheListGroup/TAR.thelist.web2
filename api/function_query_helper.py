@@ -839,65 +839,90 @@ def get_project_image(ref_id: int) -> str:
         cur.close()
         conn.close()
 
-def get_all_unit_carousel_images(unit_ids: list, project_ids: list, use_carousel_logic: bool = True) -> dict:
+def get_all_unit_carousel_images(unit_ids: list, project_ids: list, use_carousel_logic: bool = True, custom_resize: bool = None) -> dict:
     conn = get_db()
     cur = conn.cursor(dictionary=True)
     unit_placeholders = ', '.join(['%s'] * len(unit_ids))
     project_placeholders = ', '.join(['%s'] * len(project_ids))
     
+    filter_mode = 1 if use_carousel_logic else 0
+    if custom_resize is not None:
+        resize_mode = 1 if custom_resize else 0
+    else:
+        resize_mode = filter_mode
+    
     try:
-        cur.execute("SET @use_carousel_logic = %s", (use_carousel_logic,))
+        cur.execute("SET @filter_mode = %s", (filter_mode,))
+        cur.execute("SET @resize_mode = %s", (resize_mode,))
         sql_query = f"""
         WITH ProcessedImages AS (
-        SELECT
-            CASE 
-                WHEN img.Image_Type = 'Unit_Image' THEN img.Ref_ID
-                ELSE map.Unit_ID
-            END AS Owning_Unit_ID,
-
-            CASE
-                WHEN @use_carousel_logic = 0 THEN img.Image_URL
-                WHEN @use_carousel_logic = 1 AND img.Image_Type = 'Cover_Project'
-                THEN REPLACE(
-                        REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'),
-                        SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1),
-                        LPAD(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1) AS UNSIGNED) + 2, LENGTH(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1)), '0')
-                    )
-                ELSE REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400')
-            END AS Modified_Image_URL,
-
-            CASE
-                WHEN @use_carousel_logic = 1 AND img.Image_Type = 'Cover_Project' 
-                THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
-                ELSE img.Image_ID
-            END AS Modified_Image_ID,
-
-            img.Image_Name, img.Category_Order, img.Display_Order, img.Image_Type,
-            img.Category_ID,
-
-            SUM(CASE WHEN img.Image_Type = 'Unit_Image' THEN 1 ELSE 0 END) OVER (PARTITION BY 
+            SELECT
                 CASE 
                     WHEN img.Image_Type = 'Unit_Image' THEN img.Ref_ID
                     ELSE map.Unit_ID
-                END
-            ) AS unit_image_count
-        FROM
-            source_office_image_all AS img
-        LEFT JOIN 
-            (SELECT DISTINCT Unit_ID, Project_ID FROM source_office_unit_carousel_recommend WHERE Unit_ID in ({unit_placeholders})) AS map
-            ON img.Ref_ID = map.Project_ID AND img.Image_Type IN ('Project_Image', 'Cover_Project')
-        WHERE
-            (img.Image_Type = 'Unit_Image' AND img.Ref_ID IN ({unit_placeholders}))
-            OR
-            (img.Image_Type IN ('Project_Image', 'Cover_Project') AND img.Ref_ID IN ({project_placeholders}) AND img.Section <> 'Floor Plan')
+                END AS Owning_Unit_ID,
+
+                CASE
+                    WHEN @resize_mode = 0 THEN img.Image_URL                   
+                    WHEN @resize_mode = 1 AND img.Image_Type = 'Cover_Project'
+                    THEN REPLACE(
+                            REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'),
+                            SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1),
+                            LPAD(CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1) AS UNSIGNED) + 2, LENGTH(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1)), '0')
+                        )
+                    
+                    ELSE REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400')
+                END AS Modified_Image_URL,
+
+                CASE
+                    WHEN @resize_mode = 1 AND img.Image_Type = 'Cover_Project' 
+                    THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
+                    ELSE img.Image_ID
+                END AS Modified_Image_ID,
+
+                img.Image_Name, img.Category_Order, img.Display_Order, img.Image_Type,
+                img.Category_ID,
+
+                SUM(CASE WHEN img.Image_Type = 'Unit_Image' THEN 1 ELSE 0 END) OVER (PARTITION BY 
+                    CASE 
+                        WHEN img.Image_Type = 'Unit_Image' THEN img.Ref_ID
+                        ELSE map.Unit_ID
+                    END
+                ) AS unit_image_count
+            FROM
+                source_office_image_all AS img
+            LEFT JOIN 
+                (SELECT DISTINCT Unit_ID, Project_ID 
+                FROM source_office_unit_carousel_recommend
+                WHERE Unit_ID IN ({unit_placeholders})
+                ) AS map
+                ON img.Ref_ID = map.Project_ID AND img.Image_Type IN ('Project_Image', 'Cover_Project')
+            WHERE
+                (img.Image_Type = 'Unit_Image' AND img.Ref_ID IN ({unit_placeholders}))
+                OR
+                (img.Image_Type IN ('Project_Image', 'Cover_Project') AND img.Ref_ID IN ({project_placeholders}) AND img.Section <> 'Floor Plan')
         ),
         FilteredImages AS (
             SELECT *
             FROM ProcessedImages
             WHERE 
-                (@use_carousel_logic = 1 AND ((unit_image_count > 0 AND (Image_Type IN ('Unit_Image', 'Cover_Project') OR (Image_Type = 'Project_Image' AND Category_ID <> 9)))
-                OR (unit_image_count = 0 AND Image_Type IN ('Project_Image', 'Cover_Project'))))
-            OR (@use_carousel_logic = 0 AND (Image_Type IN ('Unit_Image', 'Cover_Project') OR (unit_image_count = 0 AND Image_Type = 'Project_Image' AND Category_ID = 9)))
+                -- CAROUSEL FILTER (@filter_mode = 1)
+                (@filter_mode = 1 AND (
+                    (unit_image_count > 0 AND (
+                        Image_Type IN ('Unit_Image', 'Cover_Project') 
+                        OR (Image_Type = 'Project_Image' AND Category_ID <> 9)))
+                    OR
+                    (unit_image_count = 0 AND Image_Type <> 'Unit_Image')))
+                
+                OR
+                
+                -- TEMPLATE FILTER (@filter_mode = 0)
+                (@filter_mode = 0 AND (
+                    (unit_image_count > 0 AND Image_Type IN ('Unit_Image', 'Cover_Project'))
+                    OR
+                    (unit_image_count = 0 AND (
+                        Image_Type = 'Cover_Project' 
+                        OR (Image_Type = 'Project_Image' AND Category_ID = 9)))))
         )
         SELECT 
             Owning_Unit_ID,
@@ -907,7 +932,7 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list, use_carousel
                 'Category_Order', Category_Order,
                 'Display_Order', Display_Order,
                 'Image_URL', Modified_Image_URL,
-                'Image_Type',   CASE 
+                'Image_Type',  CASE 
                                     WHEN Image_Type <> 'Unit_Image' AND Category_ID = 9 THEN 'Unit_Image' 
                                     ELSE Image_Type 
                                 END
@@ -919,7 +944,9 @@ def get_all_unit_carousel_images(unit_ids: list, project_ids: list, use_carousel
         params = tuple(unit_ids) + tuple(unit_ids) + tuple(project_ids)
         cur.execute(sql_query, params)
         rows = cur.fetchall()
-        return {row['Owning_Unit_ID']: row['Image_Set'] for row in rows}
+        if rows:
+            return {row['Owning_Unit_ID']: row['Image_Set'] for row in rows}
+        return None
     finally:
         cur.close()
         conn.close()
@@ -1159,12 +1186,15 @@ def get_unit_info_card(unit_id: int) -> Optional[str]:
         cur2.execute(
             f"""SELECT
                     /* a.Unit_ID
-                    ,*/ concat(format(a.Rent_Price, 0), ';บ./ตร.ม./ด.') as Rent_Price
-                    , concat(format(a.Size, 0), ';ตร.ม.') as Unit_Size
+                    ,*/ 
+                    concat(format(a.Size, 0), ';ตร.ม.') as Unit_Size
                     , if(d.building > 1, b.Building_Name, NULL) as Building_Name
                     , c.Name_EN as Project_Name
                     , e.Highlight as Highlight
                     , e.near_by as Nearby
+                    , concat(format(round(a.Rent_Price*a.Size,-2),0), ';บ./ด.') as Rent_Price
+                    , concat(format(a.Size,0),';ตร.ม. X ', format(a.Rent_Price,0), ';บ./ตร.ม./ด.') as Rent_Price_Sqm
+                    , e.Project_Tag_Used as Project_Tag_Used
                 FROM office_unit a
                 join office_building b on a.Building_ID = b.Building_ID
                 join office_project c on b.Project_ID = c.Project_ID
@@ -1331,19 +1361,21 @@ def get_search_project(Text: str) -> dict:
         cur.close()
         conn.close()
 
-def get_all_project_carousel_images(project_ids: list) -> dict:
+def get_all_project_carousel_images(project_ids: list, use_carousel_logic: bool = True) -> dict:
     conn = get_db()
     cur = conn.cursor(dictionary=True)
     project_placeholders = ', '.join(['%s'] * len(project_ids))
     
     try:
+        cur.execute("SET @use_carousel_logic = %s", (use_carousel_logic,))
         sql_query = f"""
         WITH ProcessedImages AS (
         SELECT
 				img.Ref_ID AS Owning_Project_ID,
 
             CASE
-                WHEN img.Image_Type = 'Cover_Project'
+                WHEN @use_carousel_logic = 0 THEN img.Image_URL
+                WHEN @use_carousel_logic = 1 AND img.Image_Type = 'Cover_Project'
                 THEN REPLACE(
                         REGEXP_REPLACE(img.Image_URL, '-H-\\\\d+', '-H-400'),
                         SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-', 1),
@@ -1353,7 +1385,8 @@ def get_all_project_carousel_images(project_ids: list) -> dict:
             END AS Modified_Image_URL,
 
             CASE
-                WHEN img.Image_Type = 'Cover_Project' THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
+                WHEN @use_carousel_logic = 1 AND img.Image_Type = 'Cover_Project' 
+                THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(img.Image_URL, '/', -1), '-H', 1) AS UNSIGNED) + 2
                 ELSE img.Image_ID
             END AS Modified_Image_ID,
 
@@ -1381,7 +1414,9 @@ def get_all_project_carousel_images(project_ids: list) -> dict:
         params = tuple(project_ids)
         cur.execute(sql_query, params)
         rows = cur.fetchall()
-        return {row['Owning_Project_ID']: row['Image_Set'] for row in rows}
+        if rows:
+            return {row['Owning_Project_ID']: row['Image_Set'] for row in rows}
+        return None
     finally:
         cur.close()
         conn.close()
