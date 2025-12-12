@@ -1057,7 +1057,7 @@ select a.Unit_ID
         , if(a.Bathroom_InUnit = 1, 'Y', 'N') as 'Bathroom_InUnit'
         , if(a.Ceiling_Dropped >= 3, 'Y', 'N') as 'Ceiling'
         , if((ifnull(a.View_N,0) + ifnull(a.View_E,0) + ifnull(a.View_S,0) + ifnull(a.View_W,0)) >= 2, 'Y', 'N') as 'Multiview'
-        , if(a.Column_InUnit = 1, 'Y', 'N') as 'Column_Free'
+        , if(a.Column_InUnit = 0, 'Y', 'N') as 'Column_Free'
         , if(a.Available <= CURRENT_DATE, 'Y', 'N') as 'Available'
         , if(a.AC_Split_Type = 1, 'Y', 'N') as 'AC_Split_Type'
 from office_unit a
