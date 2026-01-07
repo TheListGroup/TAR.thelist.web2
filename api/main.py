@@ -7,6 +7,7 @@ from routers.office_admin_and_leasing_user import router as office_admin_and_lea
 from routers.office_project import router as office_project_router
 from routers.office_building import router as office_building_router
 from routers.office_web_home import router as office_web_home_router
+from routers.office_questionnaire import router as office_questionnaire_router
 import os
 
 ROOT_PATH = os.getenv("ROOT_PATH", "")  # เว้นว่างได้ถ้าเข้าตรงพอร์ต
@@ -29,3 +30,4 @@ app.include_router(office_admin_and_leasing_user_router, prefix="/office-admin-a
 app.include_router(office_project_router, prefix="/office-project", tags=["office_project"])
 app.include_router(office_building_router, prefix="/office-building", tags=["office_building"])
 app.include_router(office_web_home_router, prefix="/office-web-home", tags=["office_web_home"])
+app.include_router(office_questionnaire_router, prefix="/office-questionnaire", tags=["office_questionnaire"])
