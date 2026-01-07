@@ -295,15 +295,15 @@ def _find_and_create_new_virtual_rooms(cur, new_pairs_added: list, new_unit_data
                     # INSERT Virtual Room
                     v_sql = """
                         INSERT INTO office_unit_virtual_room 
-                        (Virtual_Name, Size, Rent_Price, Building_ID, Available_Date, Min_Divide_Size, Floor_Replacement, View_N, View_E, View_S, View_W, Ceiling_Dropped
+                        (Virtual_Name, Size, Rent_Price, Building_ID, Floor, Available_Date, Min_Divide_Size, Floor_Replacement, View_N, View_E, View_S, View_W, Ceiling_Dropped
                         , Furnish_Condition, Ceiling_Full_Structure, Ceiling_Replacement, Column_InUnit, AC_Split_Type, Pantry_InUnit, Bathroom_InUnit, Rent_Term
                         , Rent_Deposit, Rent_Advance) 
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """
                     cur.execute(v_sql, (
                         v_room_data['Virtual_Name'], v_room_data['Size'],
-                        v_room_data['Price'], v_room_data['Building_ID'], v_room_data['Available_Date'], v_room_data['Min_Divide_Size'], v_room_data['Floor_Replacement'],
-                        v_room_data['View_N'], v_room_data['View_E'], v_room_data['View_S'], v_room_data['View_W'], v_room_data['Ceiling_Dropped'],
+                        v_room_data['Price'], v_room_data['Building_ID'], v_room_data['Floor'], v_room_data['Available_Date'], v_room_data['Min_Divide_Size'],
+                        v_room_data['Floor_Replacement'], v_room_data['View_N'], v_room_data['View_E'], v_room_data['View_S'], v_room_data['View_W'], v_room_data['Ceiling_Dropped'],
                         v_room_data['Furnish_Condition'], v_room_data['Ceiling_Full_Structure'], v_room_data['Ceiling_Replacement'], v_room_data['Column_InUnit'],
                         v_room_data['AC_Split_Type'], v_room_data['Pantry_InUnit'], v_room_data['Bathroom_InUnit'], v_room_data['Rent_Term'], v_room_data['Rent_Deposit'],
                         v_room_data['Rent_Advance']
@@ -346,7 +346,7 @@ def _calculate_virtual_room_details_optimized(unit_ids: list, transient_cache: d
             details['Furnish_Condition'] = get_furnish_index(details.get('Furnish_Condition'))
             
             for key in ['Floor_Replacement', 'View_N', 'View_E', 'View_S', 'View_W', 'Ceiling_Replacement', 'Column_InUnit'
-                        , 'AC_Split_Type', 'Pantry_InUnit', 'Bathroom_InUnit']:
+                        , 'AC_Split_Type', 'Pantry_InUnit', 'Bathroom_InUnit', 'Floor']:
                 details[key] = details.get(key)
             
             # เก็บใส่ Cache ไว้ด้วย เผื่อรอบหน้าต้องใช้ ID นี้อีก
@@ -405,7 +405,9 @@ def _calculate_virtual_room_details_optimized(unit_ids: list, transient_cache: d
             value_list[i] = 0
         else:
             value_list[i] = None
-    view_n, view_e, view_s, view_w = value_list 
+    view_n, view_e, view_s, view_w = value_list
+    
+    floor = all_details[0]['Floor']
     
     # --- 4. ส่งค่ากลับ ---
     return {
@@ -430,7 +432,8 @@ def _calculate_virtual_room_details_optimized(unit_ids: list, transient_cache: d
         'Bathroom_InUnit': replace_specs['Bathroom_InUnit'],
         'Rent_Term': specs['Rent_Term'],
         'Rent_Deposit': specs['Rent_Deposit'],
-        'Rent_Advance': specs['Rent_Advance']
+        'Rent_Advance': specs['Rent_Advance'],
+        'Floor': floor
     }
 
 def _is_subgraph_connected(nodes: tuple, full_graph: dict) -> bool:
@@ -592,7 +595,8 @@ def insert_office_unit_and_return_full_record(
             'Bathroom_InUnit': Bathroom_InUnit,
             'Rent_Term': Rent_Term if Rent_Term is not None else 0,
             'Rent_Deposit': Rent_Deposit if Rent_Deposit is not None else 0,
-            'Rent_Advance': Rent_Advance if Rent_Advance is not None else 0
+            'Rent_Advance': Rent_Advance if Rent_Advance is not None else 0,
+            'Floor': Floor
             }
             _process_virtual_room_additive(cur=cur,new_unit_data=new_unit_data,virtual_room_str=Virtual_Room, created_by=Created_By, work_state='create')
         conn.commit()
@@ -757,7 +761,8 @@ def update_office_unit_and_return_full_record(
             'Bathroom_InUnit': Bathroom_InUnit,
             'Rent_Term': Rent_Term if Rent_Term is not None else 0,
             'Rent_Deposit': Rent_Deposit if Rent_Deposit is not None else 0,
-            'Rent_Advance': Rent_Advance if Rent_Advance is not None else 0
+            'Rent_Advance': Rent_Advance if Rent_Advance is not None else 0,
+            'Floor': Floor,
             }
         if Virtual_Room and Unit_Status == "1":
             _process_virtual_room_additive(cur=cur,new_unit_data=new_unit_data,virtual_room_str=Virtual_Room, created_by=Last_Updated_By, work_state='update')
