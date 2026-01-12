@@ -15,12 +15,10 @@
 -- tenant_user_search_input
 -- tenant_user_search_output
 -- office_email_log
--- tenant_user_variable
 -- office_building_relationship
 -- office_sole_agent
 -- office_project_tag
 -- office_project_tag_relationship
--- office_around_express_way
 -- office_contact_form
 -- office_unit_highlight
 -- real_place_bank
@@ -30,6 +28,10 @@
 -- office_unit_adjacency
 -- office_unit_virtual_room
 -- office_unit_virtual_room_mapping
+-- real_office_road #prod
+-- real_office_yarn #prod
+-- office_zone
+-- office_zone_relationship
 
 
 -- -----------------------------------------------------
@@ -98,6 +100,7 @@ CREATE TABLE IF NOT EXISTS office_project (
     Project_Description TEXT NULL,
     Project_URL_Tag VARCHAR(200) NULL,
     Building_Copy BOOLEAN NOT NULL,
+    Project_Rank SMALLINT UNSIGNED NULL,
     User_ID INT UNSIGNED NOT NULL,
     Project_Status ENUM('0', '1', '2', '3') NOT NULL DEFAULT '0',
     Project_Redirect INT UNSIGNED NULL,
@@ -187,6 +190,9 @@ CREATE TABLE IF NOT EXISTS office_building (
     INDEX build_proj (Project_ID),
     INDEX build_user (User_ID),
     INDEX build_agent (Sole_Agent),
+    INDEX build_name (Building_Name),
+    INDEX build_lat (Building_Latitude),
+    INDEX build_long (Building_Longitude),
     INDEX build_admin1 (Created_By),
     INDEX build_admin2 (Last_Updated_By),
     CONSTRAINT proj FOREIGN KEY (Project_ID) REFERENCES office_project(Project_ID),
@@ -323,8 +329,8 @@ CREATE TABLE IF NOT EXISTS tenant_user (
     Phone_Number VARCHAR(15) NOT NULL,
     Email VARCHAR(100) NOT NULL,
     Profile_Picture TEXT NULL,
-    Normal_Search_Remaining SMALLINT UNSIGNED NOT NULL DEFAULT 5,
-    Premium_Search_Remaining SMALLINT NOT NULL DEFAULT 0,
+    Normal_Search_Remaining SMALLINT UNSIGNED NOT NULL DEFAULT 2,
+    Premium_Search_Remaining SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     Member_Status ENUM('Normal', 'Premium') NOT NULL DEFAULT 'Normal',
     User_Status ENUM('1', '2') NOT NULL DEFAULT '1',
     Created_By INT UNSIGNED NOT NULL DEFAULT 0,
@@ -334,6 +340,8 @@ CREATE TABLE IF NOT EXISTS tenant_user (
     PRIMARY KEY (Tenant_ID),
     INDEX tenant_admin1 (Created_By),
     INDEX tenant_admin2 (Last_Updated_By),
+    INDEX tenant_normal (Normal_Search_Remaining),
+    INDEX tenant_premium (Premium_Search_Remaining),
     CONSTRAINT tenant_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
     CONSTRAINT tenant_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
 ENGINE = InnoDB;
@@ -481,10 +489,8 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS tenant_user_search_input (
     Search_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Tenant_ID INT UNSIGNED NOT NULL,
-    input1 VARCHAR(45) NOT NULL,
-    input2 VARCHAR(45) NOT NULL,
-    input3 VARCHAR(45) NOT NULL,
     Search_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Search_Input JSON NOT NULL,
     PRIMARY KEY (Search_ID),
     INDEX tenant_search (Tenant_ID),
     CONSTRAINT tenant_search FOREIGN KEY (Tenant_ID) REFERENCES tenant_user(Tenant_ID))
@@ -512,7 +518,6 @@ CREATE TABLE IF NOT EXISTS tenant_user_search_output (
     CONSTRAINT unit_search_output FOREIGN KEY (Unit_ID) REFERENCES office_unit(Unit_ID))
 ENGINE = InnoDB;
 
-
 -- -----------------------------------------------------
 -- Table office_email_log
 -- -----------------------------------------------------
@@ -526,30 +531,6 @@ CREATE TABLE IF NOT EXISTS office_email_log (
     INDEX email_log (Search_output_ID),
     CONSTRAINT email_log FOREIGN KEY (Search_output_ID) REFERENCES tenant_user_search_output(Search_output_ID))
 ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table tenant_user_variable
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS tenant_user_variable (
-    Variable_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    User_ID INT UNSIGNED NOT NULL,
-    weight_input1 INT NOT NULL,
-    weight_input2 INT NOT NULL,
-    weight_input3 INT NOT NULL,
-    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
-    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
-    Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (Variable_ID),
-    INDEX user_var (User_ID),
-    INDEX user_var_admin1 (Created_By),
-    INDEX user_var_admin2 (Last_Updated_By),
-    CONSTRAINT user_var FOREIGN KEY (User_ID) REFERENCES office_admin_and_leasing_user(User_ID),
-    CONSTRAINT user_var_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
-    CONSTRAINT user_var_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
-ENGINE = InnoDB;
-
 
 -- -----------------------------------------------------
 -- Table office_building_relationship
@@ -580,7 +561,15 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS office_sole_agent (
     Sole_Agent_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Sole_Agent_Short_Name VARCHAR(250) NOT NULL,
-    PRIMARY KEY (Sole_Agent_ID))
+    Created_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
+    Last_Updated_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (Sole_Agent_ID),
+    INDEX sole_agent_admin1 (Created_By),
+    INDEX sole_agent_admin2 (Last_Updated_By),
+    CONSTRAINT sole_agent_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
+    CONSTRAINT sole_agent_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
 ENGINE = InnoDB;
 
 -- -----------------------------------------------------
@@ -588,7 +577,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS office_project_tag (
     Tag_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Tag_Name TEXT NOT NULL,
+    Tag_Name varchar(100) NOT NULL,
     Created_By INT UNSIGNED NOT NULL DEFAULT 0,
     Created_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     Last_Updated_By INT UNSIGNED NOT NULL DEFAULT 0,
@@ -596,6 +585,7 @@ CREATE TABLE IF NOT EXISTS office_project_tag (
     PRIMARY KEY (Tag_ID),
     INDEX tag_admin1 (Created_By),
     INDEX tag_admin2 (Last_Updated_By),
+    INDEX tag_name (Tag_Name),
     CONSTRAINT tag_admin1 FOREIGN KEY (Created_By) REFERENCES office_admin_and_leasing_user(User_ID),
     CONSTRAINT tag_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
 ENGINE = InnoDB;
@@ -624,43 +614,12 @@ CREATE TABLE IF NOT EXISTS office_project_tag_relationship (
     CONSTRAINT tag_re_admin2 FOREIGN KEY (Last_Updated_By) REFERENCES office_admin_and_leasing_user(User_ID))
 ENGINE = InnoDB;
 
-/*-- -----------------------------------------------------
--- Table office_around_express_way
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS office_around_express_way (
-    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Place_ID INT UNSIGNED NOT NULL,
-    Place_Type VARCHAR(80) NOT NULL,
-    Place_Category VARCHAR(150) NOT NULL,
-    Place_Name VARCHAR(100) NOT NULL,
-    Place_Latitude double NOT NULL,
-    Place_Longitude double NOT NULL,
-    Project_ID INT UNSIGNED NOT NULL,
-    Distance FLOAT NOT NULL,
-    PRIMARY KEY (ID),
-    INDEX express_proj (Project_ID),
-    CONSTRAINT express_proj FOREIGN KEY (Project_ID) REFERENCES office_project (Project_ID))
-ENGINE = InnoDB;*/
-
--- -----------------------------------------------------
--- Table mass_transit_bus_stop
--- -----------------------------------------------------
-/*CREATE TABLE IF NOT EXISTS mass_transit_bus_stop (
-    Bus_Stop_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    Bus_Stop_Name_TH VARCHAR(250) NOT NULL,
-    Bus_Stop_Name_EN VARCHAR(250) NOT NULL,
-    Bus_Stop_Latitude DOUBLE NOT NULL,
-    Bus_Stop_Longitude DOUBLE NOT NULL,
-    PRIMARY KEY (Bus_Stop_ID),
-    INDEX bus_stop_lat (Bus_Stop_Latitude),
-    INDEX bus_stop_long (Bus_Stop_Longitude))
-ENGINE = InnoDB;*/
-
 CREATE TABLE IF NOT EXISTS office_contact_form (
     Contact_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
     Contact_Name VARCHAR(50) NOT NULL,
     Contact_Tel VARCHAR(30) NOT NULL,
     Contact_Email VARCHAR(80) NOT NULL,
+    Contact_Topic ENUM('สนใจเช่าพื้นที่สำนักงาน','ฝากเช่า/เสนอพื้นที่สำนักงาน','สอบถามเรื่องการบริการ หรือใบเสนอราคา','อื่นๆ') NULL,
     Contact_Text TEXT NULL,
     Contact_IP VARCHAR(50) NOT NULL,
     Contact_Date DATETIME NOT NULL,
@@ -780,6 +739,7 @@ CREATE TABLE IF NOT EXISTS office_unit_virtual_room (
     Size FLOAT NOT NULL,
     Rent_Price FLOAT NOT NULL,
     Building_ID INT UNSIGNED NOT NULL,
+    Floor VARCHAR(20) NOT NULL, -- prod
     Available_Date DATE NOT NULL,
     Furnish_Condition ENUM('Furnished','Standard','As Is','Bareshell') NULL,
     Min_Divide_Size FLOAT NULL,
@@ -813,4 +773,29 @@ CREATE TABLE IF NOT EXISTS office_unit_virtual_room_mapping (
     INDEX unit_virtual_room_mapping (Unit_ID),
     CONSTRAINT virtual_room_mapping FOREIGN KEY (Virtual_ID) REFERENCES office_unit_virtual_room(Virtual_ID),
     CONSTRAINT unit_virtual_room_mapping FOREIGN KEY (Unit_ID) REFERENCES office_unit(Unit_ID))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table office_zone
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_zone (
+    Zone_ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Zone_Name VARCHAR(200) NOT NULL,
+    Zone_Count INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (Zone_ID),
+    INDEX zone_name (Zone_Name))
+ENGINE = InnoDB;
+
+-- -----------------------------------------------------
+-- Table office_zone_relationship
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS office_zone_relationship (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    Zone_ID INT UNSIGNED NOT NULL,
+    Tag_ID INT UNSIGNED NOT NULL,
+    PRIMARY KEY (ID),
+    INDEX zone_id (Zone_ID),
+    INDEX tag_id (Tag_ID),
+    CONSTRAINT zone_id FOREIGN KEY (Zone_ID) REFERENCES office_zone(Zone_ID),
+    CONSTRAINT tag_id FOREIGN KEY (Tag_ID) REFERENCES office_project_tag(Tag_ID))
 ENGINE = InnoDB;
