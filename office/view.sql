@@ -608,20 +608,32 @@ select a.Project_ID
             , if(a.F_Retail_Mall_Shop = 1, 'Y', 'N') as 'Mall_Shop'
             , if((a.F_Services_ATM = 1 or a.F_Services_Bank = 1), 'Y', 'N') as 'Bank'
             , if(a.F_Retail_Conv_Store = 1, 'Y', 'N') as 'Seven'
-            , if((a.F_Food_Foodcourt = 1 or a.F_Food_Restaurant = 1), 'Y', 'N') as 'Food'
+            , if((a.F_Food_Foodcourt = 1), 'Y', 'N') as 'Food'
             , if(a.F_Food_Cafe = 1, 'Y', 'N') as 'Cafe'
             , if(a.F_Others_Conf_Meetingroom = 1, 'Y', 'N') as 'Meeting_Room'
-            ,if(building.AC <> 'N', 'Y', 'N') as 'AC'
+            , if(building.AC <> 'N', 'Y', 'N') as 'AC'
+            , if(station.Project_ID is not null, 'Y', 'N') as 'Station'
+            , if(DATEDIFF(CURDATE(), building.Building_Built_Complete) <= 1095, 'Y', 'N') as 'New_Project'
+            , if(DATEDIFF(CURDATE(), building.Building_Last_Renovate) <= 1095, 'Y', 'N') as 'New_Renovate_Project'
         from office_project a
         left join (select Project_ID
                         , max(SUBSTRING_INDEX(Parking_Ratio, ':', -1)) as Parking_Ratio
                         , greatest(ifnull(max(Typical_Floor_Plate_1),0), greatest(ifnull(max(Typical_Floor_Plate_2),0), ifnull(max(Typical_Floor_Plate_3),0))) as Typical_Floor_Plate
                         , ifnull(max(ifnull(AC_OT_Weekday_by_Hour,ifnull(AC_OT_Weekday_by_Area,ifnull(AC_OT_Weekend_by_Hour,ifnull(AC_OT_Weekend_by_Area,null))))), 'N') as AC
+                        , max(Built_Complete) as Building_Built_Complete
+                        , max(Last_Renovate) as Building_Last_Renovate
                     from office_building 
                     where Building_Status = '1'
                     group by Project_ID) building
         on a.Project_ID = building.Project_ID
+        left join (select Project_ID from source_office_around_station where Distance <= 0.3 group by Project_ID) station
+        on a.Project_ID = station.Project_ID
         where a.Project_Status = '1';
+
+update `office_highlight` set Highlight_Order = Highlight_Order + 3;
+UPDATE `office_highlight` SET `Highlight_Name` = 'โรงอาหาร' WHERE `office_highlight`.`Highlight_ID` = 10;
+INSERT INTO `office_highlight` (`Highlight_Name`, `Highlight_Order`, `Highlight_Status`, `Created_By`, `Last_Updated_By`) 
+VALUES ('ติดรถไฟฟ้า', 1, '1', 1, 1), ('โครงการใหม่', 2, '1', 1, 1), ('ปรับปรุงใหม่', 3, '1', 1, 1);
 
 -- view source_office_project_highlight_relationship
 create or replace view source_office_project_highlight_relationship as
@@ -677,7 +689,19 @@ from (SELECT Project_ID, 1 AS Highlight, NULL as Extra_Text
         UNION ALL
         SELECT Project_ID, 13 AS Highlight, NULL as Extra_Text
         FROM source_office_project_highlight
-        WHERE AC <> 'N') aaa
+        WHERE AC <> 'N'
+        UNION ALL
+        SELECT Project_ID, 14 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Station <> 'N'
+        UNION ALL
+        SELECT Project_ID, 15 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE New_Project <> 'N'
+        UNION ALL
+        SELECT Project_ID, 16 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE New_Renovate_Project <> 'N') aaa
 join office_highlight b on aaa.Highlight = b.Highlight_ID
 where b.Highlight_Status = '1'
 group by aaa.Project_ID;
@@ -698,9 +722,32 @@ select a.Project_ID
     , a.Last_Updated_Date
     , ifnull(countunit.Pantry_InUnit,0) as Pantry_InUnit
     , ifnull(countunit.Bathroom_InUnit,0) as Bathroom_InUnit
+    , ifnull(building.Rent_Price_Min, building.Rent_Price_Max) as Rent_Price_Filter
+    , a.Project_Rank as Project_Rank
+    , project_highlight.Station as Station
+    , project_highlight.EV_Changers as EV_Charger
+    , project_highlight.Meeting_Room as Meeting_Room
+    , project_highlight.Food as Foodcourt
+    , project_highlight.Cafe as Cafe
+    , countunit.Unit_Last_Updated_Date as Unit_Last_Updated_Date
+    , if(b.Built_Complete is not null and b.Last_Renovate is not null
+        , greatest(b.Built_Complete, b.Last_Renovate)
+        , if(b.Built_Complete is not null
+            , b.Built_Complete
+            , if(b.Last_Renovate is not null
+                , b.Last_Renovate
+                , null))) as Building_Date
 from office_project a
 left join source_office_project_highlight_relationship highlight on a.Project_ID = highlight.Project_ID
+left join source_office_project_highlight project_highlight on a.Project_ID = project_highlight.Project_ID
+left join (select Project_ID
+                , max(Built_Complete) as Built_Complete
+                , max(Last_Renovate) as Last_Renovate
+            from office_building
+            group by Project_ID) b
+on a.Project_ID = b.Project_ID
 left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count, max(u.Pantry_InUnit) as Pantry_InUnit , max(u.Bathroom_InUnit) as Bathroom_InUnit
+                , max(u.Last_Updated_Date) as Unit_Last_Updated_Date 
             from office_project a
             left join office_building b on a.Project_ID = b.Project_ID
             left join office_unit u on b.Building_ID = u.Building_ID
@@ -790,6 +837,8 @@ left join (select Project_ID
                 , if(min(Price)=max(Price)
                     , format(min(Price),0)
                     , concat(format(min(Price),0),' - ',format(max(Price),0))) as Rent_Price
+                , min(Price) as Rent_Price_Min
+                , max(Price) as Rent_Price_Max
             from (select * from (select Project_ID, Rent_Price_Min as Price
                                 from office_building
                                 where Building_Status = '1'
@@ -856,7 +905,19 @@ from (SELECT Project_ID, 1 AS Highlight, NULL as Extra_Text
         UNION ALL
         SELECT Project_ID, 13 AS Highlight, NULL as Extra_Text
         FROM source_office_project_highlight
-        WHERE AC <> 'N') aaa
+        WHERE AC <> 'N'
+        UNION ALL
+        SELECT Project_ID, 14 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE Station <> 'N'
+        UNION ALL
+        SELECT Project_ID, 15 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE New_Project <> 'N'
+        UNION ALL
+        SELECT Project_ID, 16 AS Highlight, NULL as Extra_Text
+        FROM source_office_project_highlight
+        WHERE New_Renovate_Project <> 'N') aaa
 join office_highlight b on aaa.Highlight = b.Highlight_ID
 where b.Highlight_Status = '1'
 group by aaa.Project_ID;
