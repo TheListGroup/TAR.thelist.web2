@@ -7,6 +7,9 @@ from PIL import Image
 import re
 from wand.image import Image as WandImage
 from io import BytesIO
+import random
+import string
+from datetime import datetime
 
 UPLOAD_DIR = "/var/www/html/real-lease/uploads"
 PUBLIC_PREFIX = "/real-lease/uploads"
@@ -289,16 +292,15 @@ def _select_full_office_project_item(new_id: int) -> dict | None:
                         where a.Relationship_Status <> '2'
                         group by a.Project_ID) b 
             on a.Project_ID = b.Project_ID
-            left join (SELECT a.Project_ID,  JSON_ARRAYAGG(JSON_OBJECT( 'Building_ID', c.Building_ID
-                                                                        , 'Building_Name', b.Building_Name
-                                                                        , 'Floor_Plan_ID', c.Floor_Plan_ID
-                                                                        , 'Floor_Name', c.Floor_Name
-                                                                        , 'FLoor_Plan_Order', c.Display_Order
-                                                                        , 'Floor_Plan_URL', c.Floor_Plan_Image)) as Floor_Plan
+            left join (SELECT a.Project_ID,  JSON_ARRAYAGG(JSON_OBJECT( 'Floor_Plan_ID', b.Image_ID
+                                                                        , 'Floor_Name', b.Image_Name
+                                                                        , 'FLoor_Plan_Order', b.Display_Order
+                                                                        , 'Floor_Plan_URL', b.Image_URL)) as Floor_Plan
                         FROM office_project a
-                        join office_building b on a.Project_ID = b.Project_ID
-                        join office_floor_plan c on b.Building_ID = c.Building_ID
-                        where c.Floor_Plan_Status = '1'
+                        join office_image b on a.Project_ID = b.Ref_ID
+                        where b.Image_Status = '1'
+                        and b.Project_or_Building = 'Project'
+                        and b.Category_ID = 14
                         group by a.Project_ID) floor_plan
             on a.Project_ID = floor_plan.Project_ID
             WHERE a.Project_Status <> '2'
@@ -1426,8 +1428,9 @@ def _get_project_carousel_data(proj_ids: list, total_proj: int, place_use: str) 
     cur = conn.cursor(dictionary=True)
     try:
         if place_use == 'carousel_home':   
-            cur.execute("""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count, Project_URL_Tag
-                            FROM source_office_project_carousel_recommend order by Last_Updated_Date desc limit %s""", (total_proj,))
+            cur.execute("""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count, Project_URL_Tag, Project_Rank
+                            FROM source_office_project_carousel_recommend where Project_Rank is not null
+                            order by Project_Rank limit %s""", (total_proj,))
         else:
             proj_placeholders = ', '.join(['%s'] * len(proj_ids))
             query = f"""SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, Unit_Count, Project_URL_Tag
@@ -1435,6 +1438,22 @@ def _get_project_carousel_data(proj_ids: list, total_proj: int, place_use: str) 
             params = tuple(proj_ids)
             cur.execute(query, params)
         
+        rows = cur.fetchall()
+        if rows:
+            return rows
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def _get_project_tag_data(total_proj: int, condition: str) -> dict:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute(f"""SELECT Project_ID, Project_Name, near_by, Project_URL_Tag
+                        FROM source_office_project_carousel_recommend
+                        {condition}
+                        order by Unit_Last_Updated_Date desc, Building_Date desc limit %s""", (total_proj,))
         rows = cur.fetchall()
         if rows:
             return rows
@@ -1467,3 +1486,25 @@ def _get_project_youtube(Project_ID: int) -> str:
     finally:
         cur.close()
         conn.close()
+
+def _update_project_rank(
+    *, project_id, project_rank: int,
+) -> dict:
+    conn = get_db()
+    cur = conn.cursor()
+    try:        
+        sql = """
+            UPDATE office_project
+            SET Project_Rank=%s
+            WHERE Project_ID=%s
+        """
+        cur.execute(sql, (project_rank, project_id))
+        conn.commit()
+    finally:
+        cur.close()
+        conn.close()
+    
+    return {
+        "project_id": project_id,
+        "project_rank": project_rank,
+    }
