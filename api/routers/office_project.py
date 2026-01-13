@@ -4,7 +4,7 @@ from auth import get_current_user  # << ใช้ตัวเดิม (รอ�
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
 from function_query_helper import _select_full_office_project_item, _get_province, _get_district, _get_subdistrict, _get_realist_district \
     , _get_realist_subdistrict, _insert_building_record, _insert_cover_record, _get_image_display_order, _update_image_order, _select_all_unit_image_category \
-    , _select_full_project, normalize_row, _delete_cover, _delete_image, _save_image_file, _update_cover_record
+    , _select_full_project, normalize_row, _delete_cover, _delete_image, _save_image_file, _update_cover_record, _update_project_rank
 from typing import Optional, Tuple, Dict, Any, List
 import os
 import re
@@ -569,7 +569,7 @@ def select_all_office_projects(
             , a.F_Retail_Mall_Shop, a.F_Food_Market, a.F_Food_Foodcourt, a.F_Food_Cafe, a.F_Food_Restaurant, a.F_Services_ATM, a.F_Services_Bank, a.F_Services_Pharma_Clinic
             , a.F_Services_Hair_Salon, a.F_Services_Spa_Beauty, a.F_Others_Gym, a.F_Others_Valet, a.F_Others_EV, a.F_Others_Conf_Meetingroom, a.Environment_Friendly, a.Project_Description
             , a.Building_Copy, a.User_ID, a.Project_Status, a.Project_Redirect, a.Created_By, a.Created_Date, a.Last_Updated_By, a.Last_Updated_Date
-            , b.Tags
+            , b.Tags, a.Project_Rank
             FROM {TABLE} a
             left join (select a.Project_ID, group_concat(b.Tag_Name SEPARATOR ';') as Tags
                         from office_project_tag_relationship a
@@ -882,3 +882,23 @@ def select_all_office_tags(
     finally:
         cur.close()
         conn.close()
+
+# ----------------------------------------------------- UPDATE Project Rank --------------------------------------------------------------------------------------------
+@router.put("/project/update/project_rank", status_code=200)
+@router.post("/project/update/project_rank", status_code=200)
+def update_project_rank(
+    Project_ID: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor()
+    
+    rank_list = Project_ID.split(";")
+    results = []
+    cur.execute("""UPDATE office_project SET Project_Rank=NULL""")
+    conn.commit()
+    for i, order in enumerate(rank_list):
+        meta = _update_project_rank(project_id=int(order), project_rank=i+1)
+        results.append({"data": meta})
+
+    return {"items": results}
