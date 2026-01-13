@@ -261,19 +261,19 @@ def admin_office_point(
             pattern = "|".join(location_yarn_list)
             location_yarn_regex =  f"and c.Place_Name_TH REGEXP '{pattern}'"
         else:
-            location_yarn_regex = ""
+            location_yarn_regex = f"and c.Place_Name_TH REGEXP 'xxx'"
         location_road_list = [road.strip("'") for road in location_road.split(";")] if location_road else []
         if location_road_list:
             pattern = "|".join(location_road_list)
             location_road_regex = f"and c.Road_Name_TH REGEXP '{pattern}'"
         else:
-            location_road_regex = ""
+            location_road_regex = f"and c.Road_Name_TH REGEXP 'xxx'"
         location_station_list = [station.strip("'") for station in location_station.split(";")] if location_station else []
         if location_station_list:
             pattern = "|".join(location_station_list)
             location_station_regex = f"and mtsmr.Station_THName_Display REGEXP '{pattern}'"
         else:
-            location_station_regex = ""
+            location_station_regex = f"and mtsmr.Station_THName_Display REGEXP 'xxx'"
         
         w_age = (building_weight_group * percent_building_age_group) / 100
         w_security = (building_weight_group * percent_building_security_group) / 100
