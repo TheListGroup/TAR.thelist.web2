@@ -1508,3 +1508,971 @@ def _update_project_rank(
         "project_id": project_id,
         "project_rank": project_rank,
     }
+
+def _office_point_calculate(
+    actime_start_default, actime_end_default, work_start, work_end, in_unit_condition, 
+    btu_per_sqm, eer_btu_per_wh, elec_thb_per_kwh, avg_weekdays_per_month, work_sat,
+    avg_saturdays_per_month, work_sun, avg_sundays_per_month, flooring_thb_per_sqm, ceiling_thb_per_sqm,
+    elec_usage_kwh_per_sqm_month, elec_default_thb_per_sqm, water_usage_m3_per_sqm_month, water_default_thb_per_sqm, parking_needed,
+    parking_fee_default, lease_months, split_capex_per_sqm, split_maint_pct_per_year, lease_years, 
+    max_yarn_score, min_yarn_score, yarn_dist_min, yarn_dist_max, location_yarn_regex, 
+    road_dist_min, min_road_score, max_road_score, road_dist_max, location_road_regex, 
+    station_radius_dist_min, station_radius_dist_max, max_station_radius_score, min_station_radius_score, location_station_regex, 
+    minimum_cost, cost_min_k, maximum_cost, cost_max_k, default_score, 
+    minimum_size, maximum_size, size_tol_low_pct, size_tol_high_pct, dir_n_score, 
+    dir_s_score, dir_e_score, dir_w_score, min_ceiling_clear, 
+    bath_pref, pantry_pref, train_decay_k, express_decay_k, fac_bank_pref, 
+    fac_cafe_pref, fac_restaurant_pref, fac_foodcourt_pref, fac_market_pref, fac_conv_store_pref, 
+    fac_pharmacy_pref, fac_ev_pref, w_price, w_size, w_location,
+    w_floor, w_direction, w_ceiling, w_columns, w_bathroom,
+    w_pantry_inunit, w_pantry, w_security, w_passenger_lift, w_service_lift, 
+    w_age, w_station, w_expressway, w_fac_bank, w_fac_cafe, 
+    w_fac_restaurant, w_fac_foodcourt, w_fac_market, w_fac_conv_store, w_fac_pharma_clinic, 
+    w_fac_ev
+) -> dict:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:        
+        cur.execute(f"""
+                    WITH all_rentable_entities AS (
+                        SELECT
+                            vr.Virtual_ID AS Unit_ID, 
+                            vr.Virtual_Name AS Unit_NO, 
+                            '1' as Unit_Status,
+                            vr.Building_ID,
+                            vr.Size, 
+                            vr.Rent_Price, 
+                            vr.Floor,
+                            vr.Bathroom_InUnit, vr.Pantry_InUnit,
+                            vr.View_N, vr.View_E, vr.View_S, vr.View_W,
+                            vr.Ceiling_Dropped, vr.Ceiling_Full_Structure,
+                            vr.Column_InUnit,
+                            vr.Rent_Deposit, vr.Rent_Advance,
+                            vr.AC_Split_Type, 
+                            vr.Floor_Replacement, 
+                            vr.Ceiling_Replacement,
+                            'merge' as Room_Source
+                        FROM office_unit_virtual_room vr
+                        UNION ALL
+                        SELECT
+                            u.Unit_ID, 
+                            u.Unit_NO, 
+                            u.Unit_Status, 
+                            u.Building_ID,
+                            u.Size, 
+                            u.Rent_Price, 
+                            u.Floor,
+                            u.Bathroom_InUnit, u.Pantry_InUnit,
+                            u.View_N, u.View_E, u.View_S, u.View_W,
+                            u.Ceiling_Dropped, u.Ceiling_Full_Structure,
+                            u.Column_InUnit,
+                            u.Rent_Deposit, u.Rent_Advance,
+                            u.AC_Split_Type, 
+                            u.Floor_Replacement, 
+                            u.Ceiling_Replacement,
+                            'single' as Room_Source
+                        FROM office_unit u
+                        WHERE u.Unit_Status = '1'
+                    ),
+                    expenses_base AS (
+                        SELECT
+                            u.Unit_ID
+                            , u.Room_Source
+                            , u.Unit_NO
+                            , u.Size
+                            , u.Rent_Price
+                            , b.Building_ID
+                            , b.Building_Name
+                            , b.Building_Latitude as Latitude
+                            , b.Building_Longitude as Longitude
+                            , if(u.AC_Split_Type = 1, 'Split Type', b.AC_System) as AC_System
+                            , COALESCE(b.ACTime_Start, '{actime_start_default}') as ACTime_Start
+                            , COALESCE(b.ACTime_End, '{actime_end_default}') as ACTime_End
+                            , b.AC_OT_Min_Hour
+                            , b.AC_OT_Min_Baht
+                            , b.AC_OT_Weekday_by_Hour AS AC_OT_Average_Weekday_by_Hour
+                            , b.AC_OT_Weekday_by_Area AS AC_OT_Average_Weekday_by_Area
+                            , b.AC_OT_Weekend_by_Hour AS AC_OT_Average_Weekend_by_Hour
+                            , b.AC_OT_Weekend_by_Area AS AC_OT_Average_Weekend_by_Area
+                            , b.Bills_Electricity
+                            , b.Bills_Water
+                            , b.Parking_Ratio
+                            , b.Parking_Fee_Car
+                            , u.Floor_Replacement as Floor_Replacement
+                            , u.Ceiling_Replacement as Ceiling_Replacement
+                            , (GREATEST(TIME_TO_SEC(COALESCE(b.ACTime_Start, '{actime_start_default}')) - TIME_TO_SEC('{work_start}'), 0) 
+                                + GREATEST(TIME_TO_SEC('{work_end}') - TIME_TO_SEC(COALESCE(b.ACTime_End, '{actime_end_default}')), 0)) AS Wkday_OT_Seconds
+                            , GREATEST(TIME_TO_SEC('{work_end}') - TIME_TO_SEC('{work_start}'), 0) AS Wkend_Work_Seconds
+                        FROM all_rentable_entities u
+                        JOIN office_building b ON b.Building_ID = u.Building_ID
+                        {in_unit_condition}),
+                    calc AS (
+                        SELECT
+                            Unit_ID
+                            , Room_Source
+                            , Unit_NO
+                            , Size
+                            , Rent_Price
+                            , Building_ID
+                            , Building_Name
+                            , Latitude
+                            , Longitude
+                            , AC_System
+                            , ACTime_Start
+                            , ACTime_End
+                            , AC_OT_Min_Hour
+                            , AC_OT_Min_Baht
+                            , AC_OT_Average_Weekday_by_Hour
+                            , AC_OT_Average_Weekday_by_Area
+                            , AC_OT_Average_Weekend_by_Hour
+                            , AC_OT_Average_Weekend_by_Area
+                            , Wkday_OT_Seconds
+                            , Wkend_Work_Seconds
+                            , Bills_Electricity
+                            , Bills_Water
+                            , Parking_Ratio
+                            , Parking_Fee_Car
+                            , Floor_Replacement
+                            , Ceiling_Replacement
+                            , (Wkday_OT_Seconds / 3600.0) AS Wkday_Working_OT_Hours
+                            , (Wkend_Work_Seconds / 3600.0) AS Wkend_Working_OT_Hours
+                            , CASE WHEN Wkday_OT_Seconds > 0
+                                THEN GREATEST(CEIL(Wkday_OT_Seconds / 3600.0), COALESCE(AC_OT_Min_Hour,1))
+                                ELSE 0 END AS Wkday_Billable_Hours
+                            , CASE WHEN Wkend_Work_Seconds > 0
+                                THEN GREATEST(CEIL(Wkend_Work_Seconds / 3600.0), COALESCE(AC_OT_Min_Hour,1))
+                                ELSE 0 END AS Wkend_Billable_Hours
+                            , (Size * {btu_per_sqm}) AS Split_Required_BTU
+                            , (Size * {btu_per_sqm}) / ({eer_btu_per_wh} * 1000.0) AS Split_kW
+                            , ((Size * {btu_per_sqm}) / ({eer_btu_per_wh} * 1000.0)) * COALESCE(NULLIF(Bills_Electricity,0), {elec_thb_per_kwh}) AS Split_THB_per_Hour
+                            , (TIME_TO_SEC('{work_end}') - TIME_TO_SEC('{work_start}')) / 3600.0 AS WorkWindowHours
+                        FROM expenses_base),
+                    perday AS (
+                        SELECT
+                            c.*
+                            , CASE WHEN c.AC_System='Split Type' OR c.Wkday_Billable_Hours=0 THEN 0
+                                ELSE GREATEST(
+                                        COALESCE(c.AC_OT_Average_Weekday_by_Hour,0)*c.Wkday_Billable_Hours,
+                                        COALESCE(c.AC_OT_Average_Weekday_by_Area,0)*c.Size*c.Wkday_Billable_Hours,
+                                        COALESCE(c.AC_OT_Min_Baht,0))
+                            END AS Weekday_OT_Cost_Per_Day
+                            , CASE WHEN c.AC_System='Split Type' THEN 0
+                                ELSE GREATEST(
+                                        COALESCE(c.AC_OT_Average_Weekend_by_Hour,0)*c.Wkend_Billable_Hours,
+                                        COALESCE(c.AC_OT_Average_Weekend_by_Area,0)*c.Size*c.Wkend_Billable_Hours,
+                                        COALESCE(c.AC_OT_Min_Baht,0))
+                            END AS Weekend_OT_Cost_Per_Day
+                            , CASE WHEN c.AC_System='Split Type' THEN 0
+                                ELSE COALESCE(c.AC_OT_Average_Weekday_by_Hour,0)*c.Wkday_Billable_Hours END AS Weekday_Hour_Method_Cost
+                            , CASE WHEN c.AC_System='Split Type' THEN 0
+                                ELSE COALESCE(c.AC_OT_Average_Weekend_by_Hour,0)*c.Wkend_Billable_Hours END AS Weekend_Hour_Method_Cost
+                            , CASE WHEN c.AC_System='Split Type' THEN 0
+                                ELSE COALESCE(c.AC_OT_Average_Weekday_by_Area,0)*c.Size*c.Wkday_Billable_Hours END AS Weekday_Area_Method_Cost
+                            , CASE WHEN c.AC_System='Split Type' THEN 0
+                                ELSE COALESCE(c.AC_OT_Average_Weekend_by_Area,0)*c.Size*c.Wkend_Billable_Hours END AS Weekend_Area_Method_Cost
+                        FROM calc c),
+                    monthly AS (
+                        SELECT
+                            p.*
+                            , (p.Weekday_OT_Cost_Per_Day*{avg_weekdays_per_month} 
+                                + p.Weekend_OT_Cost_Per_Day*({work_sat}*{avg_saturdays_per_month}+{work_sun}*{avg_sundays_per_month})) AS Central_OT_Cost_Baht_Month
+                            , (p.Split_THB_per_Hour * (p.Wkday_Working_OT_Hours*{avg_weekdays_per_month} 
+                                + p.WorkWindowHours*({work_sat}*{avg_saturdays_per_month}+{work_sun}*{avg_sundays_per_month}))) AS Split_Energy_Baht_Month
+                        FROM perday p),
+                    nonac AS (
+                        SELECT
+                            m.*
+                            , if(m.Floor_Replacement = 1, {flooring_thb_per_sqm} * m.Size, 0) AS Flooring_Cost_OneTime_THB
+                            , if(m.Ceiling_Replacement = 1, {ceiling_thb_per_sqm} * m.Size, 0) AS Ceiling_Cost_OneTime_THB
+                            , CASE WHEN m.Bills_Electricity IS NOT NULL
+                                THEN m.Bills_Electricity*{elec_usage_kwh_per_sqm_month}*m.Size
+                                ELSE {elec_default_thb_per_sqm}*m.Size END AS Elec_Cost_Monthly_THB
+                            , CASE WHEN m.Bills_Water IS NOT NULL
+                                THEN m.Bills_Water*{water_usage_m3_per_sqm_month}*m.Size
+                                ELSE {water_default_thb_per_sqm}*m.Size END AS Water_Cost_Monthly_THB
+                            , CAST(REGEXP_SUBSTR(COALESCE(m.Parking_Ratio,''),'[0-9]+$') AS UNSIGNED) AS Sqm_Per_Free_Slot
+                            , COALESCE(FLOOR(m.Size / NULLIF(CAST(REGEXP_SUBSTR(COALESCE(m.Parking_Ratio,''),'[0-9]+$') AS UNSIGNED),0)),0) AS Parking_Free_Slots
+                            , GREATEST({parking_needed}-COALESCE(FLOOR(m.Size / NULLIF(CAST(REGEXP_SUBSTR(COALESCE(m.Parking_Ratio,''),'[0-9]+$') AS UNSIGNED),0)),0),0) AS Parking_Extra_Slots
+                            , COALESCE(m.Parking_Fee_Car,{parking_fee_default}) AS Parking_Rate_THB_per_Month
+                            , GREATEST({parking_needed}-COALESCE(FLOOR(m.Size / NULLIF(CAST(REGEXP_SUBSTR(COALESCE(m.Parking_Ratio,''),'[0-9]+$') AS UNSIGNED),0)),0),0)
+                                * COALESCE(m.Parking_Fee_Car,{parking_fee_default}) AS Parking_Cost_Monthly_THB
+                            , (COALESCE(m.Rent_Price,0)*m.Size) AS Rent_Monthly_THB
+                            , (COALESCE(m.Rent_Price,0)*m.Size)*{lease_months} AS Rent_Total_Lease_THB
+                            , (CASE WHEN m.Bills_Electricity IS NOT NULL
+                                    THEN m.Bills_Electricity*{elec_usage_kwh_per_sqm_month}*m.Size
+                                    ELSE {elec_default_thb_per_sqm}*m.Size END
+                                + CASE WHEN m.Bills_Water IS NOT NULL
+                                    THEN m.Bills_Water*{water_usage_m3_per_sqm_month}*m.Size
+                                    ELSE {water_default_thb_per_sqm}*m.Size END
+                                + (GREATEST({parking_needed}-
+                                    COALESCE(FLOOR(m.Size / NULLIF(CAST(REGEXP_SUBSTR(COALESCE(m.Parking_Ratio,''),'[0-9]+$') AS UNSIGNED),0)),0),0)
+                                    * COALESCE(m.Parking_Fee_Car,{parking_fee_default}))
+                                + (COALESCE(m.Rent_Price,0)*m.Size)) AS Opex_Monthly_Subtotal_THB
+                        FROM monthly m),
+                    expenses AS (
+                        SELECT
+                            n.Unit_ID
+                            , n.Room_Source
+                            , n.Unit_NO
+                            , n.Building_ID
+                            , n.Building_Name
+                            , n.Latitude
+                            , n.Longitude
+                            , n.Size
+                            , n.Rent_Price
+                            , n.Bills_Electricity
+                            , n.Bills_Water
+                            , n.ACTime_Start
+                            , n.ACTime_End
+                            , n.AC_OT_Average_Weekday_by_Hour
+                            , n.AC_OT_Average_Weekday_by_Area
+                            , n.AC_OT_Average_Weekend_by_Hour
+                            , n.AC_OT_Average_Weekend_by_Area
+                            , n.AC_OT_Min_Hour
+                            , n.AC_OT_Min_Baht
+                            , n.AC_System
+                            , n.Wkday_Working_OT_Hours
+                            , ROUND(n.Wkday_Billable_Hours,0) AS Wkday_Billable_Hours
+                            , n.Wkend_Working_OT_Hours
+                            , ROUND(n.Wkend_Billable_Hours,0) AS Wkend_Billable_Hours
+                            , ROUND(n.Weekday_Hour_Method_Cost,0) AS `Weekday ใช้แบบ Hour`
+                            , ROUND(n.Weekend_Hour_Method_Cost,0) AS `Weekend ใช้แบบ Hour`
+                            , ROUND(n.Weekday_Area_Method_Cost,0) AS `Weekday ใช้แบบ Area`
+                            , ROUND(n.Weekend_Area_Method_Cost,0) AS `Weekend ใช้แบบ Area`
+                            , ROUND(n.Weekday_OT_Cost_Per_Day,0) AS Weekday_OT_Cost_Per_Day
+                            , ROUND(n.Weekend_OT_Cost_Per_Day,0) AS Weekend_OT_Cost_Per_Day
+                            , ROUND(n.Central_OT_Cost_Baht_Month,0) AS Central_OT_Cost_Baht_Month
+                            , ROUND(n.Central_OT_Cost_Baht_Month*{lease_months},0) AS Total_3Y__Central_OT_Only
+                            , ROUND(n.Split_THB_per_Hour,0) AS Split_THB_per_Hour
+                            , ROUND(n.Split_Energy_Baht_Month,0) AS Split_Energy_Baht_Month
+                            , ROUND(n.Split_Energy_Baht_Month*{lease_months},0) AS Split_Energy_Total
+                            , ROUND(n.Size*{split_capex_per_sqm},0) AS Split_CAPEX_Total
+                            , ROUND((n.Size*{split_capex_per_sqm})*{split_maint_pct_per_year}*{lease_years},0) AS Split_Maint_Total
+                            , ROUND((n.Size*{split_capex_per_sqm})
+                                + (n.Size*{split_capex_per_sqm})*{split_maint_pct_per_year}*{lease_years}
+                                + (n.Split_Energy_Baht_Month*{lease_months}),0) AS Total_3Y__Split_Own_AC
+                            , ROUND(n.Flooring_Cost_OneTime_THB,0) AS Flooring_Cost_OneTime_THB
+                            , ROUND(n.Ceiling_Cost_OneTime_THB,0) AS Ceiling_Cost_OneTime_THB
+                            , ROUND(n.Elec_Cost_Monthly_THB,0) AS Elec_Cost_Monthly_THB
+                            , ROUND(n.Water_Cost_Monthly_THB,0) AS Water_Cost_Monthly_THB
+                            , ROUND(n.Parking_Free_Slots,0) AS Parking_Free_Slots
+                            , ROUND(n.Parking_Extra_Slots,0) AS Parking_Extra_Slots
+                            , ROUND(n.Parking_Rate_THB_per_Month,0) AS Parking_Rate_THB_per_Month
+                            , ROUND(n.Parking_Cost_Monthly_THB,0) AS Parking_Cost_Monthly_THB
+                            , ROUND(n.Rent_Monthly_THB,0) AS Rent_Monthly_THB
+                            , ROUND(n.Rent_Total_Lease_THB,0) AS Rent_Total_Lease_THB
+                            , ROUND(n.Opex_Monthly_Subtotal_THB,0) AS Opex_Monthly_Subtotal_THB
+                            , ROUND((n.Central_OT_Cost_Baht_Month + n.Opex_Monthly_Subtotal_THB)*{lease_months} + n.Flooring_Cost_OneTime_THB 
+                                + n.Ceiling_Cost_OneTime_THB,0) AS Total_3Y__Central_With_NonAC
+                            , ROUND(((n.Size*{split_capex_per_sqm})
+                                + (n.Size*{split_capex_per_sqm})*{split_maint_pct_per_year}*{lease_years}
+                                + (n.Split_Energy_Baht_Month*{lease_months}))
+                                + (n.Opex_Monthly_Subtotal_THB*{lease_months})
+                                + n.Flooring_Cost_OneTime_THB + n.Ceiling_Cost_OneTime_THB,0) AS Total_3Y__Split_Own_AC_Plus_NonAC
+                            , ROUND(((n.Central_OT_Cost_Baht_Month + n.Opex_Monthly_Subtotal_THB)*{lease_months} + n.Flooring_Cost_OneTime_THB 
+                                + n.Ceiling_Cost_OneTime_THB)/{lease_months},0) AS Monthly_Avg_All__Central_With_NonAC
+                            , ROUND((((n.Size*{split_capex_per_sqm})
+                                + (n.Size*{split_capex_per_sqm})*{split_maint_pct_per_year}*{lease_years}
+                                + (n.Split_Energy_Baht_Month*{lease_months}))
+                                + (n.Opex_Monthly_Subtotal_THB*{lease_months})
+                                + n.Flooring_Cost_OneTime_THB + n.Ceiling_Cost_OneTime_THB)/{lease_months},0) AS Monthly_Avg_All__Split_Own_AC_Plus_NonAC
+                        FROM nonac n
+                        ORDER BY Total_3Y__Central_With_NonAC DESC, Total_3Y__Split_Own_AC_Plus_NonAC DESC, n.Building_Name, n.Unit_NO),
+                    yarn AS (
+                        with yarn_rank as (
+                            select *, ROW_NUMBER() OVER (PARTITION BY Building_ID ORDER BY yarn_score DESC) as rn
+                            from (
+                                    SELECT 
+                                        b.Building_ID, c.Place_Name_TH, b.Building_Latitude, b.Building_Longitude,
+                                        CASE 
+                                            WHEN ST_Contains(ST_SRID(c.Place_Polygon, 4326), ST_GeomFromText(CONCAT('POINT(', b.Building_Latitude, ' ', b.Building_Longitude, ')'), 4326)) 
+                                            THEN 'INSIDE' 
+                                            ELSE 'OUTSIDE' 
+                                        END as location_status,
+                                        round(ST_Distance(
+                                                ST_GeomFromText(CONCAT('POINT(', b.Building_Latitude, ' ', b.Building_Longitude, ')'), 4326), 
+                                                ST_ExteriorRing(ST_SRID(c.Place_Polygon, 4326))
+                                            ),2) as distance_edge,
+                                        CASE 
+                                            WHEN ST_Contains(ST_SRID(c.Place_Polygon, 4326), ST_GeomFromText(CONCAT('POINT(', b.Building_Latitude, ' ', b.Building_Longitude, ')'), 4326)) 
+                                            THEN {max_yarn_score}
+                                            ELSE round(GREATEST({min_yarn_score}
+                                                    , LEAST({max_yarn_score}
+                                                        , {max_yarn_score} + ((round(ST_Distance(
+                                                                                    ST_GeomFromText(CONCAT('POINT(', b.Building_Latitude, ' ', b.Building_Longitude, ')'), 4326), 
+                                                                                    ST_ExteriorRing(ST_SRID(c.Place_Polygon, 4326))
+                                                                                ),2) - {yarn_dist_min}) * ({min_yarn_score} - {max_yarn_score}) / ({yarn_dist_max} - {yarn_dist_min})))),2)
+                                        END as yarn_score
+                                    FROM office_building b
+                                    cross join real_office_yarn c
+                                    where b.Building_Status = '1'
+                                    and b.Building_Latitude is not null
+                                    and b.Building_Longitude is not null
+                                    {location_yarn_regex}
+                                    HAVING (location_status = 'OUTSIDE' and distance_edge <= {yarn_dist_max})
+                                    OR (location_status = 'INSIDE')) aaa)
+                        select * from yarn_rank where rn = 1),
+                    road AS (
+                        with road_rank as (
+                            select *, ROW_NUMBER() OVER (PARTITION BY Building_ID ORDER BY road_score DESC) as rn
+                            from (
+                                SELECT 
+                                    b.Building_ID, b.Building_Name, b.Building_Latitude, b.Building_Longitude, c.Road_Name_TH,
+                                    round(ST_Distance(
+                                        ST_GeomFromText(CONCAT('POINT(', b.Building_Latitude, ' ', b.Building_Longitude, ')'), 4326), 
+                                        ST_SRID(c.Road_Line, 4326)
+                                    ),2) as distance_meters,
+                                    CASE 
+                                        WHEN ST_Distance(
+                                            ST_GeomFromText(CONCAT('POINT(', b.Building_Latitude, ' ', b.Building_Longitude, ')'), 4326), 
+                                            ST_SRID(c.Road_Line, 4326)
+                                        ) <= {road_dist_min} THEN 'ON ROAD'
+                                        ELSE 'OFF ROAD'
+                                    END as road_status,
+                                    round(GREATEST({min_road_score}
+                                        , LEAST({max_road_score}
+                                            , {max_road_score} + ((round(ST_Distance(
+                                                            ST_GeomFromText(CONCAT('POINT(', b.Building_Latitude, ' ', b.Building_Longitude, ')'), 4326), 
+                                                            ST_SRID(c.Road_Line, 4326)
+                                                        ),2) - {road_dist_min}) * ({min_road_score} - {max_road_score}) / ({road_dist_max} - {road_dist_min})))),2) as road_score
+                                FROM office_building b
+                                cross join real_office_road c
+                                where b.Building_Status = '1'
+                                and b.Building_Latitude is not null
+                                and b.Building_Longitude is not null
+                                {location_road_regex}
+                                HAVING distance_meters <= {road_dist_max}) aaa)
+                        select * from road_rank where rn = 1),
+                    station_radius AS (
+                        WITH radius_rank AS (
+                            select *, ROW_NUMBER() OVER (PARTITION BY Building_ID ORDER BY station_radius_score DESC) as rn
+                            from (
+                                    SELECT 
+                                        radius.*,
+                                        CASE 
+                                            WHEN distance_meters <= {station_radius_dist_min} THEN 1
+                                            WHEN distance_meters > {station_radius_dist_max} THEN 0
+                                            ELSE ROUND({max_station_radius_score} + ((distance_meters - {station_radius_dist_min}) 
+                                                * ({min_station_radius_score} - {max_station_radius_score}) / ({station_radius_dist_max} - {station_radius_dist_min})), 2)
+                                        END AS station_radius_score
+                                    FROM (
+                                        SELECT 
+                                            b.Building_ID,
+                                            b.Building_Name,
+                                            b.Building_Latitude,
+                                            b.Building_Longitude,
+                                            mtsmr.Station_Code,
+                                            mtsmr.Station_THName_Display,
+                                            mtsmr.Station_Latitude,
+                                            mtsmr.Station_Longitude,
+                                            ST_Distance_Sphere(
+                                                ST_GeomFromText(CONCAT('POINT(', b.Building_Longitude, ' ', b.Building_Latitude, ')')),
+                                                ST_GeomFromText(CONCAT('POINT(', mtsmr.Station_Longitude , ' ', mtsmr.Station_Latitude, ')'))
+                                            ) AS distance_meters
+                                        FROM mass_transit_station_match_route mtsmr
+                                        CROSS JOIN (
+                                            SELECT * FROM office_building 
+                                            WHERE Building_Status = '1' 
+                                            AND Building_Latitude IS NOT NULL 
+                                            AND Building_Longitude IS NOT NULL
+                                        ) b
+                                        WHERE mtsmr.Station_Timeline IN ('Completion', 'Planning')
+                                        {location_station_regex}) AS radius
+                                    HAVING distance_meters <= {station_radius_dist_max}) aaa)
+                            select * from radius_rank where rn = 1),
+                    station_dist AS (
+                        SELECT
+                            OAS.Project_ID,
+                            MIN(OAS.Distance) AS Distance_from_nearest_station
+                        FROM source_office_around_station OAS
+                        GROUP BY OAS.Project_ID),
+                    express_dist AS (
+                        SELECT
+                            OAE.Project_ID,
+                            MIN(OAE.Distance) AS Distance_from_nearest_express_way
+                        FROM source_office_around_express_way OAE
+                        GROUP BY OAE.Project_ID),
+                    base AS (
+                        SELECT
+                            u.*,
+                            ob.Building_Name,
+                            ob.Building_Latitude,
+                            ob.Building_Longitude,
+                            ob.Passenger_Lift AS Building_Passenger_Lift, 
+                            ob.Service_Lift AS Building_Service_Lift,
+                            ob.Built_Complete, 
+                            ob.Last_Renovate,
+                            op.Project_ID,
+                            op.F_Common_Pantry, 
+                            op.Security_Type, 
+                            op.F_Services_Bank, 
+                            op.F_Food_Cafe, 
+                            op.F_Food_Restaurant,
+                            op.F_Food_Foodcourt, 
+                            op.F_Food_Market, 
+                            op.F_Retail_Conv_Store, 
+                            op.F_Services_Pharma_Clinic, 
+                            op.F_Others_EV,
+                            sd.Distance_from_nearest_station, 
+                            ed.Distance_from_nearest_express_way,
+                            NULLIF(REGEXP_SUBSTR(u.Floor, '[0-9]+'), '') AS floor_num_str,
+                            yb.Place_Name_TH as Yarn_Name,
+                            yb.location_status as In_or_Out,
+                            round(yb.distance_edge,2) as Yarn_Distance_Meters,
+                            ifnuLL(yb.yarn_score,0) as Yarn_Score,
+                            rd.Road_Name_TH as Road_Name_TH,
+                            round(rd.distance_meters,2) as Road_Distance_Meters,
+                            ifnuLL(rd.road_score,0) as Road_Score,
+                            sr.Station_THName_Display as Station_Name,
+                            round(sr.distance_meters,2) as Station_Radius_Distance_Meters,
+                            ifnuLL(sr.station_radius_score,0) as Station_Radius_Score
+                        FROM all_rentable_entities u
+                        JOIN office_building ob ON u.Building_ID = ob.Building_ID
+                        LEFT JOIN office_project op ON ob.Project_ID = op.Project_ID
+                        LEFT JOIN station_dist sd ON op.Project_ID = sd.Project_ID
+                        LEFT JOIN express_dist ed ON op.Project_ID = ed.Project_ID
+                        LEFT JOIN yarn yb ON ob.Building_ID = yb.Building_ID
+                        LEFT JOIN road rd ON ob.Building_ID = rd.Building_ID
+                        LEFT JOIN station_radius sr ON ob.Building_ID = sr.Building_ID
+                        {in_unit_condition}),
+                    floor_stats AS (
+                        SELECT
+                            b.*,
+                            CAST(floor_num_str AS UNSIGNED) AS floor_num,
+                            MIN(CAST(floor_num_str AS UNSIGNED)) OVER () AS floor_min_overall,
+                            MAX(CAST(floor_num_str AS UNSIGNED)) OVER () AS floor_max_overall,
+                            CAST(b.Security_Type AS UNSIGNED) AS security_idx,
+                            MAX(CAST(b.Security_Type AS UNSIGNED)) OVER () AS security_max_overall,
+                            CASE 
+                                WHEN b.Built_Complete IS NULL AND b.Last_Renovate IS NULL THEN NULL 
+                                WHEN b.Built_Complete IS NULL THEN TO_DAYS(b.Last_Renovate) 
+                                WHEN b.Last_Renovate IS NULL THEN TO_DAYS(b.Built_Complete) 
+                                WHEN b.Last_Renovate > b.Built_Complete THEN TO_DAYS(b.Last_Renovate) 
+                                ELSE TO_DAYS(b.Built_Complete) 
+                            END AS build_date_days,
+                            MIN(CASE 
+                                    WHEN b.Built_Complete IS NULL AND b.Last_Renovate IS NULL THEN NULL 
+                                    WHEN b.Built_Complete IS NULL THEN TO_DAYS(b.Last_Renovate) 
+                                    WHEN b.Last_Renovate IS NULL THEN TO_DAYS(b.Built_Complete) 
+                                    WHEN b.Last_Renovate > b.Built_Complete THEN TO_DAYS(b.Last_Renovate) 
+                                    ELSE TO_DAYS(b.Built_Complete) 
+                                END) OVER () AS build_date_min_overall,
+                            MAX(CASE 
+                                    WHEN b.Built_Complete IS NULL AND b.Last_Renovate IS NULL THEN NULL 
+                                    WHEN b.Built_Complete IS NULL THEN TO_DAYS(b.Last_Renovate) 
+                                    WHEN b.Last_Renovate IS NULL THEN TO_DAYS(b.Built_Complete) 
+                                    WHEN b.Last_Renovate > b.Built_Complete THEN TO_DAYS(b.Last_Renovate) 
+                                    ELSE TO_DAYS(b.Built_Complete) 
+                                END) OVER () AS build_date_max_overall,
+                            MAX(b.Building_Passenger_Lift) OVER () AS passenger_lift_max_overall,
+                            MAX(b.Building_Service_Lift)   OVER () AS service_lift_max_overall
+                        FROM base b),
+                    scored AS (
+                        SELECT
+                            f.*,
+                            CASE 
+                                WHEN LEAST(
+                                    COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
+                                    COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC)) IS NULL THEN 0.0 
+                                WHEN LEAST(
+                                    COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
+                                    COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC)) < {minimum_cost} 
+                                    THEN 0.5 * EXP( -{cost_min_k} * 
+                                        ({minimum_cost} - LEAST(
+                                                            COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
+                                                            COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC))) )
+                                WHEN LEAST(
+                                    COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
+                                    COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC)) > {maximum_cost} 
+                                    THEN 0.5 * EXP( -{cost_max_k} * 
+                                        (LEAST(
+                                            COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
+                                            COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC)) - {maximum_cost}) )
+                                ELSE 1.0 - ( (LEAST(
+                                            COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
+                                            COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC)) - {minimum_cost}) * 
+                                    0.5 / ({maximum_cost} - {minimum_cost}) )
+                            END AS cost_score,
+                            CASE 
+                                WHEN f.Size IS NULL 
+                                    THEN {default_score} 
+                                WHEN f.Size BETWEEN {minimum_size} AND {maximum_size} 
+                                    THEN 1.0 
+                                WHEN f.Size < {minimum_size} 
+                                    THEN 1.0 / (1.0 + (({minimum_size} - f.Size) / NULLIF({minimum_size} * {size_tol_low_pct}, 0))) 
+                                ELSE 1.0 / (1.0 + ((f.Size - {maximum_size}) / NULLIF({maximum_size} * {size_tol_high_pct}, 0))) 
+                            END AS size_score,
+                            greatest(ifnull(f.Yarn_Score,0), ifnull(f.Road_Score,0), ifnull(f.Station_Radius_Score,0)) as location_score,
+                            CASE 
+                                WHEN f.floor_num IS NULL OR f.floor_min_overall IS NULL OR f.floor_max_overall IS NULL OR f.floor_min_overall = f.floor_max_overall 
+                                    THEN {default_score} 
+                                ELSE (f.floor_num - f.floor_min_overall) / NULLIF(f.floor_max_overall - f.floor_min_overall, 0) 
+                            END AS floor_score,
+                            CASE 
+                                WHEN f.View_N IS NULL AND f.View_E IS NULL AND f.View_S IS NULL AND f.View_W IS NULL 
+                                    THEN {default_score} 
+                                ELSE LEAST(IF(f.View_N = 1, {dir_n_score}, 1.0), IF(f.View_S = 1, {dir_s_score}, 1.0), IF(f.View_E = 1, {dir_e_score}, 1.0), IF(f.View_W = 1, {dir_w_score}, 1.0)) 
+                            END AS direction_score,
+                            CASE 
+                                WHEN COALESCE(f.Ceiling_Dropped, f.Ceiling_Full_Structure) IS NULL 
+                                    THEN {default_score} 
+                                WHEN COALESCE(f.Ceiling_Dropped, f.Ceiling_Full_Structure) >= {min_ceiling_clear} 
+                                    THEN 1.0 ELSE 1.0 / (1.0 + ({min_ceiling_clear} - COALESCE(f.Ceiling_Dropped, f.Ceiling_Full_Structure))) 
+                                END AS ceiling_score,
+                            CASE 
+                                WHEN f.Column_InUnit IS NULL 
+                                    THEN {default_score} 
+                                WHEN f.Column_InUnit = 0 
+                                    THEN 1.0 
+                                ELSE 0.25  
+                            END AS columns_score,
+                            CASE 
+                                WHEN {bath_pref} = 1 
+                                    THEN {default_score} 
+                                WHEN {bath_pref} = 0 
+                                    THEN 
+                                        CASE 
+                                            WHEN f.Bathroom_InUnit IS NULL 
+                                                THEN {default_score} 
+                                            WHEN f.Bathroom_InUnit = 1 
+                                                THEN 0.0 
+                                            ELSE 1.0 
+                                        END 
+                                WHEN {bath_pref} = 2 
+                                    THEN 
+                                        CASE 
+                                            WHEN f.Bathroom_InUnit IS NULL 
+                                                THEN {default_score} 
+                                            WHEN f.Bathroom_InUnit = 1 
+                                                THEN 1.0 
+                                            ELSE 0.2 
+                                        END 
+                                ELSE {default_score} 
+                            END AS bathroom_score,
+                            CASE 
+                                WHEN {pantry_pref} = 0 
+                                    THEN {default_score} 
+                                WHEN {pantry_pref} = 1 
+                                    THEN 
+                                        CASE 
+                                            WHEN f.Pantry_InUnit IS NULL 
+                                                THEN {default_score} 
+                                            WHEN f.Pantry_InUnit = 1 
+                                                THEN 1.0 
+                                            ELSE 0.2 
+                                        END 
+                                WHEN {pantry_pref} = 2 
+                                    THEN 
+                                        CASE 
+                                            WHEN f.Pantry_InUnit = 1 
+                                                THEN 1.0 
+                                            ELSE 0.0 
+                                        END 
+                                ELSE {default_score} 
+                            END AS pantry_score,
+                            /*CASE 
+                                WHEN f.Rent_Deposit IS NULL 
+                                    THEN p.rent_deposit_score_std 
+                                WHEN f.Rent_Deposit <  p.rent_deposit_std 
+                                    THEN p.rent_deposit_score_low 
+                                WHEN f.Rent_Deposit =  p.rent_deposit_std 
+                                    THEN p.rent_deposit_score_std 
+                                WHEN f.Rent_Deposit >  p.rent_deposit_std 
+                                    THEN p.rent_deposit_score_high 
+                                ELSE {default_score} 
+                            END AS deposit_score,
+                            CASE 
+                                WHEN f.Rent_Advance IS NULL 
+                                    THEN p.rent_advance_score_std 
+                                WHEN f.Rent_Advance <  p.rent_advance_std 
+                                    THEN p.rent_advance_score_low 
+                                WHEN f.Rent_Advance =  p.rent_advance_std 
+                                    THEN p.rent_advance_score_std 
+                                WHEN f.Rent_Advance >  p.rent_advance_std 
+                                    THEN p.rent_advance_score_high 
+                                ELSE {default_score} 
+                            END AS advance_score,*/
+                            CASE 
+                                WHEN f.F_Common_Pantry IS NULL 
+                                    THEN {default_score} 
+                                WHEN f.F_Common_Pantry = 1 
+                                    THEN 1.0 
+                                ELSE {default_score} 
+                            END AS common_pantry_score,
+                            CASE   
+                                WHEN f.security_idx IS NULL OR f.security_max_overall IS NULL OR f.security_max_overall = 0 
+                                    THEN {default_score} 
+                                ELSE f.security_idx / f.security_max_overall 
+                            END AS security_score,
+                            CASE 
+                                WHEN f.Building_Passenger_Lift IS NULL OR f.passenger_lift_max_overall IS NULL OR f.passenger_lift_max_overall = 0 
+                                    THEN {default_score} 
+                                ELSE f.Building_Passenger_Lift / f.passenger_lift_max_overall 
+                            END AS passenger_lift_score,
+                            CASE 
+                                WHEN f.Building_Service_Lift IS NULL OR f.service_lift_max_overall IS NULL OR f.service_lift_max_overall = 0 
+                                    THEN {default_score} 
+                                ELSE f.Building_Service_Lift / f.service_lift_max_overall 
+                            END AS service_lift_score,
+                            CASE 
+                                WHEN f.build_date_days IS NULL OR f.build_date_min_overall IS NULL OR f.build_date_max_overall IS NULL OR f.build_date_max_overall = f.build_date_min_overall 
+                                    THEN {default_score} 
+                                ELSE (f.build_date_days - f.build_date_min_overall) / NULLIF(f.build_date_max_overall - f.build_date_min_overall, 0) 
+                            END AS building_age_score,
+                            CASE 
+                                WHEN f.Distance_from_nearest_station IS NULL 
+                                    THEN 0.0 
+                                WHEN f.Distance_from_nearest_station <= 0.2 
+                                    THEN 1.0 
+                                ELSE EXP( - {train_decay_k} * (f.Distance_from_nearest_station - 0.2) ) 
+                            END AS train_station_score,
+                            CASE 
+                                WHEN f.Distance_from_nearest_express_way IS NULL 
+                                    THEN 0.0 
+                                WHEN f.Distance_from_nearest_express_way <= 1.0 
+                                    THEN 1.0 
+                                ELSE EXP( - {express_decay_k} * (f.Distance_from_nearest_express_way - 1.0) ) 
+                            END AS express_way_score,
+                            CASE 
+                                WHEN {fac_bank_pref}=0 
+                                    THEN {default_score}
+                                WHEN {fac_bank_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Services_Bank IS NULL 
+                                                    THEN {default_score}
+                                                WHEN f.F_Services_Bank=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25 
+                                            END) 
+                                ELSE (
+                                        CASE 
+                                            WHEN f.F_Services_Bank IS NULL 
+                                                THEN {default_score}
+                                            WHEN f.F_Services_Bank=1 
+                                                THEN 1.0 
+                                            ELSE 0.0 
+                                        END) 
+                            END AS bank_score,
+                            CASE 
+                                WHEN {fac_cafe_pref}=0 
+                                    THEN {default_score}
+                                WHEN {fac_cafe_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Food_Cafe IS NULL 
+                                                    THEN {default_score}
+                                                WHEN f.F_Food_Cafe=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25 
+                                            END) 
+                                ELSE (
+                                        CASE 
+                                            WHEN f.F_Food_Cafe IS NULL 
+                                                THEN {default_score}
+                                            WHEN f.F_Food_Cafe=1 
+                                                THEN 1.0 
+                                            ELSE 0.0 
+                                        END) 
+                            END AS cafe_score,
+                            CASE 
+                                WHEN {fac_restaurant_pref}=0 
+                                    THEN {default_score}
+                                WHEN {fac_restaurant_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Food_Restaurant IS NULL 
+                                                    THEN {default_score}
+                                                WHEN f.F_Food_Restaurant=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25 
+                                            END) 
+                                    ELSE (
+                                            CASE 
+                                                WHEN f.F_Food_Restaurant IS NULL 
+                                                    THEN {default_score}
+                                                WHEN f.F_Food_Restaurant=1 
+                                                    THEN 1.0 
+                                                ELSE 0.0 
+                                            END) 
+                            END AS restaurant_score,
+                            CASE 
+                                WHEN {fac_foodcourt_pref}=0 
+                                    THEN {default_score}
+                                WHEN {fac_foodcourt_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Food_Foodcourt IS NULL 
+                                                    THEN {default_score} 
+                                                WHEN f.F_Food_Foodcourt=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25 
+                                            END) 
+                                ELSE (
+                                        CASE 
+                                            WHEN f.F_Food_Foodcourt IS NULL 
+                                                THEN {default_score}
+                                            WHEN f.F_Food_Foodcourt=1 
+                                                THEN 1.0 
+                                            ELSE 0.0 
+                                        END) 
+                            END AS foodcourt_score,
+                            CASE 
+                                WHEN {fac_market_pref}=0 
+                                    THEN {default_score}
+                                WHEN {fac_market_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Food_Market IS NULL 
+                                                    THEN {default_score} 
+                                                WHEN f.F_Food_Market=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25  
+                                            END) 
+                                ELSE (
+                                        CASE 
+                                            WHEN f.F_Food_Market IS NULL 
+                                                THEN {default_score}
+                                            WHEN f.F_Food_Market=1  
+                                                THEN 1.0 
+                                            ELSE 0.0 
+                                        END) 
+                            END AS market_score,
+                            CASE 
+                                WHEN {fac_conv_store_pref}=0 
+                                    THEN {default_score}
+                                WHEN {fac_conv_store_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Retail_Conv_Store IS NULL 
+                                                    THEN {default_score}
+                                                WHEN f.F_Retail_Conv_Store=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25 
+                                            END) 
+                                ELSE (
+                                        CASE 
+                                            WHEN f.F_Retail_Conv_Store IS NULL 
+                                                THEN {default_score}
+                                            WHEN f.F_Retail_Conv_Store=1 
+                                                THEN 1.0 
+                                            ELSE 0.0   
+                                        END) 
+                            END AS conv_store_score,
+                            CASE 
+                                WHEN {fac_pharmacy_pref}=0 
+                                    THEN {default_score} 
+                                WHEN {fac_pharmacy_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Services_Pharma_Clinic IS NULL 
+                                                    THEN {default_score} 
+                                                WHEN f.F_Services_Pharma_Clinic=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25 
+                                            END) 
+                                ELSE (
+                                        CASE 
+                                            WHEN f.F_Services_Pharma_Clinic IS NULL 
+                                                THEN {default_score}
+                                            WHEN f.F_Services_Pharma_Clinic=1 
+                                                THEN 1.0 
+                                            ELSE 0.0 
+                                        END) 
+                            END AS pharma_clinic_score,
+                            CASE 
+                                WHEN {fac_ev_pref}=0 
+                                    THEN {default_score}
+                                WHEN {fac_ev_pref}=1 
+                                    THEN (
+                                            CASE 
+                                                WHEN f.F_Others_EV IS NULL 
+                                                    THEN {default_score}
+                                                WHEN f.F_Others_EV=1 
+                                                    THEN 0.75 
+                                                ELSE 0.25 
+                                            END) 
+                                ELSE (
+                                        CASE 
+                                            WHEN f.F_Others_EV IS NULL 
+                                                THEN {default_score}
+                                            WHEN f.F_Others_EV=1 
+                                                THEN 1.0 
+                                            ELSE 0.0 
+                                        END) 
+                            END AS ev_score
+                        FROM floor_stats f
+                        left join expenses b on f.Unit_ID = b.Unit_ID),
+                    summary AS (
+                        SELECT
+                            b.*, a.Project_ID,
+                            LEAST(COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
+                                COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC)) as Selected_Cost,
+                            ROUND(a.cost_score,3) AS Cost_Score,
+                            ROUND({w_price} * a.cost_score, 3) AS Cost_Score_Weighted,
+
+                            -- === Size raw + score ===
+                            a.Size as Size_cal,
+                            ROUND(a.size_score,3) AS Size_Score,
+                            ROUND({w_size} * a.size_score, 3) AS Size_Score_Weighted,
+                            
+                            -- === Location raw + score ===
+                            a.Yarn_Name,
+                            a.In_or_Out,
+                            a.Yarn_Distance_Meters,
+                            a.Yarn_Score,
+                            a.Road_Name_TH,
+                            a.Road_Distance_Meters,
+                            a.Road_Score,
+                            a.Station_Name,
+                            a.Station_Radius_Distance_Meters,
+                            a.Station_Radius_Score,
+                            ROUND(a.location_score,3) AS Location_Score,
+                            ({w_location} * a.location_score) AS Location_Score_Weighted,
+
+                            -- === Floor raw + score ===
+                            Floor,
+                            ROUND(a.floor_score,3) AS Floor_Score,
+                            ({w_floor} * a.floor_score) AS Floor_Score_Weighted,
+
+                            -- === Direction raw + score ===
+                            a.View_N, a.View_E, a.View_S, a.View_W,
+                            ROUND(a.direction_score,3) AS Direction_Score,
+                            ({w_direction} * a.direction_score) AS Direction_Score_Weighted,
+
+                            -- === Ceiling raw + score ===
+                            a.Ceiling_Dropped, a.Ceiling_Full_Structure,
+                            ROUND(a.ceiling_score,3) AS Ceiling_Score,
+                            ({w_ceiling} * a.ceiling_score) AS Ceiling_Score_Weighted,
+
+                            -- === Column raw + score ===
+                            a.Column_InUnit,
+                            ROUND(a.columns_score,3) AS Columns_Score,
+                            ({w_columns} * a.columns_score) AS Columns_Score_Weighted,
+
+                            -- === Bathroom raw + score ===
+                            a.Bathroom_InUnit,
+                            ROUND(a.bathroom_score,3) AS Bathroom_Score,
+                            ({w_bathroom} * a.bathroom_score) AS Bathroom_Score_Weighted,
+
+                            -- === Pantry raw + score ===
+                            a.Pantry_InUnit,
+                            ROUND(a.pantry_score,3) AS Pantry_Score,
+                            ({w_pantry_inunit} * a.pantry_score) AS Pantry_Score_Weighted,
+
+                            -- === Deposit raw + score ===
+                            /*Rent_Deposit,
+                            ROUND(deposit_score,3) AS Rent_Deposit_Score,
+                            (w_deposit * deposit_score) AS Rent_Deposit_Score_Weighted,
+
+                            -- === Advance rent raw + score ===
+                            Rent_Advance,
+                            ROUND(advance_score,3) AS Rent_Advance_Score,
+                            (w_advance * advance_score) AS Rent_Advance_Score_Weighted,*/
+
+                            -- === Common pantry raw + score ===
+                            a.F_Common_Pantry,
+                            ROUND(a.common_pantry_score,3) AS Common_Pantry_Score,
+                            ({w_pantry} * a.common_pantry_score) AS Common_Pantry_Score_Weighted,
+
+                            -- === Security system raw + score ===
+                            a.Security_Type,
+                            ROUND(a.security_score,3) AS Security_Score,
+                            ({w_security} * a.security_score) AS Security_Score_Weighted,
+
+                            -- === Lifts raw + score ===
+                            a.Building_Passenger_Lift,
+                            ROUND(a.passenger_lift_score,3) AS Passenger_Lift_Score,
+                            ({w_passenger_lift} * a.passenger_lift_score) AS Passenger_Lift_Score_Weighted,
+
+                            a.Building_Service_Lift,
+                            ROUND(a.service_lift_score,3) AS Service_Lift_Score,
+                            ({w_service_lift} * a.service_lift_score) AS Service_Lift_Score_Weighted,
+
+                            -- === Building year raw + score ===
+                            a.Built_Complete,
+                            a.Last_Renovate,
+                            ROUND(a.building_age_score,3) AS Building_Age_Score,
+                            ({w_age} * a.building_age_score) AS Building_Age_Score_Weighted,
+
+                            -- === Train station distance raw + score ===
+                            a.Distance_from_nearest_station,
+                            ROUND(a.train_station_score,3) AS Train_Station_Score,
+                            ({w_station} * a.train_station_score) AS Train_Station_Score_Weighted,
+
+                            -- === Express way distance raw + score ===
+                            a.Distance_from_nearest_express_way,
+                            ROUND(a.express_way_score,3) AS Express_Way_Score,
+                            ({w_expressway} * a.express_way_score) AS Express_Way_Score_Weighted,
+
+                            -- === Facilities raw + score ===
+                            a.F_Services_Bank,
+                            ROUND(a.bank_score,3) AS Bank_Score,
+                            ({w_fac_bank} * a.bank_score) AS Bank_Score_Weighted,
+
+                            a.F_Food_Cafe,
+                            ROUND(a.cafe_score,3) AS Cafe_Score,
+                            ({w_fac_cafe} * a.cafe_score) AS Cafe_Score_Weighted,
+
+                            a.F_Food_Restaurant,
+                            ROUND(a.restaurant_score,3) AS Restaurant_Score,
+                            ({w_fac_restaurant} * a.restaurant_score) AS Restaurant_Score_Weighted,
+
+                            a.F_Food_Foodcourt,
+                            ROUND(a.foodcourt_score,3) AS Foodcourt_Score,
+                            ({w_fac_foodcourt} * a.foodcourt_score) AS Foodcourt_Score_Weighted,
+
+                            a.F_Food_Market,
+                            ROUND(a.market_score,3) AS Market_Score,
+                            ({w_fac_market} * a.market_score) AS Market_Score_Weighted,
+
+                            a.F_Retail_Conv_Store,
+                            ROUND(a.conv_store_score,3) AS Conv_Store_Score,
+                            ({w_fac_conv_store} * a.conv_store_score) AS Conv_Store_Score_Weighted,
+
+                            a.F_Services_Pharma_Clinic,
+                            ROUND(a.pharma_clinic_score,3) AS Pharma_Clinic_Score,
+                            ({w_fac_pharma_clinic} * a.pharma_clinic_score) AS Pharma_Clinic_Score_Weighted,
+
+                            a.F_Others_EV,
+                            ROUND(a.ev_score,3) AS EV_Score,
+                            ({w_fac_ev} * a.ev_score) AS EV_Score_Weighted,
+
+                            -- === TOTAL weighted score ===
+                            ROUND(
+                                ({w_price}                  * a.cost_score)
+                                + ({w_size}                 * a.size_score)
+                                + ({w_location}             * a.location_score)
+                                + ({w_floor}                * a.floor_score)
+                                + ({w_direction}            * a.direction_score)
+                                + ({w_ceiling}              * a.ceiling_score)
+                                + ({w_columns}              * a.columns_score)
+                                + ({w_bathroom}             * a.bathroom_score)
+                                + ({w_pantry_inunit}        * a.pantry_score)
+                                /*+ (w_deposit              * deposit_score)
+                                + (w_advance                * advance_score)*/
+                                + ({w_pantry}               * a.common_pantry_score)
+                                + ({w_security}             * a.security_score)
+                                + ({w_passenger_lift}       * a.passenger_lift_score)
+                                + ({w_service_lift}         * a.service_lift_score)
+                                + ({w_age}                  * a.building_age_score)
+                                + ({w_station}              * a.train_station_score)
+                                + ({w_expressway}           * a.express_way_score)
+                                + ({w_fac_bank}             * a.bank_score)
+                                + ({w_fac_cafe}             * a.cafe_score)
+                                + ({w_fac_restaurant}       * a.restaurant_score)
+                                + ({w_fac_foodcourt}        * a.foodcourt_score)
+                                + ({w_fac_market}           * a.market_score)
+                                + ({w_fac_conv_store}       * a.conv_store_score)
+                                + ({w_fac_pharma_clinic}    * a.pharma_clinic_score)
+                                + ({w_fac_ev}               * a.ev_score)
+                            ,3) AS Total_Score
+                        FROM scored a
+                        left join expenses b on a.Unit_ID = b.Unit_ID
+                        LIMIT 200)
+                    select * from summary ORDER BY Total_Score DESC""")
+        rows = cur.fetchall()
+        return rows
+    finally:
+        cur.close()
+        conn.close()
