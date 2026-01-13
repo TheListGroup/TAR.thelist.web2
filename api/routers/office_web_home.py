@@ -6,7 +6,7 @@ from function_query_helper import _select_full_office_project_item, _get_project
     , _get_project_building, _get_subdistrict_data, _get_district_data, _get_province_data, get_project_station, get_project_express_way, get_project_retail \
     , get_project_hospital, get_project_education, _select_full_office_unit_item, _select_full_office_building_item, get_project_image, get_all_unit_carousel_images \
     , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_search_project, get_all_project_carousel_images, _get_project_carousel_data \
-    , _get_project_youtube
+    , _get_project_youtube, _get_project_tag_data
 from typing import Optional, Tuple, Dict, Any, List
 import os
 import re
@@ -94,6 +94,8 @@ def get_projects_data_by_ids(cur, project_ids_tuple: tuple) -> list:
                             , if(express_way.Project_ID is not null,1,0) as Express_Way
                             , if(b.Parking_Amount is not null and b.Parking_Amount > 0,1,0) as Parking
                             , a.Pantry_InUnit, a.Bathroom_InUnit, ifnull(b.F_Food_Foodcourt,0) as Foodcourt
+                            , a.Rent_Price_Filter, COALESCE(DATE(a.Unit_Last_Updated_Date), a.Building_Date) as Recommand_Lastest_Date
+                            , a.Building_Date as New_Project_Lastest_Date
                     FROM source_office_project_carousel_recommend a
                     left join (select Project_ID from source_office_around_station where MTran_shortName = 'BTS' group by Project_ID) bts on a.Project_ID = bts.Project_ID
                     left join (select Project_ID from source_office_around_station where MTran_shortName = 'MRT' group by Project_ID) mrt on a.Project_ID = mrt.Project_ID
@@ -107,7 +109,7 @@ def get_projects_data_by_ids(cur, project_ids_tuple: tuple) -> list:
     if projects_data:
         images_by_project_id = get_all_project_carousel_images(project_ids_tuple, True)
         for project in projects_data:
-            project["Carousel_Image"] = images_by_project_id.get(project["Project_ID"])
+            project["Carousel_Image"] = images_by_project_id.get(project["Project_ID"]) if images_by_project_id else None
         return projects_data
     else:
         return []
@@ -119,14 +121,15 @@ def recommand_card_data(
     _ = Depends(get_current_user),
 ):
     try:
-        MAX_TOTAL_UNITS = 100
+        MAX_TOTAL_UNITS = 20
         conn = get_db()
         cur = conn.cursor(dictionary=True)
         tag_list = tags.split(";")
         if not tag_list:
             return to_problem(409, "No Tag", "Tag input is empty.")
         
-        UNITS_PER_TAG = math.ceil(MAX_TOTAL_UNITS / len(tag_list))
+        #UNITS_PER_TAG = math.ceil(MAX_TOTAL_UNITS / len(tag_list))
+        UNITS_PER_TAG = 1
         
         in_clause_placeholders = ', '.join(['%s'] * len(tag_list))
 
@@ -134,8 +137,8 @@ def recommand_card_data(
             WITH RankedUnits AS (
                 SELECT
                     u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
-                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL, Last_Updated_Date,
-                    ROW_NUMBER() OVER (PARTITION BY jt.Found_Tag ORDER BY u.Unit_ID) as rn
+                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL, u.Last_Updated_Date,
+                    ROW_NUMBER() OVER (PARTITION BY jt.Found_Tag, u.Project_ID ORDER BY u.Last_Updated_Date desc) as rn
                 FROM
                     source_office_unit_carousel_recommend u
                 CROSS JOIN
@@ -178,13 +181,64 @@ def recommand_card_data(
         return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
 
 
+@router.get("/lastest-card-unit", status_code=200)
+def lastest_card_unit_data(
+    _ = Depends(get_current_user),
+):
+    try:
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
+        UNITS_Rank = 1
+        MAX_TOTAL_UNITS = 20
+
+        sql_query = f"""
+            WITH RankedUnits AS (
+                SELECT
+                    u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
+                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL, u.Last_Updated_Date,
+                    ROW_NUMBER() OVER (PARTITION BY u.Project_ID ORDER BY u.Last_Updated_Date desc) as rn
+                FROM
+                    source_office_unit_carousel_recommend u
+            )
+            SELECT DISTINCT
+                Unit_ID, Title, Project_Name, Project_Tag_Used, Project_Tag_All,
+                near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID, Unit_URL, Last_Updated_Date
+            FROM
+                RankedUnits
+            WHERE
+                rn <= %s
+            ORDER BY Last_Updated_Date DESC
+            LIMIT %s
+        """
+        params = (UNITS_Rank, MAX_TOTAL_UNITS)
+        cur.execute(sql_query, params)
+        final_units = cur.fetchall()
+        
+        cur.close()
+        conn.close()
+        
+        unit_ids = [unit['Unit_ID'] for unit in final_units]
+        project_ids = [unit['Project_ID'] for unit in final_units]
+        
+        images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True, True)
+        
+        for unit in final_units:
+            unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
+            unit['Unit_URL'] = unit['Unit_URL'] + '/' + str(unit['Unit_ID']).rjust(4, '0')
+            
+        return final_units
+
+    except Exception as e:
+        return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
+
+
 # ----------------------------------------------------- Recommand Project Card --------------------------------------------------------------------------------------------
 @router.get("/recommand-project-card", status_code=200)
 def recommand_project_card_data(
     _ = Depends(get_current_user),
 ):
     try:
-        MAX_TOTAL_PROJECTS = 20
+        MAX_TOTAL_PROJECTS = 10
         rows = _get_project_carousel_data(None, MAX_TOTAL_PROJECTS, 'carousel_home')
         
         if rows:
@@ -192,11 +246,48 @@ def recommand_project_card_data(
             images_by_project_id = get_all_project_carousel_images(project_ids, True)
             
             for project in rows:
-                project['Carousel_Image'] = images_by_project_id.get(project['Project_ID'])
+                project['Carousel_Image'] = images_by_project_id.get(project['Project_ID']) if images_by_project_id else None
             return rows
         else:
             return []
 
+    except Exception as e:
+        return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
+
+
+# ----------------------------------------------------- project card tag --------------------------------------------------------------------------------------------
+@router.get("/tag-card-project/{tags}", status_code=200)
+def tag_card_project(
+    tags: str,
+    _ = Depends(get_current_user),
+):
+    try:
+        MAX_TOTAL_PROJECTS = 10
+        if not tags:
+            return to_problem(409, "No Tag", "Tag input is empty.")
+        
+        if tags == 'train':
+            condition = "where Station = 'Y'"
+        elif tags == 'ev':
+            condition = "where EV_Charger = 'Y'"
+        elif tags == 'meeting':
+            condition = "where Meeting_Room = 'Y'"
+        elif tags == 'foodcourt':
+            condition = "where Foodcourt = 'Y'"
+        elif tags == 'cafe':
+            condition = "where Cafe = 'Y'"
+        
+        rows = _get_project_tag_data(MAX_TOTAL_PROJECTS, condition)
+        
+        if rows:
+            project_ids = [project['Project_ID'] for project in rows]
+            images_by_project_id = get_all_project_carousel_images(project_ids, True)
+            
+            for project in rows:
+                project['Carousel_Image'] = images_by_project_id.get(project['Project_ID']) if images_by_project_id else None
+            return rows
+        else:
+            return []
     except Exception as e:
         return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
 
@@ -213,11 +304,14 @@ def project_template_data(
         if not proj_data:
             return to_problem(404, "Project Not Found", "Project Not Found.")
         
+        project_name = {}
         proj_name = proj_data["Name_EN"]
         if not proj_name:
             return to_problem(404, "Project Name Not Found", "Project Name is None.")
         else:
-            data.append({"Project_Name": proj_name})
+            project_name['Project_Name'] = proj_name
+            project_name['Project_URL_Tag'] = proj_data["Project_URL_Tag"]
+            data.append(project_name)
         
         card_data = _get_project_card_data(Project_ID)
         fields = ["Project_Tag", "Near_By", "Project_Image_All", "Highlight"]
@@ -438,7 +532,10 @@ def project_template_data(
             unit_id_set = [unit["Unit_ID"] for unit in units]
             unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID], True, True)
             for unit in units:
-                unit["Carousel_Image"] = unit_carousel_image.get(unit['Unit_ID'])
+                if unit_carousel_image is not None:
+                    unit["Carousel_Image"] = unit_carousel_image.get(unit['Unit_ID'])
+                else:
+                    unit["Carousel_Image"] = None
                 if 'near_by' in unit and unit['near_by'] is not None:
                     unit['near_by'] = json.dumps(unit['near_by'], ensure_ascii=False)
             unit_available["Unit"] = units
@@ -807,7 +904,10 @@ def unit_template_data(
                 images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True, True)
                 
                 for unit in rows:
-                    unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
+                    if images_by_unit_id is not None:
+                        unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
+                    else:
+                        unit['Carousel_Image'] = None
                     unit['Unit_URL'] = unit['Unit_URL'] + '/' + str(unit['Unit_ID']).rjust(4, '0')
                 unit_around['Near_Unit'] = rows
                 data.append(unit_around)
@@ -852,16 +952,27 @@ def map_result(
         if rows:
             ids_from_location = tuple([row["Project_ID"] for row in rows])
             return ids_from_location
-        
-    if not Project_ids and not Train_Stations and not Tags and not Locations:
-        return to_problem(404, "Search Not Found", "Not Have Input.")
     
-    try:
-        conn = get_db()
-        cur = conn.cursor(dictionary=True)
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    
+    all_project_ids = set()
+    if not Project_ids and not Train_Stations and not Tags and not Locations:
+        cur.execute("""SELECT Project_ID from office_project where Project_Status = '1' and Latitude is not null and Longitude is not null""")
+        rows = cur.fetchall()
+        if rows:
+            ids_all = tuple([row["Project_ID"] for row in rows])
+            all_project_ids.update(ids_all)
+            
+        if not all_project_ids:
+            return []
         
-        all_project_ids = set()
+        final_id_tuple = tuple(all_project_ids)
+        data_rows = get_projects_data_by_ids(cur, final_id_tuple)
         
+        return data_rows
+    
+    try:        
         if Project_ids:
             project_ids_list = Project_ids.split(";") if Project_ids else []
             project_ids_tuple = tuple(int(pid) for pid in project_ids_list if pid.isdigit())
@@ -920,3 +1031,46 @@ def map_result(
     finally:
         cur.close()
         conn.close()
+
+# ----------------------------------------------------- recommmand tag --------------------------------------------------------------------------------------------
+@router.post("/recommand_area", status_code=200)
+def recommand_area(
+    location: str = Form(None),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    
+    if location:
+        cur.execute("""SELECT Zone_ID FROM office_zone WHERE Zone_Name = %s""", (location,))
+        rows = cur.fetchone()
+        if rows:
+            zone_id = rows["Zone_ID"]
+            cur.execute("""SELECT GROUP_CONCAT(b.Tag_Name SEPARATOR ';') as Tag_Name
+                            FROM office_zone_relationship a 
+                            join office_project_tag b on a.Tag_ID = b.Tag_ID 
+                            WHERE a.Zone_ID = %s""", (zone_id,))
+            tag_all = cur.fetchone()
+            
+            location_text = [tag.strip("'") for tag in tag_all['Tag_Name'].split(";")] if tag_all else []
+            if location_text:
+                regex_pattern = "|".join(location_text)
+                cur.execute("""SELECT count(*) as count_project FROM source_office_project_carousel_recommend WHERE Project_Tag_All REGEXP %s""", (regex_pattern,))
+                rows = cur.fetchone()
+                if rows:
+                    data = {'Location_Name': location, 'count_project': rows['count_project']}
+                else:
+                    data = {'Location_Name': location, 'count_project': 0}
+        else:
+            return to_problem(404, "Zone Not Found", "Not Have This Zone in Database.")
+    else:
+        cur.execute("""SELECT count(*) as count_project FROM source_office_project_carousel_recommend""")
+        rows = cur.fetchone()
+        if rows:
+            data = {'Location_Name': None, 'count_project': rows['count_project']}
+        else:
+            data = {'Location_Name': None, 'count_project': 0}
+    cur.close()
+    conn.close()
+    
+    return data
