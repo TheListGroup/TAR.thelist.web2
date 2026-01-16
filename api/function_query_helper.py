@@ -1602,7 +1602,9 @@ def _office_point_calculate(
                             , u.Ceiling_Replacement as Ceiling_Replacement
                             , (GREATEST(TIME_TO_SEC(COALESCE(b.ACTime_Start, '{actime_start_default}')) - TIME_TO_SEC('{work_start}'), 0) 
                                 + GREATEST(TIME_TO_SEC('{work_end}') - TIME_TO_SEC(COALESCE(b.ACTime_End, '{actime_end_default}')), 0)) AS Wkday_OT_Seconds
-                            , GREATEST(TIME_TO_SEC('{work_end}') - TIME_TO_SEC('{work_start}'), 0) AS Wkend_Work_Seconds
+                            , if({work_sat} = 0 and {work_sun} = 0
+                                , 0
+                                , GREATEST(TIME_TO_SEC('{work_end}') - TIME_TO_SEC('{work_start}'), 0)) AS Wkend_Work_Seconds
                         FROM all_rentable_entities u
                         JOIN office_building b ON b.Building_ID = u.Building_ID
                         {in_unit_condition}),
@@ -2309,12 +2311,12 @@ def _office_point_calculate(
                             LEAST(COALESCE(b.Monthly_Avg_All__Central_With_NonAC, b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC),
                                 COALESCE(b.Monthly_Avg_All__Split_Own_AC_Plus_NonAC, b.Monthly_Avg_All__Central_With_NonAC)) as Selected_Cost,
                             ROUND(a.cost_score,3) AS Cost_Score,
-                            ROUND({w_price} * a.cost_score, 3) AS Cost_Score_Weighted,
+                            ROUND({w_price} * a.cost_score, 3) AS Final_Cost_Score,
 
                             -- === Size raw + score ===
                             a.Size as Size_cal,
                             ROUND(a.size_score,3) AS Size_Score,
-                            ROUND({w_size} * a.size_score, 3) AS Size_Score_Weighted,
+                            ROUND({w_size} * a.size_score, 3) AS Final_Size_Score,
                             
                             -- === Location raw + score ===
                             a.Yarn_Name,
@@ -2329,114 +2331,117 @@ def _office_point_calculate(
                             a.Station_Radius_Score,
                             ROUND(a.location_score,3) AS Location_Score,
                             ({w_location} * a.location_score) AS Location_Score_Weighted,
-
-                            -- === Floor raw + score ===
-                            Floor,
-                            ROUND(a.floor_score,3) AS Floor_Score,
-                            ({w_floor} * a.floor_score) AS Floor_Score_Weighted,
-
-                            -- === Direction raw + score ===
-                            a.View_N, a.View_E, a.View_S, a.View_W,
-                            ROUND(a.direction_score,3) AS Direction_Score,
-                            ({w_direction} * a.direction_score) AS Direction_Score_Weighted,
-
-                            -- === Ceiling raw + score ===
-                            a.Ceiling_Dropped, a.Ceiling_Full_Structure,
-                            ROUND(a.ceiling_score,3) AS Ceiling_Score,
-                            ({w_ceiling} * a.ceiling_score) AS Ceiling_Score_Weighted,
-
-                            -- === Column raw + score ===
-                            a.Column_InUnit,
-                            ROUND(a.columns_score,3) AS Columns_Score,
-                            ({w_columns} * a.columns_score) AS Columns_Score_Weighted,
-
-                            -- === Bathroom raw + score ===
-                            a.Bathroom_InUnit,
-                            ROUND(a.bathroom_score,3) AS Bathroom_Score,
-                            ({w_bathroom} * a.bathroom_score) AS Bathroom_Score_Weighted,
-
-                            -- === Pantry raw + score ===
-                            a.Pantry_InUnit,
-                            ROUND(a.pantry_score,3) AS Pantry_Score,
-                            ({w_pantry_inunit} * a.pantry_score) AS Pantry_Score_Weighted,
-
-                            -- === Deposit raw + score ===
-                            /*Rent_Deposit,
-                            ROUND(deposit_score,3) AS Rent_Deposit_Score,
-                            (w_deposit * deposit_score) AS Rent_Deposit_Score_Weighted,
-
-                            -- === Advance rent raw + score ===
-                            Rent_Advance,
-                            ROUND(advance_score,3) AS Rent_Advance_Score,
-                            (w_advance * advance_score) AS Rent_Advance_Score_Weighted,*/
-
+                            -- === Train station distance raw + score ===
+                            a.Distance_from_nearest_station,
+                            ROUND(a.train_station_score,3) AS Train_Station_Score,
+                            ({w_station} * a.train_station_score) AS Train_Station_Score_Weighted,
+                            -- === Express way distance raw + score ===
+                            a.Distance_from_nearest_express_way,
+                            ROUND(a.express_way_score,3) AS Express_Way_Score,
+                            ({w_expressway} * a.express_way_score) AS Express_Way_Score_Weighted,
+                            (({w_location} * a.location_score) 
+                            + ({w_station} * a.train_station_score) 
+                            + ({w_expressway} * a.express_way_score)) as Final_Location_Score,
+                            
                             -- === Common pantry raw + score ===
                             a.F_Common_Pantry,
                             ROUND(a.common_pantry_score,3) AS Common_Pantry_Score,
                             ({w_pantry} * a.common_pantry_score) AS Common_Pantry_Score_Weighted,
-
                             -- === Security system raw + score ===
                             a.Security_Type,
                             ROUND(a.security_score,3) AS Security_Score,
                             ({w_security} * a.security_score) AS Security_Score_Weighted,
-
                             -- === Lifts raw + score ===
                             a.Building_Passenger_Lift,
                             ROUND(a.passenger_lift_score,3) AS Passenger_Lift_Score,
                             ({w_passenger_lift} * a.passenger_lift_score) AS Passenger_Lift_Score_Weighted,
-
                             a.Building_Service_Lift,
                             ROUND(a.service_lift_score,3) AS Service_Lift_Score,
                             ({w_service_lift} * a.service_lift_score) AS Service_Lift_Score_Weighted,
-
                             -- === Building year raw + score ===
                             a.Built_Complete,
                             a.Last_Renovate,
                             ROUND(a.building_age_score,3) AS Building_Age_Score,
                             ({w_age} * a.building_age_score) AS Building_Age_Score_Weighted,
+                            (({w_pantry} * a.common_pantry_score)
+                            + ({w_security} * a.security_score)
+                            + ({w_passenger_lift} * a.passenger_lift_score)
+                            + ({w_service_lift} * a.service_lift_score)
+                            + ({w_age} * a.building_age_score)) as Final_Building_Score,
 
-                            -- === Train station distance raw + score ===
-                            a.Distance_from_nearest_station,
-                            ROUND(a.train_station_score,3) AS Train_Station_Score,
-                            ({w_station} * a.train_station_score) AS Train_Station_Score_Weighted,
+                            -- === Floor raw + score ===
+                            Floor,
+                            ROUND(a.floor_score,3) AS Floor_Score,
+                            ({w_floor} * a.floor_score) AS Floor_Score_Weighted,
+                            -- === Direction raw + score ===
+                            a.View_N, a.View_E, a.View_S, a.View_W,
+                            ROUND(a.direction_score,3) AS Direction_Score,
+                            ({w_direction} * a.direction_score) AS Direction_Score_Weighted,
+                            -- === Ceiling raw + score ===
+                            a.Ceiling_Dropped, a.Ceiling_Full_Structure,
+                            ROUND(a.ceiling_score,3) AS Ceiling_Score,
+                            ({w_ceiling} * a.ceiling_score) AS Ceiling_Score_Weighted,
+                            -- === Column raw + score ===
+                            a.Column_InUnit,
+                            ROUND(a.columns_score,3) AS Columns_Score,
+                            ({w_columns} * a.columns_score) AS Columns_Score_Weighted,
+                            -- === Bathroom raw + score ===
+                            a.Bathroom_InUnit,
+                            ROUND(a.bathroom_score,3) AS Bathroom_Score,
+                            ({w_bathroom} * a.bathroom_score) AS Bathroom_Score_Weighted,
+                            -- === Pantry raw + score ===
+                            a.Pantry_InUnit,
+                            ROUND(a.pantry_score,3) AS Pantry_Score,
+                            ({w_pantry_inunit} * a.pantry_score) AS Pantry_Score_Weighted,
+                            (({w_floor} * a.floor_score)
+                            + ({w_direction} * a.direction_score)
+                            + ({w_ceiling} * a.ceiling_score)
+                            + ({w_columns} * a.columns_score)
+                            + ({w_bathroom} * a.bathroom_score)
+                            + ({w_pantry_inunit} * a.pantry_score)) as Final_Unit_Score,
 
-                            -- === Express way distance raw + score ===
-                            a.Distance_from_nearest_express_way,
-                            ROUND(a.express_way_score,3) AS Express_Way_Score,
-                            ({w_expressway} * a.express_way_score) AS Express_Way_Score_Weighted,
+                            -- === Deposit raw + score ===
+                            /*Rent_Deposit,
+                            ROUND(deposit_score,3) AS Rent_Deposit_Score,
+                            (w_deposit * deposit_score) AS Rent_Deposit_Score_Weighted,
+                            -- === Advance rent raw + score ===
+                            Rent_Advance,
+                            ROUND(advance_score,3) AS Rent_Advance_Score,
+                            (w_advance * advance_score) AS Rent_Advance_Score_Weighted,*/
 
                             -- === Facilities raw + score ===
                             a.F_Services_Bank,
                             ROUND(a.bank_score,3) AS Bank_Score,
                             ({w_fac_bank} * a.bank_score) AS Bank_Score_Weighted,
-
                             a.F_Food_Cafe,
                             ROUND(a.cafe_score,3) AS Cafe_Score,
                             ({w_fac_cafe} * a.cafe_score) AS Cafe_Score_Weighted,
-
                             a.F_Food_Restaurant,
                             ROUND(a.restaurant_score,3) AS Restaurant_Score,
                             ({w_fac_restaurant} * a.restaurant_score) AS Restaurant_Score_Weighted,
-
                             a.F_Food_Foodcourt,
                             ROUND(a.foodcourt_score,3) AS Foodcourt_Score,
                             ({w_fac_foodcourt} * a.foodcourt_score) AS Foodcourt_Score_Weighted,
-
                             a.F_Food_Market,
                             ROUND(a.market_score,3) AS Market_Score,
                             ({w_fac_market} * a.market_score) AS Market_Score_Weighted,
-
                             a.F_Retail_Conv_Store,
                             ROUND(a.conv_store_score,3) AS Conv_Store_Score,
                             ({w_fac_conv_store} * a.conv_store_score) AS Conv_Store_Score_Weighted,
-
                             a.F_Services_Pharma_Clinic,
                             ROUND(a.pharma_clinic_score,3) AS Pharma_Clinic_Score,
                             ({w_fac_pharma_clinic} * a.pharma_clinic_score) AS Pharma_Clinic_Score_Weighted,
-
                             a.F_Others_EV,
                             ROUND(a.ev_score,3) AS EV_Score,
                             ({w_fac_ev} * a.ev_score) AS EV_Score_Weighted,
+                            (({w_fac_bank} * a.bank_score)
+                            + ({w_fac_cafe} * a.cafe_score)
+                            + ({w_fac_restaurant} * a.restaurant_score)
+                            + ({w_fac_foodcourt} * a.foodcourt_score)
+                            + ({w_fac_market} * a.market_score)
+                            + ({w_fac_conv_store} * a.conv_store_score)
+                            + ({w_fac_pharma_clinic} * a.pharma_clinic_score)
+                            + ({w_fac_ev} * a.ev_score)) as Final_Convenience_Score,
 
                             -- === TOTAL weighted score ===
                             ROUND(
@@ -2468,8 +2473,7 @@ def _office_point_calculate(
                                 + ({w_fac_ev}               * a.ev_score)
                             ,3) AS Total_Score
                         FROM scored a
-                        left join expenses b on a.Unit_ID = b.Unit_ID
-                        LIMIT 200)
+                        left join expenses b on a.Unit_ID = b.Unit_ID)
                     select * from summary ORDER BY Total_Score DESC""")
         rows = cur.fetchall()
         return rows
