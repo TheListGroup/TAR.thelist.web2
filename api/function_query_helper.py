@@ -2480,3 +2480,163 @@ def _office_point_calculate(
     finally:
         cur.close()
         conn.close()
+
+#def _get_unit_result_data() -> dict:
+#    conn = get_db()
+#    cur = conn.cursor(dictionary=True)
+#    try:
+#        cur.execute(f"""create query for result merge room and single room""", (,))
+#        rows = cur.fetchall()
+#        if rows:
+#            return rows
+#        return None
+#    finally:
+#        cur.close()
+#        conn.close()
+
+def generate_unique_code(unit_id, length=12):
+    prefix = str(unit_id)
+    seconds_str = f"{datetime.now().second:02}"
+    fixed_part = prefix + seconds_str
+    missing_len = length - len(fixed_part)
+    
+    if missing_len <= 0:
+        return prefix[:length] 
+
+    chars = string.ascii_letters + string.digits
+    suffix = ''.join(random.choices(chars, k=missing_len))
+    
+    return fixed_part + suffix
+
+def _insert_unit_url(unique_code, unit_id, project_id, user_gen, search_output_id, user_id) -> dict:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        if user_gen == 1:
+            ex_date = 'DATE_ADD(NOW(), INTERVAL 2 MONTH)'
+            link_status = None
+            search_output_id = search_output_id
+            user_id = None
+        elif user_gen == 2:
+            ex_date = 'DATE_ADD(NOW(), INTERVAL 1 MONTH)'
+            link_status = None
+            search_output_id = None
+            user_id = user_id
+        else:
+            ex_date = 'DATE_ADD(NOW(), INTERVAL 1 YEAR)'
+            link_status = 'Active'
+            search_output_id = None
+            user_id = None
+        
+        cur.execute(f"""insert into office_unit_link (Unique_Code, Unit_ID, Project_ID, Expire_Date, Link_Status, Search_output_ID, User_ID) 
+                    values (%s, %s, %s, {ex_date}, %s, %s, %s)""", (unique_code, unit_id, project_id, link_status, search_output_id, user_id))
+        
+        conn.commit()
+        
+        host_url = 'http://thelist.group/real-lease/proj/'
+        project_data = _select_full_office_project_item(project_id)
+        project_url = project_data['Project_URL_Tag']
+        full_url = host_url + project_url + '/' + unique_code
+    
+        return full_url
+    except Exception as e:
+        conn.rollback()
+        raise Exception("Insert Link error")
+    finally:
+        cur.close()
+        conn.close()
+
+def gen_link(unit_id, project_id, user_gen, search_output_id, user_id, room_source):
+    if room_source == 'merge':
+        generated_links = []
+        for unit in unit_id:
+            unique_code = generate_unique_code(unit)
+            unit_link = _insert_unit_url(unique_code, unit, project_id, user_gen, search_output_id, user_id)
+            generated_links.append({'Unit_ID': unit, 'Unit_Link': unit_link})
+        return generated_links
+    else:
+        unique_code = generate_unique_code(unit_id)
+        unit_link = _insert_unit_url(unique_code, unit_id, project_id, user_gen, search_output_id, user_id)
+        return [{'Unit_ID': unit_id, 'Unit_Link': unit_link}]
+
+def find_unit_virtual_room(virtual_id):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute("""SELECT group_concat(Unit_ID SEPARATOR ',') as Unit_ID FROM `office_unit_virtual_room_mapping` where Virtual_ID = %s""", (virtual_id,))
+        row = cur.fetchone()
+        if row:
+            return row['Unit_ID'].split(',')
+        return []
+    finally:
+        cur.close()
+        conn.close()
+
+def get_lastest_unit(unit_rank, project_id) -> dict:
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        if project_id is not None:
+            add_query = 'and Project_ID = %s'
+            params = (unit_rank, project_id)
+        else:
+            add_query = ''
+            params = (unit_rank,)
+        
+        sql_query = f"""
+            WITH RankedUnits AS (
+                SELECT
+                    u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
+                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, concat(u.Project_URL_Tag, '/', u.Unique_Code) as Unit_URL,
+                    u.Last_Updated_Date, ROW_NUMBER() OVER (PARTITION BY u.Project_ID ORDER BY u.Last_Updated_Date desc) as rn
+                FROM
+                    source_office_unit_carousel_recommend u
+            )
+            SELECT DISTINCT
+                Unit_ID, Title, Project_Name, Project_Tag_Used, Project_Tag_All,
+                near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID, Unit_URL, Last_Updated_Date
+            FROM
+                RankedUnits
+            WHERE
+                rn <= %s
+            {add_query}
+            ORDER BY Last_Updated_Date DESC
+        """
+        cur.execute(sql_query, params)
+        final_units = cur.fetchall()
+        if final_units:
+            return final_units
+        return None
+    finally:
+        cur.close()
+        conn.close()
+
+def insert_document(user_id, doc_name, doc_type):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute(f"""insert into tenant_document (Tenant_ID, Doc_Type, Doc_Name) 
+                    values (%s, %s, %s)""", (user_id, doc_type, doc_name))
+        conn.commit()
+        return {"Document_Name": doc_name, "Document_Type": doc_type}
+    except:
+        conn.rollback()
+        raise Exception("Insert Document error")
+    finally:
+        cur.close()
+        conn.close()
+
+def _select_full_tenant_user(user_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    cur2.execute(
+        f"""SELECT
+                *
+            FROM tenant_user
+            WHERE Tenant_ID=%s""",
+        (user_id,)
+    )
+    row = cur2.fetchone()
+    cur2.close()
+    conn2.close()
+    return normalize_unit_row(row)
