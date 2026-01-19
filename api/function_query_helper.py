@@ -1523,7 +1523,7 @@ def _office_point_calculate(
     dir_s_score, dir_e_score, dir_w_score, min_ceiling_clear, 
     bath_pref, pantry_pref, train_decay_k, express_decay_k, fac_bank_pref, 
     fac_cafe_pref, fac_restaurant_pref, fac_foodcourt_pref, fac_market_pref, fac_conv_store_pref, 
-    fac_pharmacy_pref, fac_ev_pref, w_price, w_size, w_location,
+    fac_phamacy_pref, fac_ev_pref, w_price, w_size, w_location,
     w_floor, w_direction, w_ceiling, w_columns, w_bathroom,
     w_pantry_inunit, w_pantry, w_security, w_passenger_lift, w_service_lift, 
     w_age, w_station, w_expressway, w_fac_bank, w_fac_cafe, 
@@ -2262,9 +2262,9 @@ def _office_point_calculate(
                                         END) 
                             END AS conv_store_score,
                             CASE 
-                                WHEN {fac_pharmacy_pref}=0 
+                                WHEN {fac_phamacy_pref}=0 
                                     THEN {default_score} 
-                                WHEN {fac_pharmacy_pref}=1 
+                                WHEN {fac_phamacy_pref}=1 
                                     THEN (
                                             CASE 
                                                 WHEN f.F_Services_Pharma_Clinic IS NULL 
