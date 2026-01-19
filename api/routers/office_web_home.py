@@ -6,7 +6,7 @@ from function_query_helper import _select_full_office_project_item, _get_project
     , _get_project_building, _get_subdistrict_data, _get_district_data, _get_province_data, get_project_station, get_project_express_way, get_project_retail \
     , get_project_hospital, get_project_education, _select_full_office_unit_item, _select_full_office_building_item, get_project_image, get_all_unit_carousel_images \
     , get_unit_highlight, get_unit_info_card, get_project_convenience_store, get_project_bank, get_search_project, get_all_project_carousel_images, _get_project_carousel_data \
-    , _get_project_youtube, _get_project_tag_data
+    , _get_project_youtube, _get_project_tag_data, get_lastest_unit
 from typing import Optional, Tuple, Dict, Any, List
 import os
 import re
@@ -137,8 +137,8 @@ def recommand_card_data(
             WITH RankedUnits AS (
                 SELECT
                     u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
-                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL, u.Last_Updated_Date,
-                    ROW_NUMBER() OVER (PARTITION BY jt.Found_Tag, u.Project_ID ORDER BY u.Last_Updated_Date desc) as rn
+                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, concat(u.Project_URL_Tag, '/', u.Unique_Code) as Unit_URL
+                    , u.Last_Updated_Date, ROW_NUMBER() OVER (PARTITION BY jt.Found_Tag, u.Project_ID ORDER BY u.Last_Updated_Date desc) as rn
                 FROM
                     source_office_unit_carousel_recommend u
                 CROSS JOIN
@@ -173,7 +173,6 @@ def recommand_card_data(
         
         for unit in final_units:
             unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
-            unit['Unit_URL'] = unit['Unit_URL'] + '/' + str(unit['Unit_ID']).rjust(4, '0')
             
         return final_units
 
@@ -186,36 +185,10 @@ def lastest_card_unit_data(
     _ = Depends(get_current_user),
 ):
     try:
-        conn = get_db()
-        cur = conn.cursor(dictionary=True)
         UNITS_Rank = 1
         MAX_TOTAL_UNITS = 20
-
-        sql_query = f"""
-            WITH RankedUnits AS (
-                SELECT
-                    u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
-                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID, u.Project_URL_Tag as Unit_URL, u.Last_Updated_Date,
-                    ROW_NUMBER() OVER (PARTITION BY u.Project_ID ORDER BY u.Last_Updated_Date desc) as rn
-                FROM
-                    source_office_unit_carousel_recommend u
-            )
-            SELECT DISTINCT
-                Unit_ID, Title, Project_Name, Project_Tag_Used, Project_Tag_All,
-                near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID, Unit_URL, Last_Updated_Date
-            FROM
-                RankedUnits
-            WHERE
-                rn <= %s
-            ORDER BY Last_Updated_Date DESC
-            LIMIT %s
-        """
-        params = (UNITS_Rank, MAX_TOTAL_UNITS)
-        cur.execute(sql_query, params)
-        final_units = cur.fetchall()
-        
-        cur.close()
-        conn.close()
+        final_units = get_lastest_unit(UNITS_Rank, None)
+        final_units = final_units[:MAX_TOTAL_UNITS]
         
         unit_ids = [unit['Unit_ID'] for unit in final_units]
         project_ids = [unit['Project_ID'] for unit in final_units]
@@ -224,7 +197,6 @@ def lastest_card_unit_data(
         
         for unit in final_units:
             unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
-            unit['Unit_URL'] = unit['Unit_URL'] + '/' + str(unit['Unit_ID']).rjust(4, '0')
             
         return final_units
 
@@ -233,13 +205,122 @@ def lastest_card_unit_data(
 
 
 # ----------------------------------------------------- Recommand Project Card --------------------------------------------------------------------------------------------
+#@router.get("/recommand-project-card", status_code=200)
+#def recommand_project_card_data(
+#    _ = Depends(get_current_user),
+#):
+#    try:
+#        MAX_TOTAL_PROJECTS = 10
+#        rows = _get_project_carousel_data(None, MAX_TOTAL_PROJECTS, 'carousel_home')
+#        
+#        if rows:
+#            project_ids = [project['Project_ID'] for project in rows]
+#            images_by_project_id = get_all_project_carousel_images(project_ids, True)
+#            
+#            for project in rows:
+#                project['Carousel_Image'] = images_by_project_id.get(project['Project_ID']) if images_by_project_id else None
+#            return rows
+#        else:
+#            return []
+#
+#    except Exception as e:
+#        return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
+
 @router.get("/recommand-project-card", status_code=200)
 def recommand_project_card_data(
     _ = Depends(get_current_user),
 ):
     try:
+        conn = get_db()
+        cur = conn.cursor(dictionary=True)
         MAX_TOTAL_PROJECTS = 10
-        rows = _get_project_carousel_data(None, MAX_TOTAL_PROJECTS, 'carousel_home')
+        cur.execute("""WITH 
+                        Raw_Data AS (
+                            SELECT 
+                                OP.Project_ID,
+                                OP.Name_EN as Project_Name,
+                                OU.Rent_Price as Rent_Price_cal,
+                                OUCR.Last_Updated_Date,
+                                COUNT(1) OVER (PARTITION BY OP.Project_ID) as total_units,
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY OP.Project_ID 
+                                    ORDER BY OU.Rent_Price ASC
+                                ) as price_row_id,
+                                OPUCR.Project_Tag_Used,
+                                OPUCR.Project_Tag_All,
+                                OPUCR.near_by,
+                                OPUCR.Highlight,
+                                OPUCR.Rent_Price,
+                                OPUCR.Project_URL_Tag
+                            FROM 
+                                office_project OP
+                                JOIN office_building OB ON OP.Project_ID = OB.Project_ID
+                                JOIN office_unit OU ON OB.Building_ID = OU.Building_ID
+                                JOIN source_office_unit_carousel_recommend OUCR ON OU.Unit_ID = OUCR.Unit_ID
+                                JOIN source_office_project_carousel_recommend OPUCR ON OP.Project_ID = OPUCR.Project_ID
+                            WHERE OP.Project_Status = '1'
+                            AND OU.Unit_Status = '1'
+                            AND OB.Building_Status = '1'
+                        ),
+                        Project_Metrics AS (
+                            SELECT 
+                                Project_ID,
+                                Project_Name,
+                                MAX(total_units) as m_qty,
+                                ROUND(AVG(Rent_Price_cal)) as m_price,
+                                MAX(Last_Updated_Date) as m_date,
+                                Project_Tag_Used,
+                                Project_Tag_All,
+                                near_by,
+                                Highlight,
+                                Rent_Price,
+                                Project_URL_Tag,
+                                total_units
+                            FROM 
+                                Raw_Data
+                            WHERE 
+                                price_row_id > FLOOR(total_units * 0.05)
+                                AND 
+                                price_row_id <= (total_units - FLOOR(total_units * 0.05))
+                            GROUP BY 
+                                Project_ID, 
+                                Project_Name
+                        ),
+                        Scored_Projects AS (
+                            SELECT
+                                *,
+                                PERCENT_RANK() OVER (ORDER BY m_qty ASC) as score_qty,
+                                PERCENT_RANK() OVER (ORDER BY m_price ASC) as score_price,
+                                PERCENT_RANK() OVER (ORDER BY m_date ASC) as score_date
+                            FROM 
+                                Project_Metrics
+                        ),
+                        final as (SELECT
+                            Project_ID,
+                            Project_Name,
+                            m_qty as "Number of Units",
+                            m_price as "Avg Price",
+                            m_date as "Latest Date",
+                            ROUND(score_qty, 2) as "Score(Qty)",
+                            ROUND(score_price, 2) as "Score(Price)",
+                            ROUND(score_date, 2) as "Score(Date)",
+                            ROUND(
+                                (score_qty + score_price + score_date) / 3 
+                            , 4) as "Composite_Score",
+                            Project_Tag_Used,
+                            Project_Tag_All,
+                            near_by,
+                            Highlight,
+                            Rent_Price,
+                            Project_URL_Tag,
+                            total_units
+                        FROM 
+                            Scored_Projects)
+                        SELECT Project_ID, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Highlight, Rent_Price, total_units as Unit_Count, Project_URL_Tag
+                            , ROW_NUMBER() OVER (ORDER BY Composite_Score DESC) as Project_Rank
+                        FROM final
+                        LIMIT %s""", (MAX_TOTAL_PROJECTS,))
+        rows = cur.fetchall()
         
         if rows:
             project_ids = [project['Project_ID'] for project in rows]
@@ -247,13 +328,12 @@ def recommand_project_card_data(
             
             for project in rows:
                 project['Carousel_Image'] = images_by_project_id.get(project['Project_ID']) if images_by_project_id else None
-            return rows
-        else:
-            return []
-
+        return rows
     except Exception as e:
         return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
-
+    finally:
+        cur.close()
+        conn.close()
 
 # ----------------------------------------------------- project card tag --------------------------------------------------------------------------------------------
 @router.get("/tag-card-project/{tags}", status_code=200)
@@ -503,42 +583,31 @@ def project_template_data(
         data.append({"Gallery": gallery})
         
         unit_available = {}
-        conn = get_db()
-        cur = conn.cursor(dictionary=True)
-        cur.execute("""SELECT a.Project_ID, JSON_ARRAYAGG(JSON_OBJECT('Unit_ID', d.Unit_ID
-                                                                    , 'Title', d.Title
-                                                                    , 'Project_Name', d.Project_Name
-                                                                    , 'Project_Tag_Used', d.Project_Tag_Used
-                                                                    , 'Project_Tag_All', d.Project_Tag_All
-                                                                    , 'near_by', d.near_by
-                                                                    , 'Rent_Price', d.Rent_Price
-                                                                    , 'Rent_Price_Sqm', d.Rent_Price_Sqm
-                                                                    , 'Rent_Price_Status', d.Rent_Price_Status
-                                                                    , 'Unit_URL', concat(d.Project_URL_Tag,'/',LPAD(d.Unit_ID, 4, '0')))) as Unit
-                        FROM office_project a
-                        join office_building b on a.Project_ID = b.Project_ID
-                        join office_unit c on c.Building_ID = b.Building_ID
-                        join source_office_unit_carousel_recommend d on c.Unit_ID = d.Unit_ID
-                        where a.Project_ID = %s
-                        and c.Unit_Status = '1'
-                        group by a.Project_ID""", (Project_ID,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
+        UNITS_Rank = 1
+        unit_available_data = get_lastest_unit(UNITS_Rank, Project_ID)
+        if unit_available_data:
+            raw_unit = unit_available_data[0]
+            unit_obj = {'Unit_ID': raw_unit['Unit_ID'],
+                        'Title': raw_unit['Title'],
+                        'Project_Name': raw_unit['Project_Name'],
+                        'Project_Tag_Used': raw_unit['Project_Tag_Used'],
+                        'Project_Tag_All': raw_unit['Project_Tag_All'],
+                        'near_by': raw_unit['near_by'],
+                        'Rent_Price': raw_unit['Rent_Price'],
+                        'Rent_Price_Sqm': raw_unit['Rent_Price_Sqm'],
+                        'Rent_Price_Status': raw_unit['Rent_Price_Status'],
+                        'Unit_URL': raw_unit['Unit_URL']}
         
-        if rows:
-            project_data = rows[0]
-            units = json.loads(project_data["Unit"])
-            unit_id_set = [unit["Unit_ID"] for unit in units]
-            unit_carousel_image = get_all_unit_carousel_images(unit_id_set, [Project_ID], True, True)
-            for unit in units:
-                if unit_carousel_image is not None:
-                    unit["Carousel_Image"] = unit_carousel_image.get(unit['Unit_ID'])
-                else:
-                    unit["Carousel_Image"] = None
-                if 'near_by' in unit and unit['near_by'] is not None:
-                    unit['near_by'] = json.dumps(unit['near_by'], ensure_ascii=False)
-            unit_available["Unit"] = units
+            unit_carousel_image = get_all_unit_carousel_images([raw_unit['Unit_ID']], [Project_ID], True, True)
+            if unit_carousel_image is not None:
+                unit_obj["Carousel_Image"] = unit_carousel_image.get(raw_unit['Unit_ID'])
+            else:
+                unit_obj["Carousel_Image"] = None
+            
+            if 'near_by' in unit_obj and unit_obj['near_by'] is not None:
+                if isinstance(unit_obj['near_by'], (dict, list)):
+                    unit_obj['near_by'] = json.dumps(unit_obj['near_by'], ensure_ascii=False)
+            unit_available["Unit"] = [unit_obj]
         else:
             unit_available["Unit"] = None
         data.append({"Unit_Available": unit_available})
@@ -883,6 +952,7 @@ def unit_template_data(
             location["Longitude"] = None
         data.append({"Location": location})
         
+        #ตัดทิ้ง ???
         unit_around = {}
         conn = get_db()
         cur = conn.cursor(dictionary=True)
@@ -913,6 +983,7 @@ def unit_template_data(
                 data.append(unit_around)
         else:
             data.append({"Near_Unit": None})
+        ######################################################################################################################
         
         cur.close()
         conn.close()
