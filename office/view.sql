@@ -506,7 +506,7 @@ select u.Unit_ID
     , p.Project_URL_Tag
     , p.Latitude
     , p.Longitude
-    , u.Last_Updated_Date
+    , greatest(COALESCE(u.Created_Date, u.Last_Available_Date), COALESCE(u.Last_Available_Date, u.Created_Date)) as Last_Updated_Date
     /*, img_carousel.Image_Set as Carousel_Image
     , img_random.Image_Set as Carousel_Image_Random*/
 from office_unit u
@@ -729,14 +729,8 @@ select a.Project_ID
     , project_highlight.Meeting_Room as Meeting_Room
     , project_highlight.Food as Foodcourt
     , project_highlight.Cafe as Cafe
-    , countunit.Unit_Last_Updated_Date as Unit_Last_Updated_Date
-    , if(b.Built_Complete is not null and b.Last_Renovate is not null
-        , greatest(b.Built_Complete, b.Last_Renovate)
-        , if(b.Built_Complete is not null
-            , b.Built_Complete
-            , if(b.Last_Renovate is not null
-                , b.Last_Renovate
-                , null))) as Building_Date
+    , greatest(COALESCE(countunit.Created_Date, countunit.Last_Available_Date), COALESCE(countunit.Last_Available_Date, countunit.Created_Date)) as Unit_Last_Updated_Date
+    , greatest(COALESCE(b.Built_Complete, b.Last_Renovate), COALESCE(b.Last_Renovate, b.Built_Complete)) as Building_Date
 from office_project a
 left join source_office_project_highlight_relationship highlight on a.Project_ID = highlight.Project_ID
 left join source_office_project_highlight project_highlight on a.Project_ID = project_highlight.Project_ID
@@ -747,7 +741,8 @@ left join (select Project_ID
             group by Project_ID) b
 on a.Project_ID = b.Project_ID
 left join (select a.Project_ID, count(u.Unit_ID) as Unit_Count, max(u.Pantry_InUnit) as Pantry_InUnit , max(u.Bathroom_InUnit) as Bathroom_InUnit
-                , max(u.Last_Updated_Date) as Unit_Last_Updated_Date 
+                , max(u.Created_Date) as Created_Date
+                , max(u.Last_Available_Date) as Last_Available_Date 
             from office_project a
             left join office_building b on a.Project_ID = b.Project_ID
             left join office_unit u on b.Building_ID = u.Building_ID
