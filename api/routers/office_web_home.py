@@ -137,7 +137,7 @@ def recommand_card_data(
             WITH RankedUnits AS (
                 SELECT
                     u.Unit_ID, u.Title, u.Project_Name, u.Project_Tag_Used, u.Project_Tag_All,
-                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID,  u.Project_URL_Tag /*concat(u.Project_URL_Tag, '/', u.Unique_Code)*/ as Unit_URL
+                    u.near_by, u.Rent_Price, u.Rent_Price_Sqm, u.Rent_Price_Status, u.Project_ID,  concat(u.Project_URL_Tag,'/',LPAD(u.Unit_ID, 4, '0')) /*concat(u.Project_URL_Tag, '/', u.Unique_Code)*/ as Unit_URL
                     , u.Last_Updated_Date, ROW_NUMBER() OVER (PARTITION BY jt.Found_Tag, u.Project_ID ORDER BY u.Last_Updated_Date desc) as rn
                 FROM
                     source_office_unit_carousel_recommend u
