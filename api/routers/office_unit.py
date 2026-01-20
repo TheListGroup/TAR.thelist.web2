@@ -4,7 +4,7 @@ from auth import get_current_user  # << ใช้ตัวเดิม (รอ�
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists, normalize_row
 from function_query_helper import _select_full_office_unit_item, _select_full, _get_building_id, _get_project_id \
     , _get_unit_display_order, _select_all_unit_image_category, _get_building_relationship, _get_project_name, _get_building_name \
-    , _update_image_order
+    , _update_image_order, gen_link
 from typing import Optional, Tuple, Dict, Any, List
 import os, uuid, shutil
 from PIL import Image
@@ -359,9 +359,8 @@ def _calculate_virtual_room_details_optimized(unit_ids: list, transient_cache: d
     
     # --- 3. คำนวณค่าต่างๆ ---
     # 3.1 สร้างชื่อห้องรวม (String Join)
-    combined_id = "".join([str(d['Unit_ID']) for d in sorted_details])
-    combined_no = "+".join([d['Unit_NO'] for d in sorted_details])
-    combined_name = combined_id + " " + combined_no
+    combined_no = " - ".join([d['Unit_NO'] for d in sorted_details])
+    combined_name = combined_no
     
     # 3.2 Building ID (สมมติว่าห้องติดกันต้องอยู่ตึกเดียวกัน ใช้ของห้องแรก)
     building_id = sorted_details[0]['Building_ID']
@@ -694,6 +693,16 @@ def update_office_unit_and_return_full_record(
     
         conn = get_db()
         cur = conn.cursor(dictionary=True)
+        
+        last_available_date = 'null'
+        if Unit_Status == "1":
+            check_status_query = f"""SELECT Unit_Status FROM {TABLE} WHERE Unit_ID=%s"""
+            cur.execute(check_status_query, (Unit_ID,))
+            unit_status = cur.fetchone()
+            if unit_status['Unit_Status'] == '0':
+                last_available_date = 'CURRENT_TIMESTAMP'
+                Available = None
+        
         sql = f"""
             UPDATE {TABLE}
             SET Building_ID=%s,
@@ -725,7 +734,8 @@ def update_office_unit_and_return_full_record(
                 User_ID=%s,
                 Unit_Status=%s,
                 Last_Updated_By=%s,
-                Last_Updated_Date=CURRENT_TIMESTAMP
+                Last_Updated_Date=CURRENT_TIMESTAMP,
+                Last_Available_Date={last_available_date}
             WHERE Unit_ID=%s
         """
         cur.execute(sql, (
@@ -1120,58 +1130,29 @@ def select_all_unit_adjacency(
         cur.close()
         conn.close()
         
+# ====================== Agent Gen Link ======================
+@router.get("/agent-gen-link/{Unit_ID}", status_code=200)
+def agent_gen_unit_link(
+    Unit_ID: int,
+    User_ID: int,
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        unit_data = _select_full(Unit_ID)
+        if not unit_data:
+            return to_problem(404, "Not Found", "Unit not found")
         
-#@router.put("/select/unit_adjacency/all", status_code=200)
-#@router.post("/select/unit_adjacency/all", status_code=200)
-#def select_all_unit_adjacency(
-#    Floor: int,
-#    BUilding: int,
-#    State: str,
-#    Unit_ID: Optional[int] = None,
-#    _ = Depends(get_current_user),
-#):
-#    try:
-#        conn = get_db()
-#        cur = conn.cursor(dictionary=True)
-#        
-#        if state == 'update':
-#            virtual_room_mapping = """SELECT Virtual_ID, COUNT(*) as Total_Rows
-#                                        FROM office_unit_virtual_room_mapping
-#                                        WHERE Virtual_ID IN (
-#                                            SELECT Virtual_ID
-#                                            FROM office_unit_virtual_room_mapping
-#                                            WHERE Unit_ID = %s)
-#                                        GROUP BY Virtual_ID
-#                                        ORDER BY Total_Rows DESC
-#                                        LIMIT 1"""
-#            cur.execute(virtual_room_mapping, (Unit_ID,))
-#            virtual_room_row = cur.fetchone()
-#            
-#            unit_in_virtual_room_row_list= []
-#            if virtual_room_row:
-#                unit_in_virtual_room = """SELECT Unit_ID FROM `office_unit_virtual_room_mapping` where Virtual_ID = %s"""
-#                cur.execute(unit_in_virtual_room, (virtual_room_row['Virtual_ID'],))
-#                unit_in_virtual_room_row = cur.fetchall()
-#                unit_in_virtual_room_row_list = [unit['Unit_ID'] for unit in unit_in_virtual_room_row]
-#            
-#            base_unit = """SELECT Building_ID, Floor FROM office_unit
-#                            WHERE Unit_ID = %s"""
-#            cur.execute(base_unit, (Unit_ID,))
-#            row = cur.fetchone()
-#            
-#            adjacency_unit_query = """select Unit_ID, Unit_NO from office_unit
-#                                        where Building_ID = %s and Floor = %s 
-#                                        and Unit_Status = '1' and Combine_Divide = 1
-#                                        and Unit_ID != %s"""
-#            cur.execute(adjacency_unit_query, (row["Building_ID"], row["Floor"], Unit_ID))
-#            adjacency_rows = cur.fetchall()
-#            for unit in adjacency_rows:
-#                if unit['Unit_ID'] not in unit_in_virtual_room_row_list:
-#                    unit['Check'] = 0
-#                else:
-#                    unit['Check'] = 1
-#            
-#            return adjacency_rows
-#    finally:
-#        cur.close()
-#        conn.close()
+        building_id = unit_data['Building_ID']
+        project_id = _get_project_id(building_id)
+        
+        unit_link = gen_link(unit_data['Unit_ID'], project_id, 2, None, User_ID, None)
+        
+        return [{"Unit_ID": unit_data['Unit_ID'], "Unit_Link": unit_link}]
+    
+    except Exception as e:
+        return to_problem(409, "Conflict", f"Generate Unit Link error: {e}")
+    finally:
+        cur.close()
+        conn.close()
