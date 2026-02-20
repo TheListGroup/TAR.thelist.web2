@@ -122,7 +122,9 @@ select a.Housing_Code
     , h_nun(faci.Top_Facilities) as Top_Facilities
     , if(a.Pool = 3
             , "-"
-            , h_nun(concat(a.Pool_Width,' x ',a.Pool_Length,' ม.'))) as 'Pool'
+            , if(a.Pool_Width is not null and a.Pool_Length is not null
+                , h_nun(concat(a.Pool_Width,' x ',a.Pool_Length,' ม.'))
+                , h_nun(concat(COALESCE(a.Pool_Width, a.Pool_Length), ' ม.')))) as 'Pool'
     , h_nun(a.Entrance) as Entrance
     , h_nun(if(a.Main_Road is not null and a.Sub_Road is not null
             , if(a.Main_Road = a.Sub_Road
