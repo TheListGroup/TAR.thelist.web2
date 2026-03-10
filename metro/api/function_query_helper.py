@@ -10,6 +10,7 @@ from PIL import Image, ImageOps
 import json
 
 UPLOAD_DIR = "/var/www/html/metro/uploads"
+#UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -123,14 +124,22 @@ def _select_expertise():
     conn2.close()
     return normalize_unit_row(row)
 
-def _select_category():
+def _select_category(state: str):
     conn2 = get_db()
     cur2 = conn2.cursor(dictionary=True)
+    
+    if state == "prof":
+        query = "left join"
+    else:
+        query = "join"
+    
     cur2.execute(
         f"""SELECT
-                Category_Name
-            FROM proj_categories
-            WHERE Categories_Status = '1'"""
+                a.Category_Name
+            FROM proj_categories a
+            {query} proj_categories b on a.Parent_ID = b.ID and b.Categories_Status = '1'
+            WHERE a.Categories_Status = '1'
+            order by b.Categories_Order, a.Categories_Order"""
     )
     row = cur2.fetchall()
     cur2.close()
@@ -793,39 +802,37 @@ def proj_responsibilities(proj_id: int, state: str) -> Dict[str, Any] | None:
     conn2.close()
     return final_result
 
-def proj_content(proj_id: int) -> Dict[str, Any] | None:
+def proj_content(proj_id: int):
     conn2 = get_db()
     cur2 = conn2.cursor(dictionary=True)
     
-    final_result = []
     cur2.execute(
         f"""select
             UPPER(d.Content_Header) as Topic
             , c.Name_EN as Prof
             , concat(LPAD(b.Expertise_ID,2,'0'),'-',replace(c.Name_EN,' ','-')) as Anchor
             , a.Content
+            , c.ID as Prof_ID
             from proj_prof_relationship a
             join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
             join professionals c on b.Prof_ID = c.ID
             join prof_expertise d on b.Expertise_ID = d.ID
-            left join prof_employees e on a.ID = e.Proj_Profs_Relationship_ID and e.Member_Status = '1'
             where a.Relationship_Status = '1'
             and b.Relationship_Status = '1'
             and c.Prof_Status = '1'
             and d.Expertise_Status = '1'
             and a.Proj_ID = %s
             and a.Content is not null
-            group by c.Name_EN, d.Responsibility, b.Expertise_ID, a.Content
+            group by c.Name_EN, d.Responsibility, b.Expertise_ID, a.Content, c.ID
             order by d.Expertise_Order, c.Name_EN""",
         (proj_id,)
     )
-    rows = cur2.fetchall()
-    for row in rows:
-        final_result.append(row)
+    final_result = cur2.fetchall()
+    prof_list = list(set(row["Prof_ID"] for row in final_result))
     
     cur2.close()
     conn2.close()
-    return final_result
+    return final_result, prof_list
 
 def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     conn2 = get_db()
@@ -834,8 +841,8 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     final_result = []
     cur2.execute(
         f"""select
-                e.Image_URL as Url
-                , e.Image_Order as Image_Order
+                concat("/metro", e.Image_URL) as Url
+                , ROW_NUMBER() OVER (ORDER BY d.Expertise_Order, e.Image_Order) as Image_Order
                 , e.Image_Name as Image_Name
                 , e.Image_Description as Image_Description
             from proj_prof_relationship a
@@ -857,3 +864,189 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     cur2.close()
     conn2.close()
     return final_result
+
+def get_proj_category_id(cur, proj_id):
+    cur.execute("""select a.Proj_ID, a.Category_ID as Sub_Cate, b.Parent_ID as Head_Cate
+                from proj_category_relationship a
+                join proj_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
+                where a.Relationship_Status = '1'
+                and a.Proj_ID = %s""", (proj_id,))
+    row = cur.fetchone()
+    return row["Sub_Cate"], row["Head_Cate"]
+
+def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    
+    format_strings = ','.join(['%s'] * len(prof_ids))
+    cur2.execute(
+        f"""select
+                c.ID as Prof_ID
+                , c.Name_EN as Prof
+                , c.Logo_URL as Image
+                , prof_ext.Expertise as Res
+                , prof_exp.Categories as Experience
+            from proj_prof_relationship a
+            join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
+            join professionals c on b.Prof_ID = c.ID
+            left join (SELECT 
+                            t.Prof_ID, 
+                            GROUP_CONCAT(t.Category_Name SEPARATOR ', ') AS Categories
+                        FROM (
+                            SELECT 
+                                a.Prof_ID, 
+                                b.Category_Name,
+                                ROW_NUMBER() OVER (PARTITION BY a.Prof_ID ORDER BY b.Category_Name) as row_num
+                            FROM prof_experience_relationship a
+                            JOIN proj_categories b ON a.Proj_Category_ID = b.ID
+                            WHERE a.Proj_Category_Status = '1'
+                            AND b.Categories_Status = '1'
+                        ) t
+                        WHERE t.row_num <= 3
+                        GROUP BY t.Prof_ID) prof_exp
+            on c.ID = prof_exp.Prof_ID
+            left join (SELECT 
+                            t.Prof_ID, 
+                            t.Expertise
+                        FROM (
+                            SELECT 
+                                b.Prof_ID,
+                                a.Proj_ID, 
+                                ifnull(c.Content_Header, c.Responsibility) as Expertise,
+                                ROW_NUMBER() OVER (PARTITION BY b.Prof_ID ORDER BY b.Relationship_Order) as row_num
+                            from proj_prof_relationship a
+                            join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
+                            JOIN prof_expertise c ON b.Expertise_ID = c.ID
+                            WHERE b.Relationship_Status = '1'
+                            AND c.Expertise_Status = '1'
+                            and a.Relationship_Status = '1'
+                            and a.Content is not null
+                        ) t
+                        WHERE t.row_num = 1) prof_ext
+            on c.ID = prof_ext.Prof_ID
+            where a.Relationship_Status = '1'
+            and b.Relationship_Status = '1'
+            and c.Prof_Status = '1'
+            and c.ID in ({format_strings})
+            group by c.ID, c.Name_EN, c.Logo_URL, prof_ext.Expertise, prof_exp.Categories""",
+        tuple(prof_ids)
+    )
+    rows = cur2.fetchall()
+    
+    prof_list = []
+    for row in rows:
+        prof_list.append(row)
+    
+    if prof_list:
+        sub_cate, head_cate = get_proj_category_id(cur2, proj_id)
+        for prof in prof_list:
+            cur2.execute(f"""SELECT 
+                            aaa.Prof_ID,
+                            aaa.Proj_ID,
+                            aaa.Proj_Name as Name,
+                            aaa.Display_Category as Category,
+                            aaa.Proj_URL_Tag as URL,
+                            aaa.Latest_Date as Year
+                        FROM (
+                            SELECT 
+                                b.Prof_ID, 
+                                a.Proj_ID, 
+                                c.Name_EN as Proj_Name, 
+                                c.Proj_URL_Tag,
+                                concat(f.Category_Name, " | ", e.Category_Name) as Display_Category,
+                                d.Category_ID,
+                                e.Parent_ID,
+                                GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
+                                -- ใช้ ROW_NUMBER เพื่อคัดเลือกหมวดหมู่ที่ "ใช่ที่สุด" เพียงอันเดียวต่อโปรเจกต์
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY c.ID 
+                                    ORDER BY 
+                                        (CASE WHEN d.Category_ID = %s THEN 1 ELSE 2 END) ASC,
+                                        d.Relationship_Order ASC
+                                ) as row_num
+                            FROM proj_prof_relationship a
+                            JOIN prof_expertise_relationship b ON a.Prof_Expertise_Relationship_ID = b.ID
+                            JOIN projects c ON a.Proj_ID = c.ID
+                            JOIN proj_category_relationship d ON a.Proj_ID = d.Proj_ID AND d.Relationship_Status = '1'
+                            JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
+                            JOIN proj_categories f ON e.Parent_ID = f.ID AND f.Categories_Status = '1'
+                            WHERE a.Relationship_Status = '1'
+                            AND b.Relationship_Status = '1'
+                            AND c.Proj_Status = '1'
+                            AND a.Proj_ID <> %s
+                            AND b.Prof_ID = %s
+                        ) aaa
+                        -- เลือกแถวที่ 1 ที่ผ่านการเรียงลำดับความสำคัญในหมวดหมู่มาแล้ว
+                        WHERE aaa.row_num = 1 
+                        AND (aaa.Category_ID = %s OR aaa.Parent_ID = %s)
+                        ORDER BY 
+                            -- เรียงตามความสดใหม่และหมวดหมู่ที่ตรงกัน
+                            (CASE WHEN aaa.Category_ID = %s THEN 1 ELSE 2 END) ASC, 
+                            aaa.Latest_Date DESC
+                        LIMIT 3""", 
+                    (sub_cate, proj_id, prof['Prof_ID'], sub_cate, head_cate, sub_cate))
+            rows = cur2.fetchall()
+            for row in rows:
+                cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '4:3' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
+                images = cur2.fetchall()
+                row["Cover"] = images if images else None
+            prof["Proj"] = rows if rows else None
+    
+    cur2.close()
+    conn2.close()
+    return prof_list
+
+def proj_more(proj_id: int, cate_text: str):
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    
+    sub_cate, head_cate = get_proj_category_id(cur2, proj_id)
+    more = {"Title": f"MORE {cate_text.upper()} PROJECTS"}
+    cur2.execute(f"""SELECT 
+                    aaa.Proj_ID,
+                    aaa.Proj_Name as Name,
+                    aaa.Display_Category as Proj_Category,
+                    aaa.Proj_URL_Tag as URL
+                FROM (
+                    SELECT 
+                        c.ID as Proj_ID, 
+                        c.Name_EN as Proj_Name, 
+                        c.Proj_URL_Tag,
+                        concat(f.Category_Name, " | ", e.Category_Name) as Display_Category,
+                        GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
+                        d.Category_ID,
+                        e.Parent_ID,
+                        -- ใช้ ROW_NUMBER เพื่อหาหมวดหมู่ที่ "ดีที่สุด" ของแต่ละโปรเจกต์
+                        ROW_NUMBER() OVER (
+                            PARTITION BY c.ID 
+                            ORDER BY 
+                                (CASE WHEN d.Category_ID = %s THEN 1 ELSE 2 END) ASC, -- เอาตัวที่ตรงกับหน้าปัจจุบันขึ้นก่อน
+                                d.Relationship_Order ASC -- ตามด้วยลำดับที่คุณตั้งไว้ใน DB
+                        ) as row_num
+                    FROM projects c
+                    JOIN proj_category_relationship d ON c.ID = d.Proj_ID AND d.Relationship_Status = '1'
+                    JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
+                    JOIN proj_categories f ON e.Parent_ID = f.ID AND f.Categories_Status = '1'
+                    WHERE c.Proj_Status = '1'
+                    AND c.ID <> %s
+                ) aaa
+                -- เลือกเฉพาะแถวที่ 1 ของแต่ละโปรเจกต์ (แก้ปัญหาตัวซ้ำและเลือกหมวดที่ใช่ที่สุด)
+                WHERE aaa.row_num = 1 
+                AND (aaa.Category_ID = %s OR aaa.Parent_ID = %s)
+                ORDER BY 
+                    -- เรียงตาม Logic ของ Carousel: หมวดตรงกัน > ปีล่าสุด > ชื่อ A-Z
+                    (CASE WHEN aaa.Category_ID = %s THEN 1 ELSE 2 END) ASC,
+                    aaa.Latest_Date DESC,
+                    aaa.Proj_Name ASC
+                LIMIT 20""", 
+            (sub_cate, proj_id, sub_cate, head_cate, sub_cate))
+    rows = cur2.fetchall()
+    for row in rows:
+        cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '4:3' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
+        images = cur2.fetchall()
+        row["Cover"] = images if images else None
+    more["Proj"] = rows
+    
+    cur2.close()
+    conn2.close()
+    return more
