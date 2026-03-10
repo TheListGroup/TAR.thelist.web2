@@ -452,7 +452,7 @@ def select_experience(
     if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
     _ = Depends(get_current_user),
 ):
-    row = _select_category()
+    row = _select_category("prof")
 
     et = etag_of(row)
     # ถ้า client ส่ง If-None-Match มาและตรง → 304
@@ -625,7 +625,7 @@ async def upload_and_record(
                     )
             image_id = record["ID"]
             for image_size in image_size_list:
-                meta = _save_image_file(file_bytes, image_id, Prof_ID, "Gallery", "prof", None, image_size, 'horizontal')
+                meta = _save_image_file(file_bytes, image_id, Prof_ID, "Gallery", "prof", None, image_size, '16:9')
                 if image_size[0] == 1440:
                     _update_image_record(
                         cur = cur,
