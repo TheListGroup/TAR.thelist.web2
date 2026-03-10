@@ -172,6 +172,20 @@ def insert_proj_prof_relationship(
         cur.close()
         conn.close()
 
+@router.post("/delete-prof-relationship", status_code=204)  # รองรับ form
+def delete_prof_relationship(
+    relationship_id: int = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    
+    delete_expertise_process(cur, [relationship_id], 'delete')
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+
 @router.get("/select-prof-expertise/all", status_code=200)
 def select_prof_expertise(
     _ = Depends(get_current_user),
@@ -436,7 +450,7 @@ def select_categories(
     if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
     _ = Depends(get_current_user),
 ):
-    row = _select_category()
+    row = _select_category("proj")
 
     et = etag_of(row)
     # ถ้า client ส่ง If-None-Match มาและตรง → 304
