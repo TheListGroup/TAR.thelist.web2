@@ -2,7 +2,7 @@ from fastapi import APIRouter, Form, Depends, Query, Response, Header, HTTPExcep
 from db import get_db
 from auth import get_current_user  # << ใช้ตัวเดิม (รองรับ ADMIN_TOKEN หรือ JWT)
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
-from function_query_helper import check_location, check_country, _select_full_prof_item, _select_full_proj_item, _select_proj_cate, _select_proj_cover, proj_lastest_date \
+from function_query_helper import _select_full_proj_item, _select_proj_cate, _select_proj_cover, proj_lastest_date \
                                 , proj_responsibilities, proj_content, proj_gallery, get_similar_proj, proj_more
 from typing import Optional, Tuple, Dict, Any, List
 
@@ -391,14 +391,14 @@ def proj_template_data(
     
     data["Proj_ID"] = Proj_ID
     data["Proj_URL"] = "metro/proj/" + project_data["Proj_URL_Tag"]
-    data["Proj_Name"] = project_data["Name_EN"]
+    data["Proj_Name"] = project_data.get("Name_EN")
     
     category_data = _select_proj_cate(Proj_ID, 'header')
     full_cate = category_data.get("Category_Header", None)
     data["Proj_Category"] = full_cate
     
     cover_data = _select_proj_cover(Proj_ID)
-    data["Proj_Cover"] = cover_data[0]["Image_URL"] if cover_data else None
+    data["Proj_Cover"] = cover_data
     
     information_data = []
     hide = {}
@@ -410,7 +410,7 @@ def proj_template_data(
     yarn = project_data.get("Proj_Yarn", None)
     
     if country == "Thailand":
-        first_location = next((a for a in [district, yarn] if a), None)
+        first_location = next((a for a in [yarn, district] if a), None)
         locations = [loc for loc in [first_location, province, country] if loc]
     else:
         locations = [loc for loc in [province, state, country] if loc]
