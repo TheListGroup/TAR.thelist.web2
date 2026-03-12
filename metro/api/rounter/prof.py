@@ -35,7 +35,7 @@ def insert_professionals(
     Prof_District: str = Form(None),
     Prof_Province: str = Form(None),
     Prof_State: str = Form(None),
-    Prof_Country: str = Form(...),
+    Prof_Country: str = Form(None),
     FB_Link: str = Form(None),
     IG_Link: str = Form(None),
     Line_Link: str = Form(None),
@@ -64,6 +64,7 @@ def insert_professionals(
         Prof_District = None if not Prof_District else Prof_District
         Prof_Province = None if not Prof_Province else Prof_Province
         Prof_State = None if not Prof_State else Prof_State
+        Prof_Country = None if not Prof_Country else Prof_Country
         FB_Link = None if not FB_Link else FB_Link
         IG_Link = None if not IG_Link else IG_Link
         Line_Link = None if not Line_Link else Line_Link
@@ -88,7 +89,10 @@ def insert_professionals(
         for i, location in enumerate(location_list):
             location_id = check_location(cur, location, location_type_list[i])
             location_id_list[i] = location_id
-        country_id = check_country(cur, Prof_Country)
+        if Prof_Country:
+            country_id = check_country(cur, Prof_Country)
+        else:
+            country_id = None
 
         sql = f"""
             INSERT INTO {TABLE}
@@ -183,7 +187,7 @@ def update_professionals(
     Prof_District: str = Form(None),
     Prof_Province: str = Form(None),
     Prof_State: str = Form(None),
-    Prof_Country: str = Form(...),
+    Prof_Country: str = Form(None),
     FB_Link: str = Form(None),
     IG_Link: str = Form(None),
     Line_Link: str = Form(None),
@@ -212,6 +216,7 @@ def update_professionals(
         Prof_District = None if not Prof_District else Prof_District
         Prof_Province = None if not Prof_Province else Prof_Province
         Prof_State = None if not Prof_State else Prof_State
+        Prof_Country = None if not Prof_Country else Prof_Country
         FB_Link = None if not FB_Link else FB_Link
         IG_Link = None if not IG_Link else IG_Link
         Line_Link = None if not Line_Link else Line_Link
@@ -253,7 +258,10 @@ def update_professionals(
         for i, location in enumerate(location_list):
             location_id = check_location(cur, location, location_type_list[i])
             location_id_list[i] = location_id
-        country_id = check_country(cur, Prof_Country)
+        if Prof_Country:
+            country_id = check_country(cur, Prof_Country)
+        else:
+            country_id = None
         
         text_list = [(Experience_Text,"exp"), (Expertise_Text,"ext")]
         for text in text_list:

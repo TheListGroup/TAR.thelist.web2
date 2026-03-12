@@ -49,7 +49,7 @@ def insert_projs(
     Proj_District: str = Form(None),
     Proj_Province: str = Form(None),
     Proj_State: str = Form(None),
-    Proj_Country: str = Form(...),
+    Proj_Country: str = Form(None),
     Start_Date: str = Form(None),
     Finish_Date: str = Form(None),
     Renovated_Date: str = Form(None),
@@ -75,6 +75,7 @@ def insert_projs(
         Proj_District = None if not Proj_District else Proj_District
         Proj_Province = None if not Proj_Province else Proj_Province
         Proj_State = None if not Proj_State else Proj_State
+        Proj_Country = None if not Proj_Country else Proj_Country
         Start_Date = None if not Start_Date else datetime.strptime(Start_Date, "%Y-%m-%d")
         Finish_Date = None if not Finish_Date else datetime.strptime(Finish_Date, "%Y-%m-%d")
         Renovated_Date = None if not Renovated_Date else datetime.strptime(Renovated_Date, "%Y-%m-%d")
@@ -107,7 +108,10 @@ def insert_projs(
         for i, location in enumerate(location_list):
             location_id = check_location(cur, location, location_type_list[i])
             location_id_list[i] = location_id
-        country_id = check_country(cur, Proj_Country)
+        if Proj_Country:
+            country_id = check_country(cur, Proj_Country)
+        else:
+            country_id = None
 
         sql = f"""
             INSERT INTO {TABLE}
@@ -209,7 +213,7 @@ def update_projects(
     Proj_District: str = Form(None),
     Proj_Province: str = Form(None),
     Proj_State: str = Form(None),
-    Proj_Country: str = Form(...),
+    Proj_Country: str = Form(None),
     Start_Date: str = Form(None),
     Finish_Date: str = Form(None),
     Renovated_Date: str = Form(None),
@@ -235,6 +239,7 @@ def update_projects(
         Proj_District = None if not Proj_District else Proj_District
         Proj_Province = None if not Proj_Province else Proj_Province
         Proj_State = None if not Proj_State else Proj_State
+        Proj_Country = None if not Proj_Country else Proj_Country
         Start_Date = None if not Start_Date else datetime.strptime(Start_Date, "%Y-%m-%d")
         Finish_Date = None if not Finish_Date else datetime.strptime(Finish_Date, "%Y-%m-%d")
         Renovated_Date = None if not Renovated_Date else datetime.strptime(Renovated_Date, "%Y-%m-%d")
@@ -281,7 +286,11 @@ def update_projects(
         for i, location in enumerate(location_list):
             location_id = check_location(cur, location, location_type_list[i])
             location_id_list[i] = location_id
-        country_id = check_country(cur, Proj_Country)
+        
+        if Proj_Country:
+            country_id = check_country(cur, Proj_Country)
+        else:
+            country_id = None
         
         insert_relationship(cur, Proj_ID, Category_Text)
         
