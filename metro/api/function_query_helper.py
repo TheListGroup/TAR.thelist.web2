@@ -37,7 +37,7 @@ def _select_full_prof_item(prof_id: int) -> Dict[str, Any] | None:
         f"""SELECT
                 a.ID, a.Name_EN, a.Name_TH, a.Latitude, a.Longitude, a.Prof_Address, yarn.Name_EN as Prof_Yarn, sub_district.Name_EN as Prof_Sub_District
                 , district.Name_EN as Prof_District, province.Name_EN as Prof_Province, state.Name_EN as Prof_State, c.Name_EN as Prof_Country
-                , a.FB_Link, a.IG_Link, a.Line_Link, a.YT_Link, a.Website, YEAR(a.Found_Date) as Found_Date, a.Is_Freelance, a.Logo_URL, a.Brief_Description, a.Content
+                , a.FB_Link, a.IG_Link, a.Line_Link, a.YT_Link, a.Website, YEAR(a.Found_Date) as Year_Found_Date, a.Found_Date, a.Is_Freelance, a.Logo_URL, a.Brief_Description, a.Content
                 , a.Prof_URL_Tag, a.Prof_Status, owner.Owner, owner.Owner_Text, ext.Expertise, ext.Expertise_Text, exp.Experience, exp.Experience_Text
             FROM professionals a
             left join place_location yarn on a.Prof_Yarn = yarn.ID and yarn.Location_Status = '1'
@@ -1091,3 +1091,34 @@ def _select_prof_cover(prof_id: int) -> Dict[str, Any] | None:
     cur2.close()
     conn2.close()
     return cover_list
+
+def get_prof_proj(prof_id):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    
+    proj_list = []
+    cur.execute("""select Proj_ID, Proj_Name, Proj_Category, Proj_Url
+                    , ROW_NUMBER() OVER (ORDER BY Latest_Date desc) as Proj_Order
+                from (select distinct(c.Name_EN) as Proj_Name, c.ID as Proj_ID, concat_ws(' | ', f.Category_Name, e.Category_Name) as Proj_Category
+                        , c.Proj_URL_Tag as Proj_Url
+                        , GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date
+                    from proj_prof_relationship a
+                    join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID and b.Relationship_Status = '1'
+                    join projects c on a.Proj_ID = c.ID and c.Proj_Status = '1'
+                    left join proj_category_relationship d on c.ID = d.Proj_ID and d.Relationship_Status = '1' and d.Relationship_Order = 1
+                    left join proj_categories e on d.Category_ID = e.ID and e.Categories_Status = '1'
+                    left join proj_categories f on e.Parent_ID = f.ID and e.Categories_Status = '1'
+                    where a.Relationship_Status = '1'
+                    and b.Prof_ID = %s) aaa""", (prof_id,))
+    rows = cur.fetchall()
+    for row in rows:
+        cur.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '3:2' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
+        images = cur.fetchall()
+        row["Image"] = images if images else None
+        proj_list.append(row)
+    
+    cur.close()
+    conn.close()
+    
+    return proj_list
+
