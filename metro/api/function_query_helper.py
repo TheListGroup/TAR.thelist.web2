@@ -9,8 +9,8 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
-UPLOAD_DIR = "/var/www/html/metro/uploads"
-#UPLOAD_DIR = "/var/www/html/uploads"
+#UPLOAD_DIR = "/var/www/html/metro/uploads"
+UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -37,8 +37,8 @@ def _select_full_prof_item(prof_id: int) -> Dict[str, Any] | None:
         f"""SELECT
                 a.ID, a.Name_EN, a.Name_TH, a.Latitude, a.Longitude, a.Prof_Address, yarn.Name_EN as Prof_Yarn, sub_district.Name_EN as Prof_Sub_District
                 , district.Name_EN as Prof_District, province.Name_EN as Prof_Province, state.Name_EN as Prof_State, c.Name_EN as Prof_Country
-                , a.FB_Link, a.IG_Link, a.Line_Link, a.YT_Link, a.Website, a.Found_Date, a.Is_Freelance, a.Brief_Description, a.Content
-                , a.Prof_Status, owner.Owner, ext.Expertise, exp.Experience
+                , a.FB_Link, a.IG_Link, a.Line_Link, a.YT_Link, a.Website, YEAR(a.Found_Date) as Found_Date, a.Is_Freelance, a.Logo_URL, a.Brief_Description, a.Content
+                , a.Prof_URL_Tag, a.Prof_Status, owner.Owner, owner.Owner_Text, ext.Expertise, ext.Expertise_Text, exp.Experience, exp.Experience_Text
             FROM professionals a
             left join place_location yarn on a.Prof_Yarn = yarn.ID and yarn.Location_Status = '1'
             left join place_location sub_district on a.Prof_Sub_District = sub_district.ID and sub_district.Location_Status = '1'
@@ -51,6 +51,7 @@ def _select_full_prof_item(prof_id: int) -> Dict[str, Any] | None:
                                                                     , 'Last_Name_EN', a.Last_Name_EN
                                                                     , 'First_Name_TH', a.First_Name_TH
                                                                     , 'Last_Name_TH', a.Last_Name_TH)) as Owner
+                                , GROUP_CONCAT(concat_ws(' ', a.First_Name_EN, a.Last_Name_EN) ORDER BY a.First_Name_EN, a.Last_Name_EN SEPARATOR ', ') as Owner_Text
                         FROM prof_owners a
                         where a.Owner_Status = '1'
                         group by a.Prof_ID) as owner
@@ -59,16 +60,19 @@ def _select_full_prof_item(prof_id: int) -> Dict[str, Any] | None:
                                                                     , 'Expertise_ID', a.Expertise_ID
                                                                     , 'Responsibility', b.Responsibility
                                                                     , 'Expertise_Order', a.Relationship_Order)) as Expertise
+                            , GROUP_CONCAT(ifnull(b.Content_Header, b.Responsibility) ORDER BY a.Relationship_Order ASC SEPARATOR ', ') as Expertise_Text
                         FROM prof_expertise_relationship a
-                        left join prof_expertise b on a.Expertise_ID = b.ID and b.Expertise_Status = '1'
+                        join prof_expertise b on a.Expertise_ID = b.ID and b.Expertise_Status = '1'
                         where a.Relationship_Status = '1'
                         group by a.Prof_ID) as ext
             on a.ID = ext.Prof_ID
             left join (SELECT a.Prof_ID, JSON_ARRAYAGG(JSON_OBJECT( 'Relationship_ID', a.ID
                                                                     , 'Proj_Category_ID', a.Proj_Category_ID
                                                                     , 'Category_Name', b.Category_Name)) as Experience
+                            , GROUP_CONCAT(b.Category_Name ORDER BY c.Categories_Order, b.Categories_Order ASC SEPARATOR ', ') as Experience_Text
                         FROM prof_experience_relationship a
                         left join proj_categories b on a.Proj_Category_ID = b.ID and b.Categories_Status = '1'
+                        left join proj_categories c on b.Parent_ID = c.ID and c.Categories_Status = '1'
                         where a.Proj_Category_Status = '1'
                         group by a.Prof_ID) as exp
             on a.ID = exp.Prof_ID
@@ -273,7 +277,7 @@ def insert_relationship(cur, Prof_ID: int, Text: str, Text_Type: str):
         if not cur.fetchone():
             insert_tag_relationship(cur, Prof_ID, tag_id, table_relationship, i+1)
 
-def update_relationship(cur, Prof_ID: int, Text: str, Text_Type: str, state: str):
+def update_relationship(cur, Prof_ID: int, Text: str, Text_Type: str, state: str, state2: str):
     table_relationship, tag_id_column, order_column, table_cate, name_column, status_column, status_relationship_column = prepare_relationship_data(Text_Type)
 
     cur.execute(f"""SELECT max({order_column}) as max_order FROM {table_cate} where {status_column} = '1'""")
@@ -304,12 +308,11 @@ def update_relationship(cur, Prof_ID: int, Text: str, Text_Type: str, state: str
     if ids_to_delete:
         format_strings = ','.join(['%s'] * len(ids_to_delete))
         if table_relationship != 'prof_experience_relationship':
-            
             cur.execute(f"SELECT ID FROM {table_relationship} WHERE Prof_ID = %s AND {tag_id_column} IN ({format_strings})", (Prof_ID, *ids_to_delete))
             rel_rows = cur.fetchall()
             rel_ids = [r['ID'] for r in rel_rows]
             if rel_ids:
-                delete_expertise_process(cur, rel_ids, state)
+                delete_expertise_process(cur, rel_ids, state, state2)
         
         if state != 'delete':
             relationship_query = f"UPDATE {table_relationship} SET {status_relationship_column} = '2'"
@@ -341,7 +344,7 @@ def update_relationship(cur, Prof_ID: int, Text: str, Text_Type: str, state: str
             sql_update += f" WHERE Prof_ID = %s AND {tag_id_column} = %s"
             cur.execute(sql_update, tuple(params))
 
-def delete_expertise_process(cur, Prof_Relationship_IDs: list, state: str):
+def delete_expertise_process(cur, Prof_Relationship_IDs: list, state: str, state2: str):
     if not Prof_Relationship_IDs:
         return
     
@@ -355,9 +358,9 @@ def delete_expertise_process(cur, Prof_Relationship_IDs: list, state: str):
         relationship_query = "delete from proj_prof_relationship"
     
     format_rel = ','.join(['%s'] * len(Prof_Relationship_IDs))
-    if state == 'delete_prof':
+    if state2 == "prof":
         # 1. หา ID ของ proj_prof_relationship ทั้งหมดที่เกี่ยวข้อง
-        cur.execute(f"SELECT ID FROM proj_prof_relationship WHERE Prof_Expertise_Relationship_ID IN ({format_rel}) AND Relationship_Status = '1'", tuple(Prof_Relationship_IDs))
+        cur.execute(f"SELECT ID FROM proj_prof_relationship WHERE Prof_Expertise_Relationship_ID IN ({format_rel}) AND Relationship_Status = '1'", tuple(Prof_Relationship_IDs)) #xx
         rows = cur.fetchall()
         proj_rel_ids = [row['ID'] for row in rows]
     else:
@@ -374,7 +377,7 @@ def delete_expertise_process(cur, Prof_Relationship_IDs: list, state: str):
     if state == 'delete_prof':
         cur.execute(f"{relationship_query} WHERE Prof_Expertise_Relationship_ID IN ({format_rel}) AND Relationship_Status = '1'", tuple(Prof_Relationship_IDs))
     else:
-        cur.execute(f"{relationship_query} WHERE ID IN ({format_rel}) AND Relationship_Status = '1'", tuple(proj_rel_ids))
+        cur.execute(f"{relationship_query} WHERE ID IN ({format_proj}) AND Relationship_Status = '1'", tuple(proj_rel_ids)) #xx
 
 def url_work(cur, new_id, Name_EN, state):
     pattern = r'[!@#$%^&*()_+{}\[\]:;<>,.?~\\|/`\'"-]'
@@ -395,13 +398,18 @@ def url_work(cur, new_id, Name_EN, state):
 def update_owners(cur, Prof_ID: int, Owner_Text: str, state: str):
     cur.execute("SELECT First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH FROM prof_owners WHERE Prof_ID = %s and Owner_Status = '1'", (Prof_ID,))
     existing_rows = cur.fetchall()
-    existing_owners = {(r['First_Name_EN'].strip(), r['Last_Name_EN'].strip(), r['First_Name_TH'].strip(), r['Last_Name_TH'].strip()) for r in existing_rows}
+    existing_owners = {(
+        (r['First_Name_EN'] or "").strip(),
+        (r['Last_Name_EN'] or "").strip(),
+        (r['First_Name_TH'] or "").strip(),
+        (r['Last_Name_TH'] or "").strip()
+    ) for r in existing_rows}
 
     new_owners = set()
     if Owner_Text:
         owner_list = Owner_Text.split(';')
         for person in owner_list:
-            data = [d.strip() for d in person.split(',')]
+            data = [d.strip() if d.strip().lower() != 'none' else None for d in person.split(',')]
             if len(data) == 4:
                 new_owners.add(tuple(data))
     if existing_owners == new_owners:
@@ -414,8 +422,13 @@ def update_owners(cur, Prof_ID: int, Owner_Text: str, state: str):
         owner_query = "delete from prof_owners"
     for person in to_delete:
         cur.execute(f"""
-            {owner_query}
-            WHERE Prof_ID = %s AND First_Name_EN = %s AND Last_Name_EN = %s AND First_Name_TH = %s AND Last_Name_TH = %s""", (Prof_ID, *person))
+                        {owner_query}
+                        WHERE Prof_ID = %s 
+                        AND First_Name_EN = %s 
+                        AND Last_Name_EN = %s 
+                        AND IFNULL(First_Name_TH, '') = %s 
+                        AND IFNULL(Last_Name_TH, '') = %s
+                    """, (Prof_ID, person[0], person[1], person[2] or '', person[3] or ''))
 
     to_add = new_owners - existing_owners
     for person in to_add:
@@ -521,7 +534,7 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
         else:
             path_folder = os.path.join(UPLOAD_DIR, "project", str(f"{ref_id:04d}"), "gallery", str(f"{relationship_id:04d}"))
     
-    if ratio == "16:9" or ratio == "4:3":
+    if ratio == "16:9" or ratio == "9:16" or ratio == "3:2":
         ratio_code = "H"
 
     filename = f"{image_id:06d}-{ratio_code}-{width}.webp"
@@ -711,9 +724,11 @@ def _select_proj_cover(proj_id: int) -> Dict[str, Any] | None:
     cur2.execute(
         f"""SELECT
                 a.Image_URL
+                , a.Ratio_Type
             from proj_cover a
             where a.Image_Status = '1'
-            and a.Proj_ID = %s""",
+            and a.Proj_ID = %s
+            and a.Ratio_Type in ('16:9', '9:16')""",
         (proj_id,)
     )
     rows = cur2.fetchall()
@@ -841,7 +856,7 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     final_result = []
     cur2.execute(
         f"""select
-                concat("/metro", e.Image_URL) as Url
+                e.Image_URL as Url
                 , ROW_NUMBER() OVER (ORDER BY d.Expertise_Order, e.Image_Order) as Image_Order
                 , e.Image_Name as Image_Name
                 , e.Image_Description as Image_Description
@@ -987,7 +1002,7 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
                     (sub_cate, proj_id, prof['Prof_ID'], sub_cate, head_cate, sub_cate))
             rows = cur2.fetchall()
             for row in rows:
-                cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '4:3' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
+                cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '3:2' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
                 images = cur2.fetchall()
                 row["Cover"] = images if images else None
             prof["Proj"] = rows if rows else None
@@ -1042,7 +1057,7 @@ def proj_more(proj_id: int, cate_text: str):
             (sub_cate, proj_id, sub_cate, head_cate, sub_cate))
     rows = cur2.fetchall()
     for row in rows:
-        cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '4:3' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
+        cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '3:2' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
         images = cur2.fetchall()
         row["Cover"] = images if images else None
     more["Proj"] = rows
@@ -1050,3 +1065,29 @@ def proj_more(proj_id: int, cate_text: str):
     cur2.close()
     conn2.close()
     return more
+
+def _select_prof_cover(prof_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    cover_list = []
+    cur2.execute(
+        f"""select Image_URL, Ratio_Type 
+            from (SELECT
+                        a.Image_URL
+                        , a.Ratio_Type
+                        , ROW_NUMBER() OVER (PARTITION BY a.Prof_ID ORDER BY a.ID) as row_num 
+                    from prof_cover a
+                    where a.Image_Status = '1'
+                    and a.Prof_ID = %s
+                    and a.Ratio_Type in ('16:9', '9:16')) aaa
+            where row_num in (1,3)""",
+        (prof_id,)
+    )
+    rows = cur2.fetchall()
+    for row in rows:
+        row['Image_URL'] = row['Image_URL']
+        cover_list.append(row)
+    
+    cur2.close()
+    conn2.close()
+    return cover_list
