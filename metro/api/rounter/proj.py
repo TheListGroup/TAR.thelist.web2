@@ -180,7 +180,7 @@ def delete_prof_relationship(
     conn = get_db()
     cur = conn.cursor(dictionary=True)
     
-    delete_expertise_process(cur, [relationship_id], 'delete')
+    delete_expertise_process(cur, [relationship_id], 'delete', 'proj')
     
     conn.commit()
     cur.close()
@@ -352,7 +352,7 @@ def delete_project(
     rel_rows = cur.fetchall()
     rel_ids = [r['ID'] for r in rel_rows]
     if rel_ids:
-        delete_expertise_process(cur, rel_ids, 'delete_proj')
+        delete_expertise_process(cur, rel_ids, 'delete_proj', 'proj')
     
     conn.commit()
     cur.close()
@@ -479,13 +479,15 @@ async def upload_and_record_cover(
         results = []
         if Cover_Ratio == "16:9":
             cover_size_list = [
-                {"size": (1920, 800), "ratio": "16:9"},
-                {"size": (440, 800),  "ratio": "16:9"}
+                {"size": (1920, 1080), "ratio": "16:9"}
             ]
-        elif Cover_Ratio == "4:3":
+        elif Cover_Ratio == "9:16":
             cover_size_list = [
-                {"size": (450, 300),  "ratio": "4:3"},
-                {"size": (350, 240),  "ratio": "4:3"}
+                {"size": (450, 800),  "ratio": "9:16"}
+            ]
+        elif Cover_Ratio == "3:2":
+            cover_size_list = [
+                {"size": (450, 300),  "ratio": "3:2"}
             ]
         name = file.filename or "unnamed"
         ext = os.path.splitext(name)[1].lower()
@@ -559,9 +561,10 @@ def select_all_proj_cover(
             response.status_code = status.HTTP_304_NOT_MODIFIED
             return
         
-        ratio_list = ["16:9","4:3"]
+        ratio_list = ["16:9","9:16","3:2"]
         list_169 = []
-        list_43 = []
+        list_916 = []
+        list_32 = []
         for ratio in ratio_list:
             base_sql = """SELECT
                             ID,
@@ -580,11 +583,13 @@ def select_all_proj_cover(
             
             if ratio == "16:9":
                 list_169 = row
-            elif ratio == "4:3":
-                list_43 = row
+            elif ratio == "9:16":
+                list_916 = row
+            elif ratio == "3:2":
+                list_32 = row
         
         data = []
-        data.append({"cover": {"16:9": list_169, "4:3": list_43}})
+        data.append({"cover": {"16:9": list_169, "9:16": list_916, "3:2": list_32}})
 
         return {"data": data}
     

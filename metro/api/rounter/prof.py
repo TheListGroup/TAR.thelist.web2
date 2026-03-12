@@ -111,7 +111,7 @@ def insert_professionals(
         if Owner_Text is not None:
             owner = Owner_Text.split(';')
             for person in owner:
-                data = person.split(',')
+                data = [d.strip() if d.strip().lower() != 'none' else None for d in person.split(',')]
                 cur.execute("INSERT INTO prof_owners (Prof_ID, First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH, Owner_Status) VALUES (%s, %s, %s, %s, %s, %s)"
                             , (new_id, data[0], data[1], data[2], data[3], '1'))
         url_work(cur, new_id, Name_EN, 'prof')
@@ -257,7 +257,7 @@ def update_professionals(
         
         text_list = [(Experience_Text,"exp"), (Expertise_Text,"ext")]
         for text in text_list:
-            update_relationship(cur, Prof_ID, text[0], text[1], 'delete')
+            update_relationship(cur, Prof_ID, text[0], text[1], 'delete', 'prof')
         
         update_owners(cur, Prof_ID, Owner_Text, 'delete')
         
@@ -382,7 +382,7 @@ def delete_professionals(
     rel_rows = cur.fetchall()
     rel_ids = [r['ID'] for r in rel_rows]
     if rel_ids:
-        delete_expertise_process(cur, rel_ids, 'delete_prof')
+        delete_expertise_process(cur, rel_ids, 'delete_prof', 'prof')
     
     conn.commit()
     cur.close()
@@ -468,6 +468,7 @@ def select_experience(
 async def upload_and_record_cover(
     file: UploadFile = File(...),
     Prof_ID: int = Form(...),
+    Cover_Ratio: str = Form(...),
     Image_Status: str = Form("1"),
     _ = Depends(get_current_user),
 ):
@@ -478,12 +479,15 @@ async def upload_and_record_cover(
     cur = conn.cursor(dictionary=True)
     try:
         results = []
-        cover_size_list = [
-            {"size": (1920, 800), "ratio": "16:9"},
-            {"size": (166, 124),  "ratio": "16:9"},
-            {"size": (420, 236),  "ratio": "16:9"},
-            {"size": (350, 200),  "ratio": "16:9"}
-        ]
+        if Cover_Ratio == "16:9":
+            cover_size_list = [
+                {"size": (1920, 1080), "ratio": "16:9"},
+                {"size": (420, 236), "ratio": "16:9"}
+            ]
+        elif Cover_Ratio == "9:16":
+            cover_size_list = [
+                {"size": (450, 800),  "ratio": "9:16"}
+            ]
         name = file.filename or "unnamed"
         ext = os.path.splitext(name)[1].lower()
         file_bytes = await file.read()
@@ -556,24 +560,32 @@ def select_all_prof_cover(
             response.status_code = status.HTTP_304_NOT_MODIFIED
             return
         
-        base_sql = """SELECT
-                        ID,
-                        Prof_ID,
-                        Image_URL,
-                        Ratio_Type
-                    FROM prof_cover
-                    WHERE Prof_ID = %s 
-                    AND Image_Status = '1'
-                    order by ID
-                    limit 1"""
-        
-        cur.execute(base_sql, (Prof_ID,))
-        rows = cur.fetchall()
-        rows = [normalize_row(r) for r in rows]
+        ratio_list = ["16:9","9:16"]
+        list_169 = []
+        list_916 = []
+        for ratio in ratio_list:
+            base_sql = """SELECT
+                            ID,
+                            Prof_ID,
+                            Image_URL,
+                            Ratio_Type
+                        FROM prof_cover
+                        WHERE Prof_ID = %s 
+                        AND Image_Status = '1'
+                        and Ratio_Type = %s
+                        order by ID
+                        limit 1"""
+            
+            cur.execute(base_sql, (Proj_ID, ratio))
+            row = cur.fetchone()
+            
+            if ratio == "16:9":
+                list_169 = row
+            elif ratio == "9:16":
+                list_916 = row
         
         data = []
-        for row in rows:
-            data.append({"cover": row})
+        data.append({"cover": {"16:9": list_169, "9:16": list_916}})
 
         return {"data": data}
     
