@@ -190,7 +190,7 @@ def delete_prof_relationship(
     cur.close()
     conn.close()
 
-@router.get("/select-prof-expertise/all", status_code=200)
+@router.get("/select-prof-expertise-all", status_code=200)
 def select_prof_expertise(
     _ = Depends(get_current_user),
 ):
