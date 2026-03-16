@@ -394,7 +394,7 @@ def proj_template_data(
     data["Proj_Name"] = project_data.get("Name_EN")
     
     category_data = _select_proj_cate(Proj_ID, 'header')
-    full_cate = category_data.get("Category_Header", None)
+    full_cate = category_data.get("Category_Header", None) if category_data else None
     data["Proj_Category"] = full_cate
     
     cover_data = _select_proj_cover(Proj_ID)
@@ -446,7 +446,7 @@ def proj_template_data(
     hide["Area"] = area_text
     
     date_data = proj_lastest_date(Proj_ID)
-    year = date_data.get("Latest_Date", None)
+    year = date_data.get("Latest_Date", None) if date_data else None
     hide["Year"] = year
     
     hide["Responsibilities"] = proj_responsibilities(Proj_ID, 'hide')
@@ -459,12 +459,12 @@ def proj_template_data(
     full["Gross_Building_Area"] = f"{'{:,.0f}'.format(round(project_data.get('Usable_Area')))} sq.m." if project_data.get('Usable_Area') else None
     full["Gross_Rental_Area"] = f"{'{:,.0f}'.format(round(project_data.get('Commercial_Area')))} sq.m." if project_data.get('Commercial_Area') else None
     full["Land_Area"] = f"{land_area} rai" if land_area else None
-    full["Started_Year"] = date_data.get("Start_Date", None)
-    full["Completed_Year"] = date_data.get("Finish_Date", None)
-    full["Renovated_Year"] = date_data.get("Renovated_Date", None)
+    full["Started_Year"] = date_data.get("Start_Date", None) if date_data else None
+    full["Completed_Year"] = date_data.get("Finish_Date", None) if date_data else None
+    full["Renovated_Year"] = date_data.get("Renovated_Date", None) if date_data else None
     
     category_data = _select_proj_cate(Proj_ID, 'full')
-    full["Category"] = category_data.get("Category_Group", None)
+    full["Category"] = category_data.get("Category_Group", None) if category_data else None
     
     full["Responsibilities"] = proj_responsibilities(Proj_ID, 'full')
     full_data = {"Full": full}
@@ -478,10 +478,10 @@ def proj_template_data(
     gallery = proj_gallery(Proj_ID)
     data["Gallery"] = gallery
     
-    similar_proj = get_similar_proj(profs, Proj_ID)
+    similar_proj = get_similar_proj(profs, Proj_ID) if profs else None
     data["Similar_Proj"] = similar_proj
     
-    sub_cate = full_cate.split(" | ")[-1]
+    sub_cate = full_cate.split(" | ")[-1] if full_cate else None
     more_proj = proj_more(Proj_ID, sub_cate)
     data["More_Proj"] = more_proj
     

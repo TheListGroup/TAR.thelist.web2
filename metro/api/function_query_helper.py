@@ -847,7 +847,11 @@ def proj_content(proj_id: int):
     
     cur2.close()
     conn2.close()
-    return final_result, prof_list
+    
+    if final_result:
+        return final_result, prof_list
+    else:
+        return None, None 
 
 def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     conn2 = get_db()
@@ -878,7 +882,11 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     
     cur2.close()
     conn2.close()
-    return final_result
+    
+    if final_result:
+        return final_result
+    else:
+        return None
 
 def get_proj_category_id(cur, proj_id):
     cur.execute("""select a.Proj_ID, a.Category_ID as Sub_Cate, b.Parent_ID as Head_Cate
@@ -887,7 +895,10 @@ def get_proj_category_id(cur, proj_id):
                 where a.Relationship_Status = '1'
                 and a.Proj_ID = %s""", (proj_id,))
     row = cur.fetchone()
-    return row["Sub_Cate"], row["Head_Cate"]
+    if row:
+        return row["Sub_Cate"], row["Head_Cate"]
+    else:
+        return None, None
 
 def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
     conn2 = get_db()
@@ -1009,11 +1020,18 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
     
     cur2.close()
     conn2.close()
-    return prof_list
+    
+    if prof_list:
+        return prof_list
+    else:
+        return None
 
 def proj_more(proj_id: int, cate_text: str):
     conn2 = get_db()
     cur2 = conn2.cursor(dictionary=True)
+    
+    if cate_text is None:
+        return None
     
     sub_cate, head_cate = get_proj_category_id(cur2, proj_id)
     more = {"Title": f"MORE {cate_text.upper()} PROJECTS"}
@@ -1122,3 +1140,84 @@ def get_prof_proj(prof_id):
     
     return proj_list
 
+def prof_more(prof_id: int):
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    
+    more = []
+    cur2.execute("""select Prof_ID, Prof_Name, Expertise, Logo, Category, Prof_Url
+                    from (
+                        SELECT 
+                            target.Prof_ID, 
+                            p.Name_EN as Prof_Name,
+                            target.Expertise_ID,
+                            UPPER(ifnull(prof_ext.Content_Header, prof_ext.Responsibility)) as Expertise,
+                            p.Logo_URL as Logo,
+                            p.Prof_URL_Tag as Prof_Url,
+                            cate.Category,
+                            target.Relationship_Order as Target_Order, -- อันดับความเก่งของคู่แข่ง
+                            IFNULL(stats.Count_Proj, 0) as Count_Proj,
+                            ref.Relationship_Order as My_Order, -- อันดับความสำคัญตามบริษัท A (1=Landscape, 2=Interior...)
+                            ROW_NUMBER() OVER (PARTITION BY target.Prof_ID ORDER BY ref.Relationship_Order, Count_Proj DESC, p.Name_EN) as row_num
+                        FROM prof_expertise_relationship ref
+                        -- 1. เชื่อมหาคนอื่นที่มี Expertise เดียวกับที่บริษัท A มี
+                        JOIN prof_expertise_relationship target ON ref.Expertise_ID = target.Expertise_ID 
+                        AND target.Relationship_Status = '1'
+                        AND target.Prof_ID <> %s -- ตัดตัวเองออก
+                        -- 2. Join เอาชื่อบริษัทคู่แข่ง
+                        LEFT JOIN professionals p ON target.Prof_ID = p.ID and p.Prof_Status = '1'
+                        -- 3. Join Subquery นับโปรเจกต์ (แบบที่คุณเขียน)
+                        LEFT JOIN (
+                            SELECT b.Prof_ID, b.Expertise_ID, COUNT(DISTINCT ra.Proj_ID) as Count_Proj
+                            FROM proj_prof_relationship ra
+                            JOIN prof_expertise_relationship b ON ra.Prof_Expertise_Relationship_ID = b.ID 
+                            WHERE ra.Relationship_Status = '1' AND b.Relationship_Status = '1'
+                            GROUP BY b.Prof_ID, b.Expertise_ID
+                        ) stats ON target.Prof_ID = stats.Prof_ID AND target.Expertise_ID = stats.Expertise_ID
+                        join prof_expertise prof_ext on target.Expertise_ID = prof_ext.ID and prof_ext.Expertise_Status = '1'
+                        LEFT JOIN (
+                            select Prof_ID
+                                , CONCAT_WS(' | ', MAX(CASE WHEN row_num = 1 THEN UPPER(Category_Name) END), MAX(CASE WHEN row_num = 2 THEN UPPER(Category_Name) END)) AS Category
+                            from (
+                                SELECT
+                                    b.Prof_ID,
+                                    c.Category_ID,
+                                    d.Category_Name,
+                                    COUNT(DISTINCT ra.Proj_ID) as Count_Proj,
+                                    ROW_NUMBER() OVER (PARTITION BY b.Prof_ID ORDER BY COUNT(DISTINCT ra.Proj_ID) DESC) as row_num 
+                                FROM proj_prof_relationship ra
+                                JOIN prof_expertise_relationship b ON ra.Prof_Expertise_Relationship_ID = b.ID AND b.Relationship_Status = '1'
+                                JOIN proj_category_relationship c ON ra.Proj_ID = c.Proj_ID AND c.Relationship_Status = '1'
+                                join proj_categories d on c.Category_ID = d.ID and d.Categories_Status = '1'
+                                WHERE ra.Relationship_Status = '1'
+                                GROUP BY b.Prof_ID, c.Category_ID) aaa
+                            WHERE row_num <= 2
+                            group by Prof_ID
+                        ) cate ON target.Prof_ID = cate.Prof_ID
+                        -- 4. เงื่อนไขบริษัท A
+                        WHERE ref.Prof_ID = %s 
+                        AND ref.Relationship_Status = '1'
+                        AND target.Relationship_Order = 1
+                        ORDER BY 
+                            -- เรียงตามอันดับ Expertise ของบริษัท A ก่อน (Landscape ก่อน แล้วค่อย Interior...)
+                            ref.Relationship_Order ASC, 
+                            -- ในหมวดนั้นๆ เรียงตามคนที่ยกให้ด้านนี้เป็นเบอร์ 1 ของเขา
+                            -- target.Relationship_Order ASC, 
+                            -- เรียงตามจำนวนโปรเจกต์
+                            Count_Proj DESC, 
+                            -- เรียงตามชื่อ
+                            p.Name_EN) aaa
+                    where row_num = 1
+                    order by My_Order, Count_Proj DESC, Prof_Name
+                    limit 20""", (prof_id, prof_id))
+    rows = cur2.fetchall()
+    for row in rows:
+        cur2.execute(f"""SELECT Image_Url from prof_cover where Ratio_Type = '16:9' and Image_URL like '%420%'
+                        and Image_Status = '1' and Prof_ID = %s""", (row["Prof_ID"],))
+        images = cur2.fetchall()
+        row["Cover"] = images if images else None
+        more.append(row)
+    
+    cur2.close()
+    conn2.close()
+    return more
