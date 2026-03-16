@@ -584,7 +584,7 @@ def select_all_prof_cover(
                         order by ID
                         limit 1"""
             
-            cur.execute(base_sql, (Proj_ID, ratio))
+            cur.execute(base_sql, (Prof_ID, ratio))
             row = cur.fetchone()
             
             if ratio == "16:9":
