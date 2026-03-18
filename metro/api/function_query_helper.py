@@ -777,6 +777,7 @@ def proj_responsibilities(proj_id: int, state: str) -> Dict[str, Any] | None:
             , if(a.Content is not null 
                 , concat(LPAD(b.Expertise_ID,2,'0'),'-',replace(c.Name_EN,' ','-'))
                 , null) as Anchor
+            , c.Prof_URL_Tag as Prof_Url
             from proj_prof_relationship a
             join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
             join professionals c on b.Prof_ID = c.ID
