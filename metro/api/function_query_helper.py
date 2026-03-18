@@ -893,7 +893,8 @@ def get_proj_category_id(cur, proj_id):
                 from proj_category_relationship a
                 join proj_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
                 where a.Relationship_Status = '1'
-                and a.Proj_ID = %s""", (proj_id,))
+                and a.Proj_ID = %s
+                and a.Relationship_Order = 1""", (proj_id,))
     row = cur.fetchone()
     if row:
         return row["Sub_Cate"], row["Head_Cate"]
@@ -912,6 +913,7 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
                 , c.Logo_URL as Image
                 , prof_ext.Expertise as Res
                 , prof_exp.Categories as Experience
+                , concat('metro/prof/', c.Prof_URL_Tag) as Prof_Url
             from proj_prof_relationship a
             join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
             join professionals c on b.Prof_ID = c.ID
@@ -1221,3 +1223,10 @@ def prof_more(prof_id: int):
     cur2.close()
     conn2.close()
     return more
+
+def get_prod_parent(cur, parent_id):
+    cur.execute("""select Family_IDS
+                    from product_entities
+                    where ID = %s""", (parent_id,))
+    result = cur.fetchone()
+    return result["Family_IDS"] if result else None
