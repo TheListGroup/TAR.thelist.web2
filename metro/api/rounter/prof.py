@@ -12,7 +12,7 @@ from datetime import datetime
 
 router = APIRouter()
 TABLE = "professionals"
-ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".jfif"}
 
 @router.post("/test", status_code=201)
 def test(
