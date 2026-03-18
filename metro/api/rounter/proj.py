@@ -11,7 +11,7 @@ import os
 
 router = APIRouter()
 TABLE = "projects"
-ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
+ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".jfif"}
 
 def insert_relationship(cur, Proj_ID: int, Text: str):
     #ล้างให้หมดก่อนจะสร้าง
@@ -29,7 +29,7 @@ def insert_relationship(cur, Proj_ID: int, Text: str):
             if row is not None:
                 tag_id = row['ID']
             else:
-                cur.execute(f"INSERT INTO proj_categories (Category_Name, Categories_Order, Categories_Status) VALUES (%s, %s, %s)", (tag, int(max_order) + x), '1')
+                cur.execute(f"INSERT INTO proj_categories (Category_Name, Categories_Order, Categories_Status) VALUES (%s, %s, %s)", (tag, int(max_order) + x, '1'))
                 tag_id = cur.lastrowid
                 x += 1
             cur.execute(f"""INSERT INTO proj_category_relationship (Proj_ID, Category_ID, Relationship_Order, Relationship_Status) VALUES (%s, %s, %s, %s)"""
