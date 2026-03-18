@@ -789,7 +789,7 @@ def proj_responsibilities(proj_id: int, state: str) -> Dict[str, Any] | None:
             and c.Prof_Status = '1'
             and d.Expertise_Status = '1'
             and a.Proj_ID = %s
-            group by c.Name_EN, d.Responsibility, b.Expertise_ID, a.Content
+            group by c.Name_EN, d.Responsibility, b.Expertise_ID, a.Content, c.Prof_URL_Tag
             order by d.Expertise_Order, ISNULL(a.Content), c.Name_EN""",
         (proj_id,)
     )
@@ -803,7 +803,8 @@ def proj_responsibilities(proj_id: int, state: str) -> Dict[str, Any] | None:
         prof_entry = {
             "Prof_Name": item["Prof_Name"],
             "Member": f"({item['Member_Name']})" if item.get("Member_Name") else None,
-            "Anchor": item.get("Anchor", False)
+            "Anchor": item.get("Anchor", False),
+            "Prof_Url": item["Prof_Url"]
         }
         grouped_data[res_type].append(prof_entry)
 
