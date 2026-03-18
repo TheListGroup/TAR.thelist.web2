@@ -861,26 +861,49 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     
     final_result = []
     cur2.execute(
-        f"""select
+        f"""select d.Content_Header,
                 e.Image_URL as Url
-                , ROW_NUMBER() OVER (ORDER BY d.Expertise_Order, e.Image_Order) as Image_Order
+                , ROW_NUMBER() OVER (ORDER BY d.Expertise_Order, ISNULL(a.Content), c.Name_EN, e.Image_Order) as Image_Order
                 , e.Image_Name as Image_Name
                 , e.Image_Description as Image_Description
             from proj_prof_relationship a
-            join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
-            join prof_expertise d on b.Expertise_ID = d.ID
-            join proj_gallery e on a.ID = e.Proj_Profs_Relationship_ID
+            join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID and b.Relationship_Status = '1'
+            join prof_expertise d on b.Expertise_ID = d.ID and d.Expertise_Status = '1'
+            join proj_gallery e on a.ID = e.Proj_Profs_Relationship_ID and e.Image_Status = '1'
+            join professionals c on b.Prof_ID = c.ID and c.Prof_Status = '1'
             where a.Relationship_Status = '1'
-            and b.Relationship_Status = '1'
-            and d.Expertise_Status = '1'
             and a.Proj_ID = %s
-            and e.Image_Status = '1'
-            order by d.Expertise_Order, e.Image_Order""",
+            order by d.Expertise_Order, ISNULL(a.Content), c.Name_EN, e.Image_Order""",
         (proj_id,)
     )
     rows = cur2.fetchall()
-    for row in rows:
-        final_result.append(row)
+    grouped_data = {}
+    image_size_list = [(1440,810),(800,450),(400,225)]
+    for item in rows:
+        header_type = item["Content_Header"]
+        if header_type not in grouped_data:
+            grouped_data[header_type] = []
+        
+        original_name = item["Url"]
+        last_part = original_name.split("-")[-1]
+        image_urls = []
+        for width, height in image_size_list:
+            new_last_part = re.sub(r'^\d+', str(width), last_part)
+            image_urls.append(original_name.replace(last_part, new_last_part))
+        gallery_entry = {
+            "Url": image_urls,
+            "Image_Order": item["Image_Order"],
+            "Image_Name": item["Image_Name"],
+            "Image_Description": item["Image_Description"]
+        }
+        grouped_data[header_type].append(gallery_entry)
+
+    final_result = []
+    for header, gallery_list in grouped_data.items():
+        final_result.append({
+            "Header": header,
+            "Gallery": gallery_list
+        })
     
     cur2.close()
     conn2.close()
