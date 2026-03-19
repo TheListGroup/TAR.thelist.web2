@@ -9,8 +9,8 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
-#UPLOAD_DIR = "/var/www/html/metro/uploads"
-UPLOAD_DIR = "/var/www/html/uploads"
+UPLOAD_DIR = "/var/www/html/metro/uploads"
+#UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -60,7 +60,7 @@ def _select_full_prof_item(prof_id: int) -> Dict[str, Any] | None:
                                                                     , 'Expertise_ID', a.Expertise_ID
                                                                     , 'Responsibility', b.Responsibility
                                                                     , 'Expertise_Order', a.Relationship_Order)) as Expertise
-                            , GROUP_CONCAT(ifnull(b.Content_Header, b.Responsibility) ORDER BY a.Relationship_Order ASC SEPARATOR ', ') as Expertise_Text
+                            , GROUP_CONCAT(b.Responsibility ORDER BY a.Relationship_Order ASC SEPARATOR ', ') as Expertise_Text
                         FROM prof_expertise_relationship a
                         join prof_expertise b on a.Expertise_ID = b.ID and b.Expertise_Status = '1'
                         where a.Relationship_Status = '1'
@@ -965,7 +965,7 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
                             SELECT 
                                 b.Prof_ID,
                                 a.Proj_ID, 
-                                ifnull(c.Content_Header, c.Responsibility) as Expertise,
+                                c.Responsibility as Expertise,
                                 ROW_NUMBER() OVER (PARTITION BY b.Prof_ID ORDER BY b.Relationship_Order) as row_num
                             from proj_prof_relationship a
                             join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
@@ -1178,7 +1178,7 @@ def prof_more(prof_id: int):
                             target.Prof_ID, 
                             p.Name_EN as Prof_Name,
                             target.Expertise_ID,
-                            UPPER(ifnull(prof_ext.Content_Header, prof_ext.Responsibility)) as Expertise,
+                            UPPER(prof_ext.Responsibility) as Expertise,
                             p.Logo_URL as Logo,
                             p.Prof_URL_Tag as Prof_Url,
                             cate.Category,
