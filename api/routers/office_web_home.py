@@ -807,7 +807,7 @@ def unit_template_data(
         factsheet["Furnish"] = unit_data["Furnish_Condition"]
         
         if unit_data["Column_InUnit"] == 1:
-            factsheet["Column_InUnit"] = "มี"
+            factsheet["Column_InUnit"] = "ไม่มี"
             if unit_data["Combine_Divide"] == 1:
                 factsheet["Combine_Divide"] = "มี"
                 if unit_data["Min_Divide_Size"]:
@@ -818,7 +818,7 @@ def unit_template_data(
                 factsheet["Combine_Divide"] = None
                 factsheet["Min_Divide_Size"] = None
         else:
-            factsheet["Column_InUnit"] = None
+            factsheet["Column_InUnit"] = "มี"
             factsheet["Combine_Divide"] = None
             factsheet["Min_Divide_Size"] = None
         
@@ -884,7 +884,11 @@ def unit_template_data(
         key_list = ["Rent_Term", "Rent_Deposit", "Rent_Advance"]
         for i, data_key in enumerate(key_list):
             if unit_data[data_key]:
-                factsheet[data_key] = check_int(unit_data[data_key]) + ";เดือน"
+                if i == 0:
+                    last_unit = ";ปี"
+                else:
+                    last_unit = ";เดือน"
+                factsheet[data_key] = f"{check_int(unit_data[data_key])}{last_unit}"
             else:
                 factsheet[data_key] = None
         
@@ -952,42 +956,26 @@ def unit_template_data(
             location["Longitude"] = None
         data.append({"Location": location})
         
-        #ตัดทิ้ง ???
-        unit_around = {}
+        project_around = {}
         conn = get_db()
         cur = conn.cursor(dictionary=True)
-        cur.execute("""select Unit_ID2 as Unit_ID from source_office_around_office_unit where Unit_ID1 = %s order by Distance limit 20""", (Unit_ID,))
+        cur.execute("""select Project_ID2 as Project_ID from source_office_around_office_project where Project_ID1 = %s order by Distance limit 20""", (project_data["Project_ID"],))
         rows = cur.fetchall()
-        
-        if rows:
-            unit_ids = [row["Unit_ID"] for row in rows]
-            unit_placeholders = ', '.join(['%s'] * len(unit_ids))
-            query = f"""SELECT Unit_ID, Title, Project_Name, Project_Tag_Used, Project_Tag_All, near_by, Rent_Price, Rent_Price_Sqm, Rent_Price_Status, Project_ID
-                            , Project_URL_Tag as Unit_URL
-                        FROM source_office_unit_carousel_recommend where Unit_ID in ({unit_placeholders}) order by Last_Updated_Date desc"""
-            params = tuple(unit_ids)
-            cur.execute(query, params)
-            rows = cur.fetchall()
-            if rows:
-                unit_ids = [unit['Unit_ID'] for unit in rows]
-                project_ids = [unit['Project_ID'] for unit in rows]
-                images_by_unit_id = get_all_unit_carousel_images(unit_ids, project_ids, True, True)
-                
-                for unit in rows:
-                    if images_by_unit_id is not None:
-                        unit['Carousel_Image'] = images_by_unit_id.get(unit['Unit_ID'])
-                    else:
-                        unit['Carousel_Image'] = None
-                    unit['Unit_URL'] = unit['Unit_URL'] + '/' + str(unit['Unit_ID']).rjust(4, '0')
-                unit_around['Near_Unit'] = rows
-                data.append(unit_around)
-        else:
-            data.append({"Near_Unit": None})
-        ######################################################################################################################
-        
         cur.close()
         conn.close()
         
+        if rows:
+            carousel_rows = _get_project_carousel_data([row["Project_ID"] for row in rows], None, "carousel_around")
+            if carousel_rows:
+                project_ids = [project['Project_ID'] for project in carousel_rows]
+                images_by_project_id = get_all_project_carousel_images(project_ids, True)
+                for project in carousel_rows:
+                    project['Carousel_Image'] = images_by_project_id.get(project['Project_ID']) if images_by_project_id else None
+                project_around['Near_Project'] = carousel_rows
+                data.append(project_around)
+        else:
+            data.append({"Near_Project": None})
+        ######################################################################################################################
         return data    
     except Exception as e:
         return to_problem(500, "Server Error", f"Process Error (Database or Query Error): {str(e)}")
