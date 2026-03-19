@@ -9,8 +9,8 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
-UPLOAD_DIR = "/var/www/html/metro/uploads"
-#UPLOAD_DIR = "/var/www/html/uploads"
+#UPLOAD_DIR = "/var/www/html/metro/uploads"
+UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -528,6 +528,10 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
             path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "cover")
         else:
             path_folder = os.path.join(UPLOAD_DIR, "project", str(f"{ref_id:04d}"), "cover")
+    elif image_type == "Logo":
+        path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "logo")
+        ratio_code = "S"
+        filename = f"{ref_id:06d}-{ratio_code}-{width}.webp"
     else:
         if type_name == "prof":
             path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "gallery")
@@ -537,11 +541,13 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
     if ratio == "16:9" or ratio == "9:16" or ratio == "3:2":
         ratio_code = "H"
 
-    filename = f"{image_id:06d}-{ratio_code}-{width}.webp"
+    if image_type != "Logo":
+        filename = f"{image_id:06d}-{ratio_code}-{width}.webp"
+    
     os.makedirs(path_folder, exist_ok=True)  # create if not exists
     dest_path = os.path.join(path_folder, filename)
     
-    if image_type == "Cover":
+    if image_type == "Cover" or image_type == "Logo":
         image = Image.open(BytesIO(f)).convert("RGB")
         image = ImageOps.fit(image, image_size, Image.Resampling.LANCZOS)
         image.save(dest_path, "WEBP", quality=65)

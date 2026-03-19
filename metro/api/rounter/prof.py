@@ -872,3 +872,90 @@ async def delete_image_record(
     finally:
         cur.close()
         conn.close()
+
+# ============ upload logo + บันทึก DB ============
+@router.post("/logo/record", status_code=201)
+async def upload_and_record_logo(
+    file: UploadFile = File(...),
+    Prof_ID: int = Form(...),
+    _ = Depends(get_current_user),
+):
+    if not file:
+        raise HTTPException(status_code=400, detail="No files")
+    
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        results = []
+        name = file.filename or "unnamed"
+        ext = os.path.splitext(name)[1].lower()
+        file_bytes = await file.read()
+        if ext not in ALLOWED_EXT:
+            raise HTTPException(status_code=400, detail=f"File type not allowed: {ext}")
+        size = (180, 180)
+        meta = _save_image_file(file_bytes, None, Prof_ID, "Logo", "prof", None, size, None)
+        
+        cur.execute(f"""UPDATE professionals SET Logo_URL = %s WHERE ID = %s""", (meta["url"], Prof_ID))
+    
+        results.append({"file": meta})
+        conn.commit()
+
+        return {"logo": results}
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Insert Prof_Logo failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+# ============ ลบ logo + ลบ DB ============
+@router.post("/logo/delete/", status_code=204)
+async def delete_logo_record(
+    Prof_ID: int = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        cur.execute(f"""select Logo_URL from professionals WHERE ID = %s""", (Prof_ID,))
+        logo = cur.fetchone()
+        
+        cur.execute(f"""UPDATE professionals SET Logo_URL = null WHERE ID = %s""", (Prof_ID,))
+        
+        dest_path = os.path.join('/var/www/html', logo["Logo_URL"].lstrip('/'))
+        os.remove(dest_path)
+        
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Delete Prof_Logo failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+# ====================== SELECT BY KEY ======================
+@router.get("/logo/select/{Prof_ID}", status_code=200)
+def select_all_prof_cover(
+    Prof_ID: int,
+    if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
+    response: Response = Response(),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        prof = _select_full_prof_item(Prof_ID)
+        require_row_exists(prof, Prof_ID, 'Prof')
+        
+        et = etag_of(prof)
+        # ถ้า client ส่ง If-None-Match มาและตรง → 304
+        if if_none_match and if_none_match == et:
+            response.headers["ETag"] = et
+            response.status_code = status.HTTP_304_NOT_MODIFIED
+            return
+
+        return {"logo": prof["Logo_URL"]}
+    
+    finally:
+        cur.close()
+        conn.close()
