@@ -377,7 +377,8 @@ def delete_expertise_process(cur, Prof_Relationship_IDs: list, state: str, state
     if state == 'delete_prof':
         cur.execute(f"{relationship_query} WHERE Prof_Expertise_Relationship_ID IN ({format_rel}) AND Relationship_Status = '1'", tuple(Prof_Relationship_IDs))
     else:
-        cur.execute(f"{relationship_query} WHERE ID IN ({format_proj}) AND Relationship_Status = '1'", tuple(proj_rel_ids)) #xx
+        if proj_rel_ids:
+            cur.execute(f"{relationship_query} WHERE ID IN ({format_proj}) AND Relationship_Status = '1'", tuple(proj_rel_ids)) #xx
 
 def url_work(cur, new_id, Name_EN, state):
     pattern = r'[!@#$%^&*()_+{}\[\]:;<>,.?~\\|/`\'"-]'
@@ -1122,16 +1123,12 @@ def _select_prof_cover(prof_id: int) -> Dict[str, Any] | None:
     cur2 = conn2.cursor(dictionary=True)
     cover_list = []
     cur2.execute(
-        f"""select Image_URL, Ratio_Type 
-            from (SELECT
-                        a.Image_URL
-                        , a.Ratio_Type
-                        , ROW_NUMBER() OVER (PARTITION BY a.Prof_ID ORDER BY a.ID) as row_num 
-                    from prof_cover a
-                    where a.Image_Status = '1'
-                    and a.Prof_ID = %s
-                    and a.Ratio_Type in ('16:9', '9:16')) aaa
-            where row_num in (1,3)""",
+        f"""SELECT
+                a.Image_URL
+                , a.Ratio_Type
+            from prof_cover a
+            where a.Image_Status = '1'
+            and a.Prof_ID = %s""",
         (prof_id,)
     )
     rows = cur2.fetchall()
