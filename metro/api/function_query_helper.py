@@ -953,17 +953,18 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
             left join (SELECT 
                             t.Prof_ID, 
                             GROUP_CONCAT(t.Category_Name SEPARATOR ', ') AS Categories
-                        FROM (
-                            SELECT 
-                                a.Prof_ID, 
-                                b.Category_Name,
-                                ROW_NUMBER() OVER (PARTITION BY a.Prof_ID ORDER BY b.Category_Name) as row_num
-                            FROM prof_experience_relationship a
-                            JOIN proj_categories b ON a.Proj_Category_ID = b.ID
-                            WHERE a.Proj_Category_Status = '1'
-                            AND b.Categories_Status = '1'
+                        FROM (  SELECT
+                                    b.Prof_ID,
+                                    d.Category_Name,
+                                    ROW_NUMBER() OVER (PARTITION BY b.Prof_ID ORDER BY COUNT(DISTINCT ra.Proj_ID) DESC) as row_num 
+                                FROM proj_prof_relationship ra
+                                JOIN prof_expertise_relationship b ON ra.Prof_Expertise_Relationship_ID = b.ID AND b.Relationship_Status = '1'
+                                JOIN proj_category_relationship c ON ra.Proj_ID = c.Proj_ID AND c.Relationship_Status = '1'
+                                join proj_categories d on c.Category_ID = d.ID and d.Categories_Status = '1'
+                                WHERE ra.Relationship_Status = '1'
+                                GROUP BY b.Prof_ID, d.Category_Name
                         ) t
-                        WHERE t.row_num <= 3
+                        WHERE t.row_num <= 2
                         GROUP BY t.Prof_ID) prof_exp
             on c.ID = prof_exp.Prof_ID
             left join (SELECT 
@@ -1208,7 +1209,7 @@ def prof_more(prof_id: int):
                         join prof_expertise prof_ext on target.Expertise_ID = prof_ext.ID and prof_ext.Expertise_Status = '1'
                         LEFT JOIN (
                             select Prof_ID
-                                , CONCAT_WS(' | ', MAX(CASE WHEN row_num = 1 THEN UPPER(Category_Name) END), MAX(CASE WHEN row_num = 2 THEN UPPER(Category_Name) END)) AS Category
+                                , CONCAT_WS(', ', MAX(CASE WHEN row_num = 1 THEN UPPER(Category_Name) END), MAX(CASE WHEN row_num = 2 THEN UPPER(Category_Name) END)) AS Category
                             from (
                                 SELECT
                                     b.Prof_ID,
