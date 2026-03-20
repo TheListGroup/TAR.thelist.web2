@@ -40,7 +40,7 @@ CREATE TABLE user_admin (
     Role_ID INT NULL,
     User_FullName Varchar(250) NOT NULL,
     User_Username Varchar(20) NOT NULL,
-    User_Password Varchar(40) NOT NULL,
+    User_Password Varchar(80) NOT NULL,
     INDEX(Role_ID),
     FOREIGN KEY (Role_ID) REFERENCES role(Role_ID)
 ) ENGINE=InnoDB;
@@ -114,7 +114,7 @@ CREATE TABLE proj_cover (
     Proj_ID INT UNSIGNED NOT NULL,
     Cover_Name VARCHAR(100),
     Image_URL TEXT NOT NULL,
-    Ratio_Type ENUM('16:9', '4:3') NOT NULL,
+    Ratio_Type ENUM('16:9', '9:16', '3:2') NOT NULL,
     Image_Status ENUM('0','1','2') NOT NULL,
     INDEX (Proj_ID),
     FOREIGN KEY (Proj_ID) REFERENCES projects(ID)
@@ -227,7 +227,7 @@ CREATE TABLE prof_cover (
     Prof_ID INT UNSIGNED NOT NULL,
     Cover_Name VARCHAR(100),
     Image_URL TEXT NOT NULL,
-    Ratio_type ENUM('16:9', '4:3') NOT NULL,
+    Ratio_type ENUM('16:9', '9:16') NOT NULL,
     Image_Status ENUM('0','1','2') NOT NULL,
     INDEX (Prof_ID),
     FOREIGN KEY (Prof_ID) REFERENCES professionals(ID)
