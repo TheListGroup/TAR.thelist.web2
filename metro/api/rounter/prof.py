@@ -43,7 +43,6 @@ def insert_professionals(
     Website: str = Form(None),
     Found_Date: str = Form(None),
     Is_Freelance: str = Form(None),
-    Logo_URL: str = Form(None),
     Brief_Description: str = Form(None),
     Content: str = Form(None),
     Experience_Text: str = Form(None),
@@ -72,7 +71,6 @@ def insert_professionals(
         Website = None if not Website else Website
         Found_Date = None if not Found_Date else datetime.strptime(Found_Date, "%Y-%m-%d")
         Is_Freelance = 0 if not Is_Freelance else 1
-        Logo_URL = None if not Logo_URL else Logo_URL
         Brief_Description = None if not Brief_Description else Brief_Description
         Content = None if not Content else Content
         Prof_Status = Prof_Status if Prof_Status else '0'
@@ -97,13 +95,13 @@ def insert_professionals(
         sql = f"""
             INSERT INTO {TABLE}
             (Name_EN, Name_TH, Latitude, Longitude, Prof_Address, Prof_Yarn, Prof_Sub_District, Prof_District, Prof_Province, Prof_State
-            , Prof_Country, FB_Link, IG_Link, Line_Link, YT_Link, Website, Found_Date, Is_Freelance, Logo_URL, Brief_Description
+            , Prof_Country, FB_Link, IG_Link, Line_Link, YT_Link, Website, Found_Date, Is_Freelance, Brief_Description
             , Content, Prof_Status, Created_By, Last_Updated_By)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
         cur.execute(sql, (
             Name_EN, Name_TH, Latitude, Longitude, Prof_Address, location_id_list[0], location_id_list[1], location_id_list[2], location_id_list[3], location_id_list[4]
-            , country_id, FB_Link, IG_Link, Line_Link, YT_Link, Website, Found_Date, Is_Freelance, Logo_URL, Brief_Description
+            , country_id, FB_Link, IG_Link, Line_Link, YT_Link, Website, Found_Date, Is_Freelance, Brief_Description
             , Content, Prof_Status, Created_By, Last_Updated_By
         ))
         new_id = cur.lastrowid
@@ -195,7 +193,6 @@ def update_professionals(
     Website: str = Form(None),
     Found_Date: str = Form(None),
     Is_Freelance: str = Form(None),
-    Logo_URL: str = Form(None),
     Brief_Description: str = Form(None),
     Content: str = Form(None),
     Experience_Text: str = Form(None),
@@ -224,7 +221,6 @@ def update_professionals(
         Website = None if not Website else Website
         Found_Date = None if not Found_Date else datetime.strptime(Found_Date, "%Y-%m-%d")
         Is_Freelance = 0 if not Is_Freelance else 1
-        Logo_URL = None if not Logo_URL else Logo_URL
         Brief_Description = None if not Brief_Description else Brief_Description
         Content = None if not Content else Content
         Prof_Status = Prof_Status if Prof_Status else '0'
@@ -289,7 +285,6 @@ def update_professionals(
                 Website=%s,
                 Found_Date=%s,
                 Is_Freelance=%s,
-                Logo_URL=%s,
                 Brief_Description=%s,
                 Content=%s,
                 Prof_Status=%s,
@@ -298,7 +293,7 @@ def update_professionals(
             WHERE ID=%s
         """
         cur.execute(sql, (Name_EN, Name_TH, Latitude, Longitude, Prof_Address, location_id_list[0], location_id_list[1], location_id_list[2], location_id_list[3], location_id_list[4]
-            , country_id, FB_Link, IG_Link, Line_Link, YT_Link, Website, Found_Date, Is_Freelance, Logo_URL, Brief_Description
+            , country_id, FB_Link, IG_Link, Line_Link, YT_Link, Website, Found_Date, Is_Freelance, Brief_Description
             , Content, Prof_Status, Last_Updated_By, Prof_ID))
         
         url_work(cur, Prof_ID, Name_EN, 'prof')
