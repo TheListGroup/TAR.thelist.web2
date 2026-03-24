@@ -784,8 +784,8 @@ def select_all_member(
                     FROM prof_employees a
                     join proj_prof_relationship b on a.Proj_Profs_Relationship_ID = b.ID and b.Relationship_Status = '1'
                     join prof_expertise_relationship c on b.Prof_Expertise_Relationship_ID = c.ID and c.Relationship_Status = '1'
-                    join professionals d on c.Prof_ID = d.ID and d.Prof_Status = '1'
-                    join projects e on b.Proj_ID = e.ID and e.Proj_Status = '1'
+                    join professionals d on c.Prof_ID = d.ID and d.Prof_Status <> '2'
+                    join projects e on b.Proj_ID = e.ID and e.Proj_Status <> '2'
                     WHERE d.ID = %s
                     and a.Member_Status = '1'
                     ORDER BY a.ID""", (Prof_ID,))

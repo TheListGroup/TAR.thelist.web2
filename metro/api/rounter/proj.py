@@ -785,16 +785,12 @@ def select_prof_expertise(
                         , e.Expertise_Order
                         , c.Relationship_Order as Prof_Expertise_Order
                     from proj_prof_relationship a
-                    join projects b on a.Proj_ID = b.ID
-                    join prof_expertise_relationship c on a.Prof_Expertise_Relationship_ID = c.ID
-                    join professionals d on c.Prof_ID = d.ID
-                    join prof_expertise e on c.Expertise_ID = e.ID
+                    join projects b on a.Proj_ID = b.ID and b.Proj_Status <> '2'
+                    join prof_expertise_relationship c on a.Prof_Expertise_Relationship_ID = c.ID and c.Relationship_Status = '1'
+                    join professionals d on c.Prof_ID = d.ID and d.Prof_Status <> '2'
+                    join prof_expertise e on c.Expertise_ID = e.ID and e.Expertise_Status = '1'
                     where a.Proj_ID = %s
-                    and b.Proj_Status = '1'
-                    and a.Relationship_Status = '1'
-                    and c.Relationship_Status = '1'
-                    and d.Prof_Status = '1'
-                    and e.Expertise_Status = '1'"""
+                    and a.Relationship_Status = '1'"""
         
         cur.execute(base_sql, (Proj_ID,))
         rows = cur.fetchall()

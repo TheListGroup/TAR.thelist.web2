@@ -191,12 +191,9 @@ def _select_prof_expertise() -> Dict[str, Any]:
                 a.ID,
                 concat(b.Name_EN, ' - ', c.Responsibility) as expertise
             FROM prof_expertise_relationship a
-            join professionals b on a.Prof_ID = b.ID
-            join prof_expertise c on a.Expertise_ID = c.ID
-            where b.Prof_Status = '1'
-            and a.Relationship_Status = '1'
-            and b.Prof_Status = '1'
-            and c.Expertise_Status = '1'"""
+            join professionals b on a.Prof_ID = b.ID and b.Prof_Status <> '2'
+            join prof_expertise c on a.Expertise_ID = c.ID and c.Expertise_Status = '1'
+            where a.Relationship_Status = '1'"""
     )
     row = cur2.fetchall()
     cur2.close()
@@ -211,16 +208,12 @@ def _select_proj_prof_relationship(Prof_ID) -> Dict[str, Any]:
                 aa.ID,
                 concat(d.Name_EN, ' - ', b.Name_EN, ' - ', c.Responsibility) as expertise
             FROM proj_prof_relationship aa
-            join prof_expertise_relationship a on aa.Prof_Expertise_Relationship_ID = a.ID
-            join professionals b on a.Prof_ID = b.ID
-            join prof_expertise c on a.Expertise_ID = c.ID
-            join projects d on aa.Proj_ID = d.ID
+            join prof_expertise_relationship a on aa.Prof_Expertise_Relationship_ID = a.ID and a.Relationship_Status = '1'
+            join professionals b on a.Prof_ID = b.ID and b.Prof_Status <> '2'
+            join prof_expertise c on a.Expertise_ID = c.ID and c.Expertise_Status = '1'
+            join projects d on aa.Proj_ID = d.ID and d.Proj_Status <> '2'
             where a.Prof_ID = %s
-            and aa.Relationship_Status = '1'
-            and a.Relationship_Status = '1'
-            and b.Prof_Status = '1'
-            and c.Expertise_Status = '1'
-            and d.Proj_Status = '1'""",
+            and aa.Relationship_Status = '1'""",
         (Prof_ID,)
     )
     row = cur2.fetchall()
