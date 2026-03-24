@@ -9,8 +9,8 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
-#UPLOAD_DIR = "/var/www/html/metro/uploads"
-UPLOAD_DIR = "/var/www/html/uploads"
+UPLOAD_DIR = "/var/www/html/metro/uploads"
+#UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -133,7 +133,7 @@ def _select_category(state: str):
     cur2 = conn2.cursor(dictionary=True)
     
     if state == "prof":
-        query = "left join"
+        query = "join"
     else:
         query = "join"
     
