@@ -420,7 +420,7 @@ def proj_template_data(
     rai = project_data.get('Land_Rai', 0)
     ngan = project_data.get('Land_Ngan', 0)
     wa = project_data.get('Land_Wa', 0)
-    if rai and ngan and wa:
+    if rai or ngan or wa:
         total_wa = (rai * 400) + (ngan * 100) + wa
         if total_wa > 0:
             final_rai = int(total_wa // 400)
