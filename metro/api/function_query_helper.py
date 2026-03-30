@@ -9,8 +9,8 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
-UPLOAD_DIR = "/var/www/html/metro/uploads"
-#UPLOAD_DIR = "/var/www/html/uploads"
+#UPLOAD_DIR = "/var/www/html/metro/uploads"
+UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -777,19 +777,20 @@ def proj_responsibilities(proj_id: int, state: str) -> Dict[str, Any] | None:
             , if(a.Content is not null 
                 , concat(LPAD(b.Expertise_ID,2,'0'),'-',replace(c.Name_EN,' ','-'))
                 , null) as Anchor
-            , c.Prof_URL_Tag as Prof_Url
+            , if(f.Url_Status = 1, c.Prof_URL_Tag, null) as Prof_Url
             from proj_prof_relationship a
             join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
             join professionals c on b.Prof_ID = c.ID
             join prof_expertise d on b.Expertise_ID = d.ID
             left join prof_employees e on a.ID = e.Proj_Profs_Relationship_ID and e.Member_Status = '1'
+            left join prof_url f on c.ID = f.Prof_ID
             where a.Relationship_Status = '1'
             {content_query}
             and b.Relationship_Status = '1'
             and c.Prof_Status = '1'
             and d.Expertise_Status = '1'
             and a.Proj_ID = %s
-            group by c.Name_EN, d.Responsibility, b.Expertise_ID, a.Content, c.Prof_URL_Tag
+            group by c.Name_EN, d.Responsibility, b.Expertise_ID, a.Content, c.Prof_URL_Tag, f.Prof_ID, c.Logo_URL
             order by d.Expertise_Order, ISNULL(a.Content), c.Name_EN""",
         (proj_id,)
     )
@@ -914,18 +915,25 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     else:
         return None
 
-def get_proj_category_id(cur, proj_id):
-    cur.execute("""select a.Proj_ID, a.Category_ID as Sub_Cate, b.Parent_ID as Head_Cate
+def get_proj_category_id(cur, proj_id, state):
+    more_query = ''
+    if state != 'more':
+        more_query = 'and a.Relationship_Order = 1'
+    
+    cur.execute(f"""select a.Proj_ID, a.Category_ID as Sub_Cate, b.Parent_ID as Head_Cate
                 from proj_category_relationship a
                 join proj_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
                 where a.Relationship_Status = '1'
                 and a.Proj_ID = %s
-                and a.Relationship_Order = 1""", (proj_id,))
-    row = cur.fetchone()
-    if row:
-        return row["Sub_Cate"], row["Head_Cate"]
+                {more_query}""", (proj_id,))
+    rows = cur.fetchall()
+    if not rows:
+        return [] if state == 'more' else (None, None)
+
+    if state == 'more':
+        return [row["Sub_Cate"] for row in rows]
     else:
-        return None, None
+        return rows[0]["Sub_Cate"], rows[0]["Head_Cate"]
 
 def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
     conn2 = get_db()
@@ -939,10 +947,11 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
                 , c.Logo_URL as Image
                 , prof_ext.Expertise as Res
                 , prof_exp.Categories as Experience
-                , concat('metro/prof/', c.Prof_URL_Tag) as Prof_Url
+                , if(f.Url_Status = 1, concat('metro/prof/', c.Prof_URL_Tag), null) as Prof_Url
             from proj_prof_relationship a
             join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
             join professionals c on b.Prof_ID = c.ID
+            left join prof_url f on c.ID = f.Prof_ID
             left join (SELECT 
                             t.Prof_ID, 
                             GROUP_CONCAT(t.Category_Name SEPARATOR ', ') AS Categories
@@ -993,7 +1002,7 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
         prof_list.append(row)
     
     if prof_list:
-        sub_cate, head_cate = get_proj_category_id(cur2, proj_id)
+        sub_cate, head_cate = get_proj_category_id(cur2, proj_id, 'similar')
         for prof in prof_list:
             cur2.execute(f"""SELECT 
                             aaa.Prof_ID,
@@ -1055,16 +1064,14 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
     else:
         return None
 
-def proj_more(proj_id: int, cate_text: str):
+def proj_more(proj_id: int):
     conn2 = get_db()
     cur2 = conn2.cursor(dictionary=True)
     
-    if cate_text is None:
-        return None
-    
-    sub_cate, head_cate = get_proj_category_id(cur2, proj_id)
-    more = {"Title": f"MORE {cate_text.upper()} PROJECTS"}
-    cur2.execute(f"""SELECT 
+    sub_cate = get_proj_category_id(cur2, proj_id, 'more')
+    placeholders = ', '.join(['%s'] * len(sub_cate))
+    more = {}
+    raw_query = f"""SELECT 
                     aaa.Proj_ID,
                     aaa.Proj_Name as Name,
                     aaa.Display_Category as Proj_Category,
@@ -1078,35 +1085,49 @@ def proj_more(proj_id: int, cate_text: str):
                         GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
                         d.Category_ID,
                         e.Parent_ID,
-                        -- ใช้ ROW_NUMBER เพื่อหาหมวดหมู่ที่ "ดีที่สุด" ของแต่ละโปรเจกต์
-                        ROW_NUMBER() OVER (
-                            PARTITION BY c.ID 
-                            ORDER BY 
-                                (CASE WHEN d.Category_ID = %s THEN 1 ELSE 2 END) ASC, -- เอาตัวที่ตรงกับหน้าปัจจุบันขึ้นก่อน
-                                d.Relationship_Order ASC -- ตามด้วยลำดับที่คุณตั้งไว้ใน DB
-                        ) as row_num
+                        CASE 
+                            WHEN ref_sub.Relationship_Order IS NOT NULL THEN ref_sub.Relationship_Order
+                            WHEN ref_parent.Min_Order IS NOT NULL THEN 100 + ref_parent.Min_Order
+                            ELSE 999 
+                        END as Final_Priority,
+                        ROW_NUMBER() OVER (PARTITION BY c.ID 
+                            ORDER BY (CASE WHEN d.Category_ID in ({placeholders}) THEN 1 ELSE 2 END) ASC, d.Relationship_Order ASC) as row_num
                     FROM projects c
                     JOIN proj_category_relationship d ON c.ID = d.Proj_ID AND d.Relationship_Status = '1'
                     JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
                     JOIN proj_categories f ON e.Parent_ID = f.ID AND f.Categories_Status = '1'
+                    LEFT JOIN proj_category_relationship ref_sub ON d.Category_ID = ref_sub.Category_ID AND ref_sub.Proj_ID = %s AND ref_sub.Relationship_Status = '1'
+                    LEFT JOIN (SELECT p.Parent_ID, MIN(r.Relationship_Order) as Min_Order
+                                FROM proj_category_relationship r
+                                JOIN proj_categories p ON r.Category_ID = p.ID
+                                WHERE r.Proj_ID = %s AND r.Relationship_Status = '1'
+                                GROUP BY p.Parent_ID) ref_parent
+                    ON e.Parent_ID = ref_parent.Parent_ID
                     WHERE c.Proj_Status = '1'
                     AND c.ID <> %s
                 ) aaa
-                -- เลือกเฉพาะแถวที่ 1 ของแต่ละโปรเจกต์ (แก้ปัญหาตัวซ้ำและเลือกหมวดที่ใช่ที่สุด)
                 WHERE aaa.row_num = 1 
-                AND (aaa.Category_ID = %s OR aaa.Parent_ID = %s)
+                AND aaa.Final_Priority < 999 
                 ORDER BY 
-                    -- เรียงตาม Logic ของ Carousel: หมวดตรงกัน > ปีล่าสุด > ชื่อ A-Z
-                    (CASE WHEN aaa.Category_ID = %s THEN 1 ELSE 2 END) ASC,
+                    aaa.Final_Priority ASC,
                     aaa.Latest_Date DESC,
                     aaa.Proj_Name ASC
-                LIMIT 20""", 
-            (sub_cate, proj_id, sub_cate, head_cate, sub_cate))
+                LIMIT 20"""
+    query = raw_query.format(placeholders)
+    params = list(sub_cate) + [proj_id, proj_id, proj_id]
+    cur2.execute(query, params)
     rows = cur2.fetchall()
+    categories = []
     for row in rows:
         cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '3:2' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
         images = cur2.fetchall()
         row["Cover"] = images if images else None
+        categories.append(row["Proj_Category"].split(' | ')[0])
+    categories = list(set(categories))
+    if len(categories) > 1:
+        more["Title"] = "MORE PROJECTS"
+    else:
+        more["Title"] = f"MORE {categories[0].upper()} PROJECTS"
     more["Proj"] = rows
     
     cur2.close()
@@ -1178,7 +1199,7 @@ def prof_more(prof_id: int):
                             target.Expertise_ID,
                             UPPER(prof_ext.Responsibility) as Expertise,
                             p.Logo_URL as Logo,
-                            p.Prof_URL_Tag as Prof_Url,
+                            if(f.Url_Status = 1, p.Prof_URL_Tag, null) as Prof_Url,
                             cate.Category,
                             target.Relationship_Order as Target_Order, -- อันดับความเก่งของคู่แข่ง
                             IFNULL(stats.Count_Proj, 0) as Count_Proj,
@@ -1191,6 +1212,7 @@ def prof_more(prof_id: int):
                         AND target.Prof_ID <> %s -- ตัดตัวเองออก
                         -- 2. Join เอาชื่อบริษัทคู่แข่ง
                         LEFT JOIN professionals p ON target.Prof_ID = p.ID and p.Prof_Status = '1'
+                        left join prof_url f on p.ID = f.Prof_ID
                         -- 3. Join Subquery นับโปรเจกต์ (แบบที่คุณเขียน)
                         LEFT JOIN (
                             SELECT b.Prof_ID, b.Expertise_ID, COUNT(DISTINCT ra.Proj_ID) as Count_Proj

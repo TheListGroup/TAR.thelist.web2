@@ -481,8 +481,7 @@ def proj_template_data(
     similar_proj = get_similar_proj(profs, Proj_ID) if profs else None
     data["Similar_Proj"] = similar_proj
     
-    sub_cate = full_cate.split(" | ")[-1] if full_cate else None
-    more_proj = proj_more(Proj_ID, sub_cate)
+    more_proj = proj_more(Proj_ID)
     data["More_Proj"] = more_proj
     
     return data
