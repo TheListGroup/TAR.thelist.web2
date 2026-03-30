@@ -294,3 +294,18 @@ CREATE TABLE prof_gallery (
     INDEX (Prof_ID),
     FOREIGN KEY (Prof_ID) REFERENCES professionals(ID)
 ) ENGINE=InnoDB;
+
+CREATE TABLE home_image (
+    ID INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    Card_Type VARCHAR(30),
+    Category VARCHAR(100),
+    Category_Hierarchy json,
+    Card_Name VARCHAR(255),
+    Card_Sub_Name VARCHAR(255),
+    Card_Logo TEXT,
+    Brief_Description TEXT,
+    Image_URL TEXT NOT NULL,
+    Image_Order INT NOT NULL,
+    Card_Url TEXT,
+    Last_Updated_Date timestamp NOT NULL
+) ENGINE=InnoDB;
