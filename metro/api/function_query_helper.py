@@ -9,8 +9,8 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
-#UPLOAD_DIR = "/var/www/html/metro/uploads"
-UPLOAD_DIR = "/var/www/html/uploads"
+UPLOAD_DIR = "/var/www/html/metro/uploads"
+#UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -1123,11 +1123,14 @@ def proj_more(proj_id: int):
         images = cur2.fetchall()
         row["Cover"] = images if images else None
         categories.append(row["Proj_Category"].split(' | ')[0])
-    categories = list(set(categories))
-    if len(categories) > 1:
-        more["Title"] = "MORE PROJECTS"
+    if categories:
+        categories = list(set(categories))
+        if len(categories) > 1:
+            more["Title"] = "MORE PROJECTS"
+        else:
+            more["Title"] = f"MORE {categories[0].upper()} PROJECTS"
     else:
-        more["Title"] = f"MORE {categories[0].upper()} PROJECTS"
+        more["Title"] = None
     more["Proj"] = rows
     
     cur2.close()
