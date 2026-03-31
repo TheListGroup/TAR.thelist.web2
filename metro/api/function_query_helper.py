@@ -1069,69 +1069,72 @@ def proj_more(proj_id: int):
     cur2 = conn2.cursor(dictionary=True)
     
     sub_cate = get_proj_category_id(cur2, proj_id, 'more')
-    placeholders = ', '.join(['%s'] * len(sub_cate))
-    more = {}
-    raw_query = f"""SELECT 
-                    aaa.Proj_ID,
-                    aaa.Proj_Name as Name,
-                    aaa.Display_Category as Proj_Category,
-                    aaa.Proj_URL_Tag as URL
-                FROM (
-                    SELECT 
-                        c.ID as Proj_ID, 
-                        c.Name_EN as Proj_Name, 
-                        c.Proj_URL_Tag,
-                        concat(f.Category_Name, " | ", e.Category_Name) as Display_Category,
-                        GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
-                        d.Category_ID,
-                        e.Parent_ID,
-                        CASE 
-                            WHEN ref_sub.Relationship_Order IS NOT NULL THEN ref_sub.Relationship_Order
-                            WHEN ref_parent.Min_Order IS NOT NULL THEN 100 + ref_parent.Min_Order
-                            ELSE 999 
-                        END as Final_Priority,
-                        ROW_NUMBER() OVER (PARTITION BY c.ID 
-                            ORDER BY (CASE WHEN d.Category_ID in ({placeholders}) THEN 1 ELSE 2 END) ASC, d.Relationship_Order ASC) as row_num
-                    FROM projects c
-                    JOIN proj_category_relationship d ON c.ID = d.Proj_ID AND d.Relationship_Status = '1'
-                    JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
-                    JOIN proj_categories f ON e.Parent_ID = f.ID AND f.Categories_Status = '1'
-                    LEFT JOIN proj_category_relationship ref_sub ON d.Category_ID = ref_sub.Category_ID AND ref_sub.Proj_ID = %s AND ref_sub.Relationship_Status = '1'
-                    LEFT JOIN (SELECT p.Parent_ID, MIN(r.Relationship_Order) as Min_Order
-                                FROM proj_category_relationship r
-                                JOIN proj_categories p ON r.Category_ID = p.ID
-                                WHERE r.Proj_ID = %s AND r.Relationship_Status = '1'
-                                GROUP BY p.Parent_ID) ref_parent
-                    ON e.Parent_ID = ref_parent.Parent_ID
-                    WHERE c.Proj_Status = '1'
-                    AND c.ID <> %s
-                ) aaa
-                WHERE aaa.row_num = 1 
-                AND aaa.Final_Priority < 999 
-                ORDER BY 
-                    aaa.Final_Priority ASC,
-                    aaa.Latest_Date DESC,
-                    aaa.Proj_Name ASC
-                LIMIT 20"""
-    query = raw_query.format(placeholders)
-    params = list(sub_cate) + [proj_id, proj_id, proj_id]
-    cur2.execute(query, params)
-    rows = cur2.fetchall()
-    categories = []
-    for row in rows:
-        cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '3:2' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
-        images = cur2.fetchall()
-        row["Cover"] = images if images else None
-        categories.append(row["Proj_Category"].split(' | ')[0])
-    if categories:
-        categories = list(set(categories))
-        if len(categories) > 1:
-            more["Title"] = "MORE PROJECTS"
+    if sub_cate:
+        placeholders = ', '.join(['%s'] * len(sub_cate))
+        more = {}
+        raw_query = f"""SELECT 
+                        aaa.Proj_ID,
+                        aaa.Proj_Name as Name,
+                        aaa.Display_Category as Proj_Category,
+                        aaa.Proj_URL_Tag as URL
+                    FROM (
+                        SELECT 
+                            c.ID as Proj_ID, 
+                            c.Name_EN as Proj_Name, 
+                            c.Proj_URL_Tag,
+                            concat(f.Category_Name, " | ", e.Category_Name) as Display_Category,
+                            GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
+                            d.Category_ID,
+                            e.Parent_ID,
+                            CASE 
+                                WHEN ref_sub.Relationship_Order IS NOT NULL THEN ref_sub.Relationship_Order
+                                WHEN ref_parent.Min_Order IS NOT NULL THEN 100 + ref_parent.Min_Order
+                                ELSE 999 
+                            END as Final_Priority,
+                            ROW_NUMBER() OVER (PARTITION BY c.ID 
+                                ORDER BY (CASE WHEN d.Category_ID in ({placeholders}) THEN 1 ELSE 2 END) ASC, d.Relationship_Order ASC) as row_num
+                        FROM projects c
+                        JOIN proj_category_relationship d ON c.ID = d.Proj_ID AND d.Relationship_Status = '1'
+                        JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
+                        JOIN proj_categories f ON e.Parent_ID = f.ID AND f.Categories_Status = '1'
+                        LEFT JOIN proj_category_relationship ref_sub ON d.Category_ID = ref_sub.Category_ID AND ref_sub.Proj_ID = %s AND ref_sub.Relationship_Status = '1'
+                        LEFT JOIN (SELECT p.Parent_ID, MIN(r.Relationship_Order) as Min_Order
+                                    FROM proj_category_relationship r
+                                    JOIN proj_categories p ON r.Category_ID = p.ID
+                                    WHERE r.Proj_ID = %s AND r.Relationship_Status = '1'
+                                    GROUP BY p.Parent_ID) ref_parent
+                        ON e.Parent_ID = ref_parent.Parent_ID
+                        WHERE c.Proj_Status = '1'
+                        AND c.ID <> %s
+                    ) aaa
+                    WHERE aaa.row_num = 1 
+                    AND aaa.Final_Priority < 999 
+                    ORDER BY 
+                        aaa.Final_Priority ASC,
+                        aaa.Latest_Date DESC,
+                        aaa.Proj_Name ASC
+                    LIMIT 20"""
+        query = raw_query.format(placeholders)
+        params = list(sub_cate) + [proj_id, proj_id, proj_id]
+        cur2.execute(query, params)
+        rows = cur2.fetchall()
+        categories = []
+        for row in rows:
+            cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '3:2' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
+            images = cur2.fetchall()
+            row["Cover"] = images if images else None
+            categories.append(row["Proj_Category"].split(' | ')[0])
+        if categories:
+            categories = list(set(categories))
+            if len(categories) > 1:
+                more["Title"] = "MORE PROJECTS"
+            else:
+                more["Title"] = f"MORE {categories[0].upper()} PROJECTS"
         else:
-            more["Title"] = f"MORE {categories[0].upper()} PROJECTS"
+            more["Title"] = None
+        more["Proj"] = rows
     else:
-        more["Title"] = None
-    more["Proj"] = rows
+        more = None
     
     cur2.close()
     conn2.close()
