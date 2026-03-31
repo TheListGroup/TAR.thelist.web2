@@ -307,5 +307,6 @@ CREATE TABLE home_image (
     Image_URL TEXT NOT NULL,
     Image_Order INT NOT NULL,
     Card_Url TEXT,
-    Last_Updated_Date timestamp NOT NULL
+    Last_Updated_Date timestamp NOT NULL,
+    All_Category TEXT
 ) ENGINE=InnoDB;
