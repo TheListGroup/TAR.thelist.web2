@@ -98,10 +98,20 @@ def get_home_images(cur, start_order, amount, category_path):
     filters = []
     params = []
     
-    for i, val in enumerate(category_path, 1):
+    l1_type = category_path[0].upper() if category_path else None
+    if l1_type and l1_type != "ALL":
+        filters.append("UPPER(Card_Type) = %s")
+        params.append(l1_type)
+    
+    #for i, val in enumerate(category_path, 1):
+    #    if val and val.upper() != "ALL":
+    #        filters.append(f"Category_Hierarchy->>'$.l{i}' = %s")
+    #        params.append(val.upper())
+    
+    for val in category_path[1:]:
         if val and val.upper() != "ALL":
-            filters.append(f"Category_Hierarchy->>'$.l{i}' = %s")
-            params.append(val.upper())
+            filters.append("JSON_CONTAINS(UPPER(All_Category), JSON_QUOTE(UPPER(%s)))")
+            params.append(val)
     
     filter_sql = " AND ".join(filters) if filters else "1=1"
     
@@ -127,6 +137,44 @@ def get_home_images(cur, start_order, amount, category_path):
     
     return data, total
 
+def _select_active_category(cur):
+    sql = """
+        SELECT DISTINCT 
+            c.ID, 
+            c.Category_Name, 
+            c.Parent_ID, 
+            c.Categories_Order
+        FROM home_image h
+        JOIN proj_categories c ON (
+            c.Category_Name MEMBER OF (h.All_Category)
+        )
+        WHERE h.Card_Type = 'PROJECT' 
+        AND c.Categories_Status = '1'
+        AND h.All_Category IS NOT NULL
+        ORDER BY c.Parent_ID ASC, c.Categories_Order ASC
+    """
+    cur.execute(sql)
+    return cur.fetchall()
+
+def _select_active_expertise(cur):
+    sql = """
+        SELECT DISTINCT 
+            c.ID, 
+            c.Responsibility, 
+            c.Parent_ID, 
+            c.Expertise_Order
+        FROM home_image h
+        JOIN prof_expertise c ON (
+            c.Responsibility MEMBER OF (h.All_Category)
+        )
+        WHERE h.Card_Type = 'PROFESSIONAL' 
+        AND c.Expertise_Status = '1'
+        AND h.All_Category IS NOT NULL
+        ORDER BY c.Parent_ID , c.Expertise_Order
+    """
+    cur.execute(sql)
+    return cur.fetchall()
+
 @router.get("/home-template-tag", status_code=200)
 def home_template_tag(
     _ = Depends(get_current_user),
@@ -134,13 +182,15 @@ def home_template_tag(
     conn2 = get_db()
     cur2 = conn2.cursor(dictionary=True)
     
-    proj_cate_data = _select_active_category_hierarchies(cur2)
+    #proj_cate_data = _select_active_category_hierarchies(cur2)
+    proj_cate_data = _select_active_category(cur2)
     if proj_cate_data:
         proj = create_json(proj_cate_data, 'PROJECT')
     else:
         proj = None
     
-    prof_cate_data = _select_active_expertise_hierarchies(cur2)
+    #prof_cate_data = _select_active_expertise_hierarchies(cur2)
+    prof_cate_data = _select_active_expertise(cur2)
     if prof_cate_data:
         prof = create_json(prof_cate_data, 'PROFESSIONAL')
     else:
