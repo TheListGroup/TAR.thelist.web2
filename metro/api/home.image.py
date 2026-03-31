@@ -187,6 +187,7 @@ def build_master_queue(items: List[Dict[str, Any]], item_type: str) -> List[Dict
                         "brief": current_item["brief"],
                         "logo": current_item["logo"],
                         "link": current_item["url"],
+                        "all_cate": current_item["head_cate"],
                         "photo_data": photos[photo_index],
                         "photo_rank": photo_index 
                     })
@@ -305,7 +306,8 @@ def create_image_group(state):
                             proj.Name_EN as Proj_Name,
                             proj.Brief_Description,
                             null as Logo,
-                            proj.Proj_URL_Tag as Link
+                            proj.Proj_URL_Tag as Link,
+                            category_helper.All_Category_JSON as All_Category
                         FROM CategoryHierarchy ch
                         JOIN proj_categories a ON ch.ID = a.ID
                         JOIN proj_categories b ON a.Parent_ID = b.ID AND b.Categories_Status = '1'
@@ -315,6 +317,19 @@ def create_image_group(state):
                         JOIN prof_expertise f ON e.Expertise_ID = f.ID AND f.Expertise_Status = '1'
                         JOIN proj_cover cov ON c.Proj_ID = cov.Proj_ID AND cov.Image_Status = '1'
                         JOIN projects proj ON c.Proj_ID = proj.ID AND proj.Proj_Status = '1'
+                        LEFT JOIN (SELECT 
+                                        c.Proj_ID,
+                                        CONCAT('[', 
+                                            GROUP_CONCAT(DISTINCT '"', b.Category_Name, '"' SEPARATOR ','), 
+                                            ',',
+                                            GROUP_CONCAT(DISTINCT '"', a.Category_Name, '"' SEPARATOR ','),
+                                        ']') as All_Category_JSON
+                                    FROM proj_categories a
+                                    JOIN proj_categories b ON a.Parent_ID = b.ID AND b.Categories_Status = '1'
+                                    JOIN proj_category_relationship c ON a.ID = c.Category_ID AND c.Relationship_Status = '1'
+                                    WHERE a.Categories_Status = '1'
+                                    GROUP BY c.Proj_ID
+                                ) category_helper ON c.Proj_ID = category_helper.Proj_ID
                         WHERE a.Categories_Status = '1'
                         AND cov.Image_URL LIKE '%{1920}%'
                         UNION ALL
@@ -334,7 +349,8 @@ def create_image_group(state):
                             proj.Name_EN as Proj_Name,
                             proj.Brief_Description,
                             null as Logo,
-                            proj.Proj_URL_Tag as Link
+                            proj.Proj_URL_Tag as Link,
+                            category_helper.All_Category_JSON as All_Category
                         FROM CategoryHierarchy ch
                         JOIN proj_categories a ON ch.ID = a.ID
                         JOIN proj_categories b ON a.Parent_ID = b.ID AND b.Categories_Status = '1'
@@ -345,6 +361,19 @@ def create_image_group(state):
                         JOIN proj_gallery g ON d.ID = g.Proj_Profs_Relationship_ID AND g.Image_Status = '1'
                         JOIN professionals h ON e.Prof_ID = h.ID AND h.Prof_Status = '1'
                         JOIN projects proj ON c.Proj_ID = proj.ID AND proj.Proj_Status = '1'
+                        LEFT JOIN (SELECT 
+                                        c.Proj_ID,
+                                        CONCAT('[', 
+                                            GROUP_CONCAT(DISTINCT '"', b.Category_Name, '"' SEPARATOR ','), 
+                                            ',',
+                                            GROUP_CONCAT(DISTINCT '"', a.Category_Name, '"' SEPARATOR ','),
+                                        ']') as All_Category_JSON
+                                    FROM proj_categories a
+                                    JOIN proj_categories b ON a.Parent_ID = b.ID AND b.Categories_Status = '1'
+                                    JOIN proj_category_relationship c ON a.ID = c.Category_ID AND c.Relationship_Status = '1'
+                                    WHERE a.Categories_Status = '1'
+                                    GROUP BY c.Proj_ID
+                                ) category_helper ON c.Proj_ID = category_helper.Proj_ID
                         WHERE a.Categories_Status = '1'
                     ),
                     RankedData AS (
@@ -359,6 +388,7 @@ def create_image_group(state):
                     )
                     -- [4] จัดเรียงแบบยกแผง
                     SELECT Full_Path, category, Proj_ID, Image_URL, img_group_priority, Proj_Name, prof_name, Brief_Description, Logo, Link
+                        , All_Category
                     FROM RankedData
                     WHERE category_rank = 1
                     ORDER BY 
@@ -410,7 +440,8 @@ def create_image_group(state):
                             0 as internal_img_order,
                             null as Brief_Description,
                             h.Logo_URL as Logo,
-                            if(pf_url.Url_Status = 1, h.Prof_URL_Tag, null) as Link
+                            if(pf_url.Url_Status = 1, h.Prof_URL_Tag, null) as Link,
+                            expertise_helper.All_Category_JSON as All_Category
                         FROM CategoryHierarchy ch
                         JOIN prof_expertise a on ch.ID = a.ID
                         JOIN prof_expertise_relationship c ON a.ID = c.Expertise_ID AND c.Relationship_Status = '1'
@@ -436,6 +467,15 @@ def create_image_group(state):
                             WHERE row_num <= 2
                             group by Prof_ID
                         ) cate ON c.Prof_ID = cate.Prof_ID
+                        LEFT JOIN (SELECT 
+                                        c.Prof_ID,
+                                        CONCAT('[', group_concat(DISTINCT '"', a.Responsibility, '"' SEPARATOR ','), ']') as All_Category_JSON
+                                    FROM prof_expertise a
+                                    JOIN prof_expertise_relationship c ON a.ID = c.Expertise_ID AND c.Relationship_Status = '1'
+                                    where a.Expertise_Status = '1'
+                                    group by c.Prof_ID
+                                ) expertise_helper 
+                        ON c.Prof_ID = expertise_helper.Prof_ID                     
                         WHERE a.Expertise_Status = '1' 
                         AND cov.Image_URL LIKE '%{1920}%'
                         UNION ALL
@@ -452,7 +492,8 @@ def create_image_group(state):
                             gal.Image_Order as internal_img_order,
                             null as Brief_Description,
                             h.Logo_URL as Logo,
-                            if(pf_url.Url_Status = 1, h.Prof_URL_Tag, null) as Link
+                            if(pf_url.Url_Status = 1, h.Prof_URL_Tag, null) as Link,
+                            expertise_helper.All_Category_JSON as All_Category
                         FROM CategoryHierarchy ch
                         JOIN prof_expertise a on ch.ID = a.ID
                         JOIN prof_expertise_relationship c ON a.ID = c.Expertise_ID AND c.Relationship_Status = '1'
@@ -478,6 +519,15 @@ def create_image_group(state):
                             WHERE row_num <= 2
                             group by Prof_ID
                         ) cate ON c.Prof_ID = cate.Prof_ID
+                        LEFT JOIN (SELECT 
+                                        c.Prof_ID,
+                                        CONCAT('[', group_concat(DISTINCT '"', a.Responsibility, '"' SEPARATOR ','), ']') as All_Category_JSON
+                                    FROM prof_expertise a
+                                    JOIN prof_expertise_relationship c ON a.ID = c.Expertise_ID AND c.Relationship_Status = '1'
+                                    where a.Expertise_Status = '1'
+                                    group by c.Prof_ID
+                                ) expertise_helper 
+                        ON c.Prof_ID = expertise_helper.Prof_ID     
                         WHERE a.Expertise_Status = '1'
                     ),
                     RankedData AS (
@@ -492,6 +542,7 @@ def create_image_group(state):
                     )
                     -- [4] จัดเรียงแบบยกแผง
                     SELECT Full_Path, expertise, Prof_ID, Image_URL, img_group_priority, prof_name, experience_category, Brief_Description, Logo, Link
+                        , All_Category
                     FROM RankedData
                     WHERE category_rank = 1
                     ORDER BY 
@@ -537,6 +588,7 @@ def create_image_group(state):
                 "logo": row["Logo"],
                 "url": row["Link"],
                 "full_path": hierarchy_json_str,
+                "head_cate": row["All_Category"],
                 "contributors": []
             }
             
@@ -621,15 +673,17 @@ if __name__ == "__main__":
         image_brief = image["brief"]
         image_path = image["photo_data"]
         url = image["link"]
+        all_cate = image["all_cate"]
         image_order = i + 1
         data_list.append((image_type, image_category, image_category_path, image_name, image_sub_name, image_logo
-                        , image_brief, image_path, image_order, url))
+                        , image_brief, image_path, image_order, url, all_cate))
     
     try:
         cur.execute("truncate home_image")
         cur.executemany(f"""insert into home_image (Card_Type, Category, Category_Hierarchy, Card_Name, Card_Sub_Name
-                        , Card_Logo, Brief_Description, Image_URL, Image_Order, Card_Url, Last_Updated_Date)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)""", data_list)
+                        , Card_Logo, Brief_Description, Image_URL, Image_Order, Card_Url, Last_Updated_Date
+                        , All_Category)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s)""", data_list)
         conn.commit()
     except Exception as e:
         print(f"Error inserting data: {e}")
