@@ -287,7 +287,7 @@ def create_image_group(state):
                             ch.Full_Path,
                             a.Category_Name as category,
                             c.Proj_ID,
-                            cov.Image_URL,
+                            ifnull(cov2.Image_URL, cov1.Image_URL) as Image_URL,
                             b.Categories_Order as Parent_Order,
                             a.Categories_Order as Cat_Order,
                             0 as img_group_priority, -- กลุ่มที่ 1: cover ทั้งหมด
@@ -315,7 +315,8 @@ def create_image_group(state):
                         JOIN proj_prof_relationship d ON c.Proj_ID = d.Proj_ID AND d.Relationship_Status = '1'
                         JOIN prof_expertise_relationship e ON d.Prof_Expertise_Relationship_ID = e.ID AND e.Relationship_Status = '1'
                         JOIN prof_expertise f ON e.Expertise_ID = f.ID AND f.Expertise_Status = '1'
-                        JOIN proj_cover cov ON c.Proj_ID = cov.Proj_ID AND cov.Image_Status = '1'
+                        left JOIN proj_cover cov1 ON c.Proj_ID = cov1.Proj_ID AND cov1.Image_Status = '1' and cov1.Ratio_Type = '16:9'
+                        left JOIN proj_cover cov2 ON c.Proj_ID = cov2.Proj_ID AND cov2.Image_Status = '1' and cov2.Ratio_Type = '9:16'
                         JOIN projects proj ON c.Proj_ID = proj.ID AND proj.Proj_Status = '1'
                         LEFT JOIN (SELECT 
                                         c.Proj_ID,
@@ -331,14 +332,13 @@ def create_image_group(state):
                                     GROUP BY c.Proj_ID
                                 ) category_helper ON c.Proj_ID = category_helper.Proj_ID
                         WHERE a.Categories_Status = '1'
-                        AND cov.Image_URL LIKE '%{1920}%'
                         UNION ALL
                         -- [2] ก้อน Gallery: ดึงทุกโปรเจกต์ที่มี Gallery
                         SELECT 
                             ch.Full_Path,
                             a.Category_Name as category,
                             c.Proj_ID,
-                            g.Image_URL,
+                            REPLACE(g.Image_URL, '1440', '800') as Image_URL,
                             b.Categories_Order as Parent_Order,
                             a.Categories_Order as Cat_Order,
                             1 as img_group_priority, -- กลุ่มที่ 1: Gallery ทั้งหมด (ต่อท้าย Cover)
@@ -390,7 +390,7 @@ def create_image_group(state):
                     SELECT Full_Path, category, Proj_ID, Image_URL, img_group_priority, Proj_Name, prof_name, Brief_Description, Logo, Link
                         , All_Category
                     FROM RankedData
-                    WHERE category_rank = 1
+                    WHERE category_rank = 1 and Image_URL is not null
                     ORDER BY 
                         img_group_priority, -- สำคัญสุด: 0 (Cover ทุกตัว) จะมาก่อน 1 (Gallery ทุกตัว)
                         Parent_Order,       -- เรียงตามหมวดหมู่ใหญ่
@@ -432,7 +432,7 @@ def create_image_group(state):
                             ch.Full_Path,
                             a.Responsibility as expertise,
                             c.Prof_ID,
-                            cov.Image_URL,
+                            ifnull(cov2.Image_URL, cov1.Image_URL) as Image_URL,
                             a.Expertise_Order as Expertise_Order,
                             0 as img_group_priority, -- กลุ่มที่ 0: Cover ทั้งหมด
                             h.Name_EN as prof_name,
@@ -440,14 +440,15 @@ def create_image_group(state):
                             0 as internal_img_order,
                             null as Brief_Description,
                             h.Logo_URL as Logo,
-                            if(pf_url.Url_Status = 1, h.Prof_URL_Tag, null) as Link,
+                            h.Prof_URL_Tag as Link,
                             expertise_helper.All_Category_JSON as All_Category
                         FROM CategoryHierarchy ch
                         JOIN prof_expertise a on ch.ID = a.ID
                         JOIN prof_expertise_relationship c ON a.ID = c.Expertise_ID AND c.Relationship_Status = '1'
-                        JOIN prof_cover cov ON c.Prof_ID = cov.Prof_ID AND cov.Image_Status = '1'
+                        left JOIN prof_cover cov1 ON c.Prof_ID = cov1.Prof_ID AND cov1.Image_Status = '1' and cov1.Ratio_Type = '16:9' and cov1.Image_URL like '%{1920}%'
+                        left JOIN prof_cover cov2 ON c.Prof_ID = cov2.Prof_ID AND cov2.Image_Status = '1' and cov2.Ratio_Type = '9:16'
                         JOIN professionals h ON c.Prof_ID = h.ID AND h.Prof_Status = '1'
-                        left join prof_url pf_url on h.ID = pf_url.Prof_ID
+                        join prof_url pf_url on h.ID = pf_url.Prof_ID and pf_url.Url_Status = 1
                         LEFT JOIN (
                             select Prof_ID
                                 , CONCAT_WS(', ', MAX(CASE WHEN row_num = 1 THEN UPPER(Category_Name) END), MAX(CASE WHEN row_num = 2 THEN UPPER(Category_Name) END)) AS Category
@@ -477,14 +478,13 @@ def create_image_group(state):
                                 ) expertise_helper 
                         ON c.Prof_ID = expertise_helper.Prof_ID                     
                         WHERE a.Expertise_Status = '1' 
-                        AND cov.Image_URL LIKE '%{1920}%'
                         UNION ALL
                         -- [2] ก้อน Gallery
                         SELECT
                             ch.Full_Path,
                             a.Responsibility as expertise,
                             c.Prof_ID,
-                            gal.Image_URL,
+                            REPLACE(gal.Image_URL, '1440', '800') as Image_URL,
                             a.Expertise_Order as Expertise_Order,
                             1 as img_group_priority, -- กลุ่มที่ 1: Gallery ทั้งหมด (ต่อท้าย Cover)
                             h.Name_EN as prof_name,
@@ -492,14 +492,14 @@ def create_image_group(state):
                             gal.Image_Order as internal_img_order,
                             null as Brief_Description,
                             h.Logo_URL as Logo,
-                            if(pf_url.Url_Status = 1, h.Prof_URL_Tag, null) as Link,
+                            h.Prof_URL_Tag as Link,
                             expertise_helper.All_Category_JSON as All_Category
                         FROM CategoryHierarchy ch
                         JOIN prof_expertise a on ch.ID = a.ID
                         JOIN prof_expertise_relationship c ON a.ID = c.Expertise_ID AND c.Relationship_Status = '1'
                         JOIN prof_gallery gal ON c.Prof_ID = gal.Prof_ID AND gal.Image_Status = '1'
                         JOIN professionals h ON c.Prof_ID = h.ID AND h.Prof_Status = '1'
-                        left join prof_url pf_url on h.ID = pf_url.Prof_ID
+                        join prof_url pf_url on h.ID = pf_url.Prof_ID and pf_url.Url_Status = 1
                         LEFT JOIN (
                             select Prof_ID
                                 , CONCAT_WS(', ', MAX(CASE WHEN row_num = 1 THEN UPPER(Category_Name) END), MAX(CASE WHEN row_num = 2 THEN UPPER(Category_Name) END)) AS Category
@@ -544,7 +544,7 @@ def create_image_group(state):
                     SELECT Full_Path, expertise, Prof_ID, Image_URL, img_group_priority, prof_name, experience_category, Brief_Description, Logo, Link
                         , All_Category
                     FROM RankedData
-                    WHERE category_rank = 1
+                    WHERE category_rank = 1 and Image_URL is not null
                     ORDER BY 
                         img_group_priority, -- สำคัญสุด: 0 (Cover ทุกตัว) จะมาก่อน 1 (Gallery ทุกตัว)
                         Expertise_Order,       -- เรียงตามหมวดหมู่ใหญ่
