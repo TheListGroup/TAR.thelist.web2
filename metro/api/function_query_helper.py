@@ -532,8 +532,10 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
         else:
             path_folder = os.path.join(UPLOAD_DIR, "project", str(f"{ref_id:04d}"), "gallery", str(f"{relationship_id:04d}"))
     
-    if ratio == "16:9" or ratio == "9:16" or ratio == "3:2":
+    if ratio == "16:9" or ratio == "3:2":
         ratio_code = "H"
+    elif ratio == "9:16":
+        ratio_code = "S"
 
     if image_type != "Logo":
         filename = f"{image_id:06d}-{ratio_code}-{width}.webp"
