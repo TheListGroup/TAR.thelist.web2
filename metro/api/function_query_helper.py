@@ -9,8 +9,8 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import json
 
-UPLOAD_DIR = "/var/www/html/metro/uploads"
-#UPLOAD_DIR = "/var/www/html/uploads"
+#UPLOAD_DIR = "/var/www/html/metro/uploads"
+UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
     cur.execute(f"""select ID from place_location where Location_Type = %s and Name_EN = %s and Location_Status = '1'""", (location_type, location))
@@ -1206,7 +1206,7 @@ def prof_more(prof_id: int):
                             target.Expertise_ID,
                             UPPER(prof_ext.Responsibility) as Expertise,
                             p.Logo_URL as Logo,
-                            if(f.Url_Status = 1, p.Prof_URL_Tag, null) as Prof_Url,
+                            p.Prof_URL_Tag as Prof_Url,
                             cate.Category,
                             target.Relationship_Order as Target_Order, -- อันดับความเก่งของคู่แข่ง
                             IFNULL(stats.Count_Proj, 0) as Count_Proj,
@@ -1219,7 +1219,7 @@ def prof_more(prof_id: int):
                         AND target.Prof_ID <> %s -- ตัดตัวเองออก
                         -- 2. Join เอาชื่อบริษัทคู่แข่ง
                         LEFT JOIN professionals p ON target.Prof_ID = p.ID and p.Prof_Status = '1'
-                        left join prof_url f on p.ID = f.Prof_ID
+                        join prof_url f on p.ID = f.Prof_ID and f.Url_Status = 1
                         -- 3. Join Subquery นับโปรเจกต์ (แบบที่คุณเขียน)
                         LEFT JOIN (
                             SELECT b.Prof_ID, b.Expertise_ID, COUNT(DISTINCT ra.Proj_ID) as Count_Proj
