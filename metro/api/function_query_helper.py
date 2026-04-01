@@ -916,6 +916,54 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     else:
         return None
 
+def prof_gallery(prof_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    
+    final_result = []
+    cur2.execute(
+        f"""select a.Image_URL as Url
+                , a.Image_Name as Image_Name
+                , a.Image_Description as Image_Description
+                , a.Image_Order
+            from prof_gallery a
+            where a.Image_Status = '1'
+            and a.Prof_ID = %s
+            order by a.Image_Order""",
+        (prof_id,)
+    )
+    rows = cur2.fetchall()
+    grouped_data = []
+    image_size_list = [(1440,810),(800,450),(400,225)]
+    for item in rows:
+        original_name = item["Url"]
+        last_part = original_name.split("-")[-1]
+        image_urls = []
+        for width, height in image_size_list:
+            new_last_part = re.sub(r'^\d+', str(width), last_part)
+            image_urls.append(original_name.replace(last_part, new_last_part))
+        gallery_entry = {
+            "Url": image_urls,
+            "Image_Order": item["Image_Order"],
+            "Image_Name": item["Image_Name"],
+            "Image_Description": item["Image_Description"]
+        }
+        grouped_data.append(gallery_entry)
+
+    final_result = []
+    for gallery_list in grouped_data:
+        final_result.append({
+            "Gallery": gallery_list
+        })
+    
+    cur2.close()
+    conn2.close()
+    
+    if final_result:
+        return final_result
+    else:
+        return None
+
 def get_proj_category_id(cur, proj_id, state):
     more_query = ''
     if state != 'more':

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Form, Depends, Query, Response, Header, HTTPExcep
 from db import get_db
 from auth import get_current_user  # << ใช้ตัวเดิม (รองรับ ADMIN_TOKEN หรือ JWT)
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
-from function_query_helper import _select_full_prof_item, _select_prof_cover, get_prof_proj, prof_more
+from function_query_helper import _select_full_prof_item, _select_prof_cover, get_prof_proj, prof_more, prof_gallery
 from typing import Optional, Tuple, Dict, Any, List
 
 router = APIRouter()
@@ -129,6 +129,9 @@ def prof_template_data(
     content = prof_data.get("Content", None)
     des = prof_data.get("Brief_Description", None)
     data["Content"] = next((a for a in [content, des] if a), None)
+    
+    gallery = prof_gallery(Prof_ID)
+    data["Gallery"] = gallery
     
     prof_proj = get_prof_proj(Prof_ID)
     data["Proj"] = prof_proj
