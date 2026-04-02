@@ -123,7 +123,7 @@ def prof_template_data(
     location_text = ", ".join(locations)
     data["Location"] = location_text
     
-    data["Owner"] = prof_data.get("Owner_Text", None)
+    data["Founder"] = prof_data.get("Owner_Text", None)
     data["Since"] = prof_data.get("Year_Found_Date", None)
     
     content = prof_data.get("Content", None)
