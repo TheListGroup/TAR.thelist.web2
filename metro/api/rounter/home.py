@@ -66,7 +66,8 @@ def create_json(data, state):
     head_cate_list = []
     
     # -- อันดับแรกสุดของ PROJECT คือ ALL PROJECTS --
-    head_cate_list.append({"ID": 0, "Head_Name": f"ALL {state}S", "Order": 1, "Sub_Cate": None})
+    #head_cate_list.append({"ID": 0, "Head_Name": f"ALL {state}S", "Order": 1, "Sub_Cate": None})
+    head_cate_list.append({"ID": 0, "Head_Name": f"ALL", "Order": 1, "Sub_Cate": None})
 
     # 3. วนลูปเฉพาะพวก Parent_ID IS NULL (จากรูปคือ ID 1-15)
     # พวกนี้จะเป็น Head_Name
@@ -78,7 +79,8 @@ def create_json(data, state):
         # 4. สร้าง Sub_Cate ของแต่ละ Head
         sub_cate_list = []
         # ต้องมี ALL ของตัวเองก่อน (เช่น ALL RESIDENTIAL PROJECTS)
-        sub_cate_list.append({"ID": 0, "Sub_Name": f"ALL {root_name} {state}S", "Order": 1})
+        #sub_cate_list.append({"ID": 0, "Sub_Name": f"ALL {root_name} {state}S", "Order": 1})
+        sub_cate_list.append({"ID": 0, "Sub_Name": f"ALL", "Order": 1})
         
         # ดึงลูกจริงๆ มาใส่ (เช่น ID 16, 17, 18 มาใส่ใต้ ID 1)
         children = by_parent.get(root_id, [])
