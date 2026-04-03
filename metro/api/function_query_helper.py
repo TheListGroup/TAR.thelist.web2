@@ -410,7 +410,7 @@ def update_owners(cur, Prof_ID: int, Owner_Text: str, state: str):
     if Owner_Text:
         owner_list = Owner_Text.split(';')
         for person in owner_list:
-            data = [d.strip() if d.strip().lower() != 'none' else None for d in person.split(',')]
+            data = [d.strip() if d.strip().lower() != 'none' else "" for d in person.split(',')]
             if len(data) == 4:
                 new_owners.add(tuple(data))
     if existing_owners == new_owners:
@@ -425,18 +425,19 @@ def update_owners(cur, Prof_ID: int, Owner_Text: str, state: str):
         cur.execute(f"""
                         {owner_query}
                         WHERE Prof_ID = %s 
-                        AND First_Name_EN = %s 
-                        AND Last_Name_EN = %s 
+                        AND IFNULL(First_Name_EN, '') = %s 
+                        AND IFNULL(Last_Name_EN, '') = %s 
                         AND IFNULL(First_Name_TH, '') = %s 
                         AND IFNULL(Last_Name_TH, '') = %s
                     """, (Prof_ID, person[0], person[1], person[2] or '', person[3] or ''))
 
     to_add = new_owners - existing_owners
     for person in to_add:
+        person_to_insert = [None if str(p).strip() == "" else p for p in person]
         cur.execute("""
             INSERT INTO prof_owners (Prof_ID, First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH, Owner_Status) 
             VALUES (%s, %s, %s, %s, %s, '1')
-        """, (Prof_ID, *person))
+        """, (Prof_ID, *person_to_insert))
 
 def _delete_cover(cur, ref_id, cover_ratio: str, state: str):
     if state == 'prof':
