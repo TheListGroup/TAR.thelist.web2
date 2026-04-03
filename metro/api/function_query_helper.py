@@ -8,6 +8,7 @@ from wand.image import Image as WandImage
 from io import BytesIO
 from PIL import Image, ImageOps
 import json
+import shutil
 
 #UPLOAD_DIR = "/var/www/html/metro/uploads"
 UPLOAD_DIR = "/var/www/html/uploads"
@@ -371,6 +372,11 @@ def delete_expertise_process(cur, Prof_Relationship_IDs: list, state: str, state
         cur.execute(f"{relationship_query} WHERE Prof_Expertise_Relationship_ID IN ({format_rel}) AND Relationship_Status = '1'", tuple(Prof_Relationship_IDs))
     else:
         if proj_rel_ids:
+            for data in proj_rel_ids:
+                cur.execute(f"SELECT Proj_ID FROM proj_prof_relationship WHERE ID = %s AND Relationship_Status = '1'", (data,))
+                proj_id = cur.fetchone()
+                path_folder = os.path.join(UPLOAD_DIR, "project", f"{proj_id['Proj_ID']:04d}", "gallery", f"{data:04d}")
+                shutil.rmtree(path_folder)
             cur.execute(f"{relationship_query} WHERE ID IN ({format_proj}) AND Relationship_Status = '1'", tuple(proj_rel_ids)) #xx
 
 def url_work(cur, new_id, Name_EN, state):
@@ -1326,9 +1332,26 @@ def prof_more(prof_id: int):
     conn2.close()
     return more
 
-def get_prod_parent(cur, parent_id):
-    cur.execute("""select Family_IDS
-                    from product_entities
-                    where ID = %s""", (parent_id,))
-    result = cur.fetchone()
-    return result["Family_IDS"] if result else None
+def get_prod_parent(cur, parent_id, current_id, state):
+    if state == 'insert':
+        if not parent_id:
+            cur.execute("""update product_entities set Family_IDS = %s where ID = %s""", (current_id, current_id))
+            return
+        
+        cur.execute("""select Family_IDS, Buttom_Parent from product_entities where ID = %s""", (parent_id,))
+        result = cur.fetchone()
+        
+        if result and result["Family_IDS"]:
+            parent_family = result["Family_IDS"]
+            new_top_parent = parent_family
+            new_family_ids = f"{parent_family},{current_id}"
+            
+            cur.execute("""update product_entities 
+                        set Top_Parent = %s, Family_IDS = %s 
+                        where ID = %s""", (new_top_parent, new_family_ids, current_id))
+            
+            if not result["Buttom_Parent"]:
+                new_bottom = str(current_id)
+            else:
+                new_bottom = f"{result['Buttom_Parent']},{current_id}"
+            cur.execute("""update product_entities set Buttom_Parent = %s where ID = %s""", (new_bottom, parent_id))
