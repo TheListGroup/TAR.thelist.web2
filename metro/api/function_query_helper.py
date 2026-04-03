@@ -70,7 +70,7 @@ def _select_full_prof_item(prof_id: int) -> Dict[str, Any] | None:
             left join (SELECT a.Prof_ID, JSON_ARRAYAGG(JSON_OBJECT( 'Relationship_ID', a.ID
                                                                     , 'Proj_Category_ID', a.Proj_Category_ID
                                                                     , 'Category_Name', b.Category_Name)) as Experience
-                            , GROUP_CONCAT(b.Category_Name ORDER BY c.Categories_Order, b.Categories_Order ASC SEPARATOR ', ') as Experience_Text
+                            , GROUP_CONCAT(b.Category_Name ORDER BY c.Categories_Order, b.Categories_Order ASC SEPARATOR ' | ') as Experience_Text
                         FROM prof_experience_relationship a
                         left join proj_categories b on a.Proj_Category_ID = b.ID and b.Categories_Status = '1'
                         left join proj_categories c on b.Parent_ID = c.ID and c.Categories_Status = '1'
@@ -376,7 +376,8 @@ def delete_expertise_process(cur, Prof_Relationship_IDs: list, state: str, state
                 cur.execute(f"SELECT Proj_ID FROM proj_prof_relationship WHERE ID = %s AND Relationship_Status = '1'", (data,))
                 proj_id = cur.fetchone()
                 path_folder = os.path.join(UPLOAD_DIR, "project", f"{proj_id['Proj_ID']:04d}", "gallery", f"{data:04d}")
-                shutil.rmtree(path_folder)
+                if os.path.exists(path_folder):
+                    shutil.rmtree(path_folder)
             cur.execute(f"{relationship_query} WHERE ID IN ({format_proj}) AND Relationship_Status = '1'", tuple(proj_rel_ids)) #xx
 
 def url_work(cur, new_id, Name_EN, state):
@@ -697,11 +698,12 @@ def _select_proj_cate(proj_id: int, state: str) -> Dict[str, Any] | None:
     cur2 = conn2.cursor(dictionary=True)
     
     if state == 'header':
-        column_query = ", concat(b.Category_Name, ' | ', c.Category_Name) as Category_Header"
-        order_query = "and a.Relationship_Order = 1"
+        #column_query = ", concat(b.Category_Name, ' | ', c.Category_Name) as Category_Header"
+        column_query = ", group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ' | ') as Category_Header"
+        order_query = "and a.Relationship_Order <= 3"
         group_by_query = ""
     elif state == 'full':
-        column_query = ", group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ', ') as Category_Group"
+        column_query = ", group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ' | ') as Category_Group"
         order_query = ""
         group_by_query = "group by a.Proj_ID"
     
@@ -1011,17 +1013,18 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
             left join prof_url f on c.ID = f.Prof_ID
             left join (SELECT 
                             t.Prof_ID, 
-                            GROUP_CONCAT(t.Category_Name SEPARATOR ', ') AS Categories
+                            group_concat(UPPER(t.Category_Name) order by row_num separator ' | ') AS Categories
                         FROM (  SELECT
                                     b.Prof_ID,
                                     d.Category_Name,
+                                    c.Relationship_Order,
                                     ROW_NUMBER() OVER (PARTITION BY b.Prof_ID ORDER BY COUNT(DISTINCT ra.Proj_ID) DESC) as row_num 
                                 FROM proj_prof_relationship ra
                                 JOIN prof_expertise_relationship b ON ra.Prof_Expertise_Relationship_ID = b.ID AND b.Relationship_Status = '1'
                                 JOIN proj_category_relationship c ON ra.Proj_ID = c.Proj_ID AND c.Relationship_Status = '1'
                                 join proj_categories d on c.Category_ID = d.ID and d.Categories_Status = '1'
                                 WHERE ra.Relationship_Status = '1'
-                                GROUP BY b.Prof_ID, d.Category_Name
+                                GROUP BY b.Prof_ID, d.Category_Name, c.Relationship_Order
                         ) t
                         WHERE t.row_num <= 2
                         GROUP BY t.Prof_ID) prof_exp
@@ -1074,7 +1077,7 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
                                 a.Proj_ID, 
                                 c.Name_EN as Proj_Name, 
                                 c.Proj_URL_Tag,
-                                concat(f.Category_Name, " | ", e.Category_Name) as Display_Category,
+                                cate.Display_Category,
                                 d.Category_ID,
                                 e.Parent_ID,
                                 GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
@@ -1090,7 +1093,12 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
                             JOIN projects c ON a.Proj_ID = c.ID
                             JOIN proj_category_relationship d ON a.Proj_ID = d.Proj_ID AND d.Relationship_Status = '1'
                             JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
-                            JOIN proj_categories f ON e.Parent_ID = f.ID AND f.Categories_Status = '1'
+                            left join (select a.Proj_ID, group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ' | ') as Display_Category
+                                        from proj_category_relationship a
+                                        join proj_categories b on a.Category_ID = b.ID AND b.Categories_Status = '1'
+                                        where a.Relationship_Order <= 3
+                                        group by a.Proj_ID) cate
+                            on c.ID = cate.Proj_ID
                             WHERE a.Relationship_Status = '1'
                             AND b.Relationship_Status = '1'
                             AND c.Proj_Status = '1'
@@ -1139,10 +1147,8 @@ def proj_more(proj_id: int):
                             c.ID as Proj_ID, 
                             c.Name_EN as Proj_Name, 
                             c.Proj_URL_Tag,
-                            concat(f.Category_Name, " | ", e.Category_Name) as Display_Category,
+                            cate.Display_Category,
                             GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
-                            d.Category_ID,
-                            e.Parent_ID,
                             CASE 
                                 WHEN ref_sub.Relationship_Order IS NOT NULL THEN ref_sub.Relationship_Order
                                 WHEN ref_parent.Min_Order IS NOT NULL THEN 100 + ref_parent.Min_Order
@@ -1153,7 +1159,6 @@ def proj_more(proj_id: int):
                         FROM projects c
                         JOIN proj_category_relationship d ON c.ID = d.Proj_ID AND d.Relationship_Status = '1'
                         JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
-                        JOIN proj_categories f ON e.Parent_ID = f.ID AND f.Categories_Status = '1'
                         LEFT JOIN proj_category_relationship ref_sub ON d.Category_ID = ref_sub.Category_ID AND ref_sub.Proj_ID = %s AND ref_sub.Relationship_Status = '1'
                         LEFT JOIN (SELECT p.Parent_ID, MIN(r.Relationship_Order) as Min_Order
                                     FROM proj_category_relationship r
@@ -1161,6 +1166,12 @@ def proj_more(proj_id: int):
                                     WHERE r.Proj_ID = %s AND r.Relationship_Status = '1'
                                     GROUP BY p.Parent_ID) ref_parent
                         ON e.Parent_ID = ref_parent.Parent_ID
+                        left join (select a.Proj_ID, group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ' | ') as Display_Category
+                                    from proj_category_relationship a
+                                    join proj_categories b on a.Category_ID = b.ID AND b.Categories_Status = '1'
+                                    where a.Relationship_Order <= 3
+                                    group by a.Proj_ID) cate
+                        on c.ID = cate.Proj_ID
                         WHERE c.Proj_Status = '1'
                         AND c.ID <> %s
                     ) aaa
