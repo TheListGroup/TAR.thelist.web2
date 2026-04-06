@@ -304,7 +304,7 @@ def create_image_group(state):
                                 LIMIT 1) as prof_name,
                             0 as internal_img_order,
                             proj.Name_EN as Proj_Name,
-                            proj.Brief_Description,
+                            ifnull(proj.Brief_Description, content_helper.Content) as Brief_Description,
                             null as Logo,
                             proj.Proj_URL_Tag as Link,
                             category_helper.All_Category_JSON as All_Category
@@ -318,6 +318,14 @@ def create_image_group(state):
                         left JOIN proj_cover cov1 ON c.Proj_ID = cov1.Proj_ID AND cov1.Image_Status = '1' and cov1.Ratio_Type = '16:9'
                         left JOIN proj_cover cov2 ON c.Proj_ID = cov2.Proj_ID AND cov2.Image_Status = '1' and cov2.Ratio_Type = '9:16'
                         JOIN projects proj ON c.Proj_ID = proj.ID AND proj.Proj_Status = '1'
+                        left join (select a.Proj_ID, a.Content
+                                    from proj_prof_relationship a
+                                    JOIN prof_expertise_relationship b ON a.Prof_Expertise_Relationship_ID = b.ID AND b.Relationship_Status = '1'
+                                    JOIN prof_expertise c ON b.Expertise_ID = c.ID AND c.Expertise_Status = '1'
+                                    where a.Content is not null
+                                    order by c.Expertise_Order
+                                    limit 1) content_helper 
+                        ON c.Proj_ID = content_helper.Proj_ID
                         LEFT JOIN (SELECT 
                                         c.Proj_ID,
                                         CONCAT('[', 
@@ -347,7 +355,7 @@ def create_image_group(state):
                             h.Name_EN as prof_name,
                             g.Image_Order as internal_img_order,
                             proj.Name_EN as Proj_Name,
-                            proj.Brief_Description,
+                            ifnull(proj.Brief_Description, content_helper.Content) as Brief_Description,
                             null as Logo,
                             proj.Proj_URL_Tag as Link,
                             category_helper.All_Category_JSON as All_Category
@@ -361,6 +369,14 @@ def create_image_group(state):
                         JOIN proj_gallery g ON d.ID = g.Proj_Profs_Relationship_ID AND g.Image_Status = '1'
                         JOIN professionals h ON e.Prof_ID = h.ID AND h.Prof_Status = '1'
                         JOIN projects proj ON c.Proj_ID = proj.ID AND proj.Proj_Status = '1'
+                        left join (select a.Proj_ID, a.Content
+                                    from proj_prof_relationship a
+                                    JOIN prof_expertise_relationship b ON a.Prof_Expertise_Relationship_ID = b.ID AND b.Relationship_Status = '1'
+                                    JOIN prof_expertise c ON b.Expertise_ID = c.ID AND c.Expertise_Status = '1'
+                                    where a.Content is not null
+                                    order by c.Expertise_Order
+                                    limit 1) content_helper 
+                        ON c.Proj_ID = content_helper.Proj_ID
                         LEFT JOIN (SELECT 
                                         c.Proj_ID,
                                         CONCAT('[', 
