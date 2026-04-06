@@ -543,7 +543,7 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
     if ratio == "16:9" or ratio == "3:2":
         ratio_code = "H"
     elif ratio == "9:16":
-        ratio_code = "S"
+        ratio_code = "V"
 
     if image_type != "Logo":
         filename = f"{image_id:06d}-{ratio_code}-{width}.webp"
