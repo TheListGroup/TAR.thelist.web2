@@ -927,22 +927,31 @@ def proj_gallery(proj_id: int) -> Dict[str, Any] | None:
     else:
         return None
 
-def prof_gallery(prof_id: int) -> Dict[str, Any] | None:
+def get_gallery(ref_id: int, state: str) -> Dict[str, Any] | None:
     conn2 = get_db()
     cur2 = conn2.cursor(dictionary=True)
     
     final_result = []
-    cur2.execute(
-        f"""select a.Image_URL as Url
-                , a.Image_Name as Image_Name
-                , a.Image_Description as Image_Description
-                , a.Image_Order
-            from prof_gallery a
-            where a.Image_Status = '1'
-            and a.Prof_ID = %s
-            order by a.Image_Order""",
-        (prof_id,)
-    )
+    if state == 'prof':
+        query = f"""select a.Image_URL as Url
+                    , a.Image_Name as Image_Name
+                    , a.Image_Description as Image_Description
+                    , a.Image_Order
+                from prof_gallery a
+                where a.Image_Status = '1'
+                and a.Prof_ID = %s
+                order by a.Image_Order"""
+    else:
+        query = f"""select a.Image_URL as Url
+                    , a.Image_Name as Image_Name
+                    , a.Image_Description as Image_Description
+                    , a.Image_Order
+                from product_gallery a
+                where a.Image_Status = '1'
+                and a.Entity_ID = %s
+                order by a.Image_Order"""
+
+    cur2.execute(query, (ref_id,))
     rows = cur2.fetchall()
     grouped_data = []
     image_size_list = [(1440,810),(800,450),(400,225)]
@@ -1238,7 +1247,7 @@ def get_prof_proj(prof_id):
     proj_list = []
     cur.execute("""select Proj_ID, Proj_Name, Proj_Category, Proj_Url
                     , ROW_NUMBER() OVER (ORDER BY Latest_Date desc) as Proj_Order
-                from (select distinct(c.Name_EN) as Proj_Name, c.ID as Proj_ID, concat_ws(' | ', f.Category_Name, e.Category_Name) as Proj_Category
+                from (select distinct(c.Name_EN) as Proj_Name, c.ID as Proj_ID, cate.Display_Category as Proj_Category
                         , c.Proj_URL_Tag as Proj_Url
                         , GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date
                     from proj_prof_relationship a
@@ -1246,7 +1255,12 @@ def get_prof_proj(prof_id):
                     join projects c on a.Proj_ID = c.ID and c.Proj_Status = '1'
                     left join proj_category_relationship d on c.ID = d.Proj_ID and d.Relationship_Status = '1' and d.Relationship_Order = 1
                     left join proj_categories e on d.Category_ID = e.ID and e.Categories_Status = '1'
-                    left join proj_categories f on e.Parent_ID = f.ID and e.Categories_Status = '1'
+                    left join (select a.Proj_ID, group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ' | ') as Display_Category
+                                    from proj_category_relationship a
+                                    join proj_categories b on a.Category_ID = b.ID AND b.Categories_Status = '1'
+                                    where a.Relationship_Order <= 3
+                                    group by a.Proj_ID) cate
+                        on c.ID = cate.Proj_ID
                     where a.Relationship_Status = '1'
                     and b.Prof_ID = %s) aaa""", (prof_id,))
     rows = cur.fetchall()
@@ -1299,7 +1313,7 @@ def prof_more(prof_id: int):
                         join prof_expertise prof_ext on target.Expertise_ID = prof_ext.ID and prof_ext.Expertise_Status = '1'
                         LEFT JOIN (
                             select Prof_ID
-                                , CONCAT_WS(', ', MAX(CASE WHEN row_num = 1 THEN UPPER(Category_Name) END), MAX(CASE WHEN row_num = 2 THEN UPPER(Category_Name) END)) AS Category
+                                , CONCAT_WS(' | ', MAX(CASE WHEN row_num = 1 THEN UPPER(Category_Name) END), MAX(CASE WHEN row_num = 2 THEN UPPER(Category_Name) END)) AS Category
                             from (
                                 SELECT
                                     b.Prof_ID,
