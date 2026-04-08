@@ -269,6 +269,7 @@ CREATE TABLE prof_employees (
     First_Name_TH VARCHAR(255),
     Last_Name_TH VARCHAR(255),
     Position_TH VARCHAR(255),
+    Member_Order INT,
     Member_Status ENUM('0','1','2') NOT NULL,
     Created_By INT UNSIGNED NULL,
     Created_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
