@@ -1149,9 +1149,9 @@ def proj_more(proj_id: int):
         more = {}
         raw_query = f"""SELECT 
                             aaa.Proj_ID,
-                            aaa.Proj_Name,
+                            aaa.Proj_Name as Name,
                             aaa.Display_Category as Proj_Category,
-                            aaa.Proj_URL_Tag, aaa.Final_Priority, aaa.Latest_Date
+                            aaa.Proj_URL_Tag as URL
                         FROM (
                             SELECT 
                                 c.ID as Proj_ID, 
