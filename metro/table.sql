@@ -216,6 +216,7 @@ CREATE TABLE prof_owners (
     Last_Name_EN VARCHAR(255),
     First_Name_TH VARCHAR(255),
     Last_Name_TH VARCHAR(255),
+    Owner_Order INT,
     Owner_Status ENUM('0','1','2') NOT NULL,
     INDEX (Prof_ID),
     FOREIGN KEY (Prof_ID) REFERENCES professionals(id)
