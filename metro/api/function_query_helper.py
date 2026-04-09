@@ -1148,52 +1148,69 @@ def proj_more(proj_id: int):
         placeholders = ', '.join(['%s'] * len(sub_cate))
         more = {}
         raw_query = f"""SELECT 
-                        aaa.Proj_ID,
-                        aaa.Proj_Name as Name,
-                        aaa.Display_Category as Proj_Category,
-                        aaa.Proj_URL_Tag as URL
-                    FROM (
-                        SELECT 
-                            c.ID as Proj_ID, 
-                            c.Name_EN as Proj_Name, 
-                            c.Proj_URL_Tag,
-                            cate.Display_Category,
-                            GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
-                            CASE 
-                                WHEN ref_sub.Relationship_Order IS NOT NULL THEN ref_sub.Relationship_Order
-                                WHEN ref_parent.Min_Order IS NOT NULL THEN 100 + ref_parent.Min_Order
-                                ELSE 999 
-                            END as Final_Priority,
-                            ROW_NUMBER() OVER (PARTITION BY c.ID 
-                                ORDER BY (CASE WHEN d.Category_ID in ({placeholders}) THEN 1 ELSE 2 END) ASC, d.Relationship_Order ASC) as row_num
-                        FROM projects c
-                        JOIN proj_category_relationship d ON c.ID = d.Proj_ID AND d.Relationship_Status = '1'
-                        JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
-                        LEFT JOIN proj_category_relationship ref_sub ON d.Category_ID = ref_sub.Category_ID AND ref_sub.Proj_ID = %s AND ref_sub.Relationship_Status = '1'
-                        LEFT JOIN (SELECT p.Parent_ID, MIN(r.Relationship_Order) as Min_Order
-                                    FROM proj_category_relationship r
-                                    JOIN proj_categories p ON r.Category_ID = p.ID
-                                    WHERE r.Proj_ID = %s AND r.Relationship_Status = '1'
-                                    GROUP BY p.Parent_ID) ref_parent
-                        ON e.Parent_ID = ref_parent.Parent_ID
-                        left join (select a.Proj_ID, group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ' | ') as Display_Category
-                                    from proj_category_relationship a
-                                    join proj_categories b on a.Category_ID = b.ID AND b.Categories_Status = '1'
-                                    where a.Relationship_Order <= 3
-                                    group by a.Proj_ID) cate
-                        on c.ID = cate.Proj_ID
-                        WHERE c.Proj_Status = '1'
-                        AND c.ID <> %s
-                    ) aaa
-                    WHERE aaa.row_num = 1 
-                    AND aaa.Final_Priority < 999 
-                    ORDER BY 
-                        aaa.Final_Priority ASC,
-                        aaa.Latest_Date DESC,
-                        aaa.Proj_Name ASC
-                    LIMIT 20"""
-        query = raw_query.format(placeholders)
-        params = list(sub_cate) + [proj_id, proj_id, proj_id]
+                            aaa.Proj_ID,
+                            aaa.Proj_Name,
+                            aaa.Display_Category as Proj_Category,
+                            aaa.Proj_URL_Tag, aaa.Final_Priority, aaa.Latest_Date
+                        FROM (
+                            SELECT 
+                                c.ID as Proj_ID, 
+                                c.Name_EN as Proj_Name, 
+                                c.Proj_URL_Tag,
+                                cate.Display_Category,
+                                GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) as Latest_Date,
+                                e.Categories_Order,
+                                -- คำนวณความสำคัญ: ย่อยตรง (1-99) > ใหญ่ตรง (100+)
+                                CASE 
+                                    WHEN ref_sub.Relationship_Order IS NOT NULL THEN ref_sub.Relationship_Order
+                                    WHEN ref_parent.Min_Order IS NOT NULL THEN 100 + ref_parent.Min_Order
+                                    ELSE 999 
+                                END as Final_Priority,
+                                -- สำคัญ: เลือกแถวที่ "ดีที่สุด" ของโปรเจกต์นั้นมาโชว์ (ตัวที่ตรงเงื่อนไขที่สุด)
+                                ROW_NUMBER() OVER (
+                                    PARTITION BY c.ID 
+                                    ORDER BY 
+                                        (CASE 
+                                            WHEN d.Category_ID IN ({placeholders}) THEN 1 
+                                            WHEN e.Parent_ID IN (SELECT DISTINCT Parent_ID FROM proj_categories WHERE ID IN ({placeholders})) THEN 2 
+                                            ELSE 3 
+                                        END) ASC,
+                                        d.Relationship_Order ASC
+                                ) as row_num
+                            FROM projects c
+                            JOIN proj_category_relationship d ON c.ID = d.Proj_ID AND d.Relationship_Status = '1'
+                            JOIN proj_categories e ON d.Category_ID = e.ID AND e.Categories_Status = '1'
+                            -- Join เพื่อเช็คหมวดหมู่ย่อยที่ตรงกับโปรเจกต์ตั้งต้น (ใช้หา Priority 1-99)
+                            LEFT JOIN proj_category_relationship ref_sub ON d.Category_ID = ref_sub.Category_ID AND ref_sub.Proj_ID = %s AND ref_sub.Relationship_Status = '1'
+                            -- Join เพื่อเช็คหมวดหมู่ใหญ่ที่ตรงกัน (ใช้หา Priority 101-199)
+                            LEFT JOIN (
+                                SELECT p.Parent_ID, MIN(r.Relationship_Order) as Min_Order
+                                FROM proj_category_relationship r
+                                JOIN proj_categories p ON r.Category_ID = p.ID
+                                WHERE r.Proj_ID = %s AND r.Relationship_Status = '1'
+                                GROUP BY p.Parent_ID
+                            ) ref_parent ON e.Parent_ID = ref_parent.Parent_ID
+                            -- ดึงชื่อหมวดหมู่มาโชว์
+                            LEFT JOIN (
+                                SELECT a.Proj_ID, GROUP_CONCAT(UPPER(b.Category_Name) ORDER BY a.Relationship_Order SEPARATOR ' | ') as Display_Category
+                                FROM proj_category_relationship a
+                                JOIN proj_categories b ON a.Category_ID = b.ID AND b.Categories_Status = '1'
+                                WHERE a.Relationship_Order <= 3
+                                GROUP BY a.Proj_ID
+                            ) cate ON c.ID = cate.Proj_ID
+                            WHERE c.Proj_Status = '1'
+                            AND c.ID <> %s
+                        ) aaa
+                        WHERE aaa.row_num = 1 
+                        AND aaa.Final_Priority < 999 
+                        ORDER BY 
+                            aaa.Final_Priority ASC,
+                            aaa.Categories_Order ASC,
+                            aaa.Latest_Date DESC,
+                            aaa.Proj_Name ASC
+                        LIMIT 20"""
+        query = raw_query.format(placeholders, placeholders)
+        params = list(sub_cate) + list(sub_cate) + [proj_id, proj_id, proj_id]
         cur2.execute(query, params)
         rows = cur2.fetchall()
         categories = []
