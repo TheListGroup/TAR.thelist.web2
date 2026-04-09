@@ -145,12 +145,13 @@ def insert_member(
         data_list = []
         member = Member_Text.split(';')
         for person in member:
-            data = person.split(',')
+            data = [None if x.strip().lower() == 'none' else x.strip() for x in person.split(',')]
             cur.execute("""INSERT INTO prof_employees (Proj_Profs_Relationship_ID, First_Name_EN, Last_Name_EN, Position_EN
-                        , First_Name_TH, Last_Name_TH, Position_TH, Created_By, Last_Updated_By, Member_Status) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                        , (Proj_Profs_Relationship_ID, data[0], data[1], data[2], data[3], data[4], data[5], User_ID, User_ID, '1'))
+                        , First_Name_TH, Last_Name_TH, Position_TH, Member_Order, Created_By, Last_Updated_By, Member_Status) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                        , (Proj_Profs_Relationship_ID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], User_ID, User_ID, '1'))
             data_list.append({"First_Name_EN": data[0], "Last_Name_EN": data[1], "Position_EN": data[2], "First_Name_TH": data[3], "Last_Name_TH": data[4]
-                            , "Position_TH": data[5]})
+                            , "Position_TH": data[5], "Member_Order": data[6]})
         conn.commit()
         
         return {"data": data_list}
@@ -780,7 +781,7 @@ def select_all_member(
     conn = get_db()
     cur = conn.cursor(dictionary=True)
     try:
-        cur.execute("""SELECT a.ID, a.First_Name_EN, a.Last_Name_EN, a.Position_EN, e.Name_EN as Project_Name
+        cur.execute("""SELECT a.ID, a.First_Name_EN, a.Last_Name_EN, a.Position_EN, e.Name_EN as Project_Name, a.Member_Order
                     FROM prof_employees a
                     join proj_prof_relationship b on a.Proj_Profs_Relationship_ID = b.ID and b.Relationship_Status = '1'
                     join prof_expertise_relationship c on b.Prof_Expertise_Relationship_ID = c.ID and c.Relationship_Status = '1'
@@ -826,6 +827,7 @@ def update_prof_member(
     First_Name_TH: str = Form(None),
     Last_Name_TH: str = Form(None),
     Position_TH: str = Form(None),
+    Member_Order: str = Form(None),
     Member_Status: str = Form('1'),
     User_ID: int = Form(...),
     _ = Depends(get_current_user),
@@ -833,17 +835,20 @@ def update_prof_member(
     conn = get_db()
     cur = conn.cursor()
     update_query = """UPDATE prof_employees SET Proj_Profs_Relationship_ID = %s, First_Name_EN = %s, Last_Name_EN = %s, Position_EN = %s, First_Name_TH = %s
-                    , Last_Name_TH = %s, Position_TH = %s, Member_Status = %s, Last_Updated_By = %s, Last_Updated_Date = CURRENT_TIMESTAMP WHERE ID = %s"""
+                    , Last_Name_TH = %s, Position_TH = %s, Member_Order = %s, Member_Status = %s, Last_Updated_By = %s
+                    , Last_Updated_Date = CURRENT_TIMESTAMP WHERE ID = %s"""
     try:
         Last_Name_EN = None if not Last_Name_EN else Last_Name_EN 
         Position_EN = None if not Position_EN else Position_EN 
         First_Name_TH = None if not First_Name_TH else First_Name_TH 
         Last_Name_TH = None if not Last_Name_TH else Last_Name_TH 
         Position_TH = None if not Position_TH else Position_TH 
-        cur.execute(update_query, (Proj_Profs_Relationship_ID, First_Name_EN, Last_Name_EN, Position_EN, First_Name_TH, Last_Name_TH, Position_TH, Member_Status, User_ID, Mem_ID))
+        Member_Order = None if not Member_Order else Member_Order 
+        cur.execute(update_query, (Proj_Profs_Relationship_ID, First_Name_EN, Last_Name_EN, Position_EN, First_Name_TH, Last_Name_TH, Position_TH, Member_Order, Member_Status, User_ID, Mem_ID))
         conn.commit()
         return {"data": {"Proj_Profs_Relationship_ID": Proj_Profs_Relationship_ID, "Member_ID": Mem_ID, "First_Name_EN": First_Name_EN, "Last_Name_EN": Last_Name_EN
-                        , "Position_EN": Position_EN, "First_Name_TH": First_Name_TH, "Last_Name_TH": Last_Name_TH, "Position_TH": Position_TH, "Member_Status": Member_Status}}
+                        , "Position_EN": Position_EN, "First_Name_TH": First_Name_TH, "Last_Name_TH": Last_Name_TH, "Position_TH": Position_TH, "Member_Order": Member_Order
+                        , "Member_Status": Member_Status}}
     except Exception as e:
         return to_problem(409, "Conflict", f"Update Member failed: {e}")
     finally:
