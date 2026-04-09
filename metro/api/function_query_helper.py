@@ -51,7 +51,8 @@ def _select_full_prof_item(prof_id: int) -> Dict[str, Any] | None:
                                                                     , 'First_Name_EN', a.First_Name_EN
                                                                     , 'Last_Name_EN', a.Last_Name_EN
                                                                     , 'First_Name_TH', a.First_Name_TH
-                                                                    , 'Last_Name_TH', a.Last_Name_TH)) as Owner
+                                                                    , 'Last_Name_TH', a.Last_Name_TH
+                                                                    , 'Order', a.Owner_Order)) as Owner
                                 , GROUP_CONCAT(concat_ws(' ', a.First_Name_EN, a.Last_Name_EN) ORDER BY a.First_Name_EN, a.Last_Name_EN SEPARATOR ', ') as Owner_Text
                         FROM prof_owners a
                         where a.Owner_Status = '1'
@@ -397,13 +398,14 @@ def url_work(cur, new_id, Name_EN, state):
     cur.execute(update_sql, (project_url_tag, new_id))
 
 def update_owners(cur, Prof_ID: int, Owner_Text: str, state: str):
-    cur.execute("SELECT First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH FROM prof_owners WHERE Prof_ID = %s and Owner_Status = '1'", (Prof_ID,))
+    cur.execute("SELECT First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH, Owner_Order FROM prof_owners WHERE Prof_ID = %s and Owner_Status = '1'", (Prof_ID,))
     existing_rows = cur.fetchall()
     existing_owners = {(
         (r['First_Name_EN'] or "").strip(),
         (r['Last_Name_EN'] or "").strip(),
         (r['First_Name_TH'] or "").strip(),
-        (r['Last_Name_TH'] or "").strip()
+        (r['Last_Name_TH'] or "").strip(),
+        str(r['Owner_Order']).strip() if r['Owner_Order'] is not None else ""
     ) for r in existing_rows}
 
     new_owners = set()
@@ -411,7 +413,7 @@ def update_owners(cur, Prof_ID: int, Owner_Text: str, state: str):
         owner_list = Owner_Text.split(';')
         for person in owner_list:
             data = [d.strip() if d.strip().lower() != 'none' else "" for d in person.split(',')]
-            if len(data) == 4:
+            if len(data) == 5:
                 new_owners.add(tuple(data))
     if existing_owners == new_owners:
         return
@@ -429,14 +431,15 @@ def update_owners(cur, Prof_ID: int, Owner_Text: str, state: str):
                         AND IFNULL(Last_Name_EN, '') = %s 
                         AND IFNULL(First_Name_TH, '') = %s 
                         AND IFNULL(Last_Name_TH, '') = %s
-                    """, (Prof_ID, person[0], person[1], person[2] or '', person[3] or ''))
+                        AND IFNULL(Owner_Order, '') = %s
+                    """, (Prof_ID, person[0], person[1], person[2] or '', person[3] or '', person[4] or ''))
 
     to_add = new_owners - existing_owners
     for person in to_add:
         person_to_insert = [None if str(p).strip() == "" else p for p in person]
         cur.execute("""
-            INSERT INTO prof_owners (Prof_ID, First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH, Owner_Status) 
-            VALUES (%s, %s, %s, %s, %s, '1')
+            INSERT INTO prof_owners (Prof_ID, First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH, Owner_Order, Owner_Status) 
+            VALUES (%s, %s, %s, %s, %s, %s, '1')
         """, (Prof_ID, *person_to_insert))
 
 def _delete_cover(cur, ref_id, cover_ratio: str, state: str):

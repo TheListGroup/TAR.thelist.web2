@@ -114,8 +114,8 @@ def insert_professionals(
             owner = Owner_Text.split(';')
             for person in owner:
                 data = [d.strip() if d.strip().lower() != 'none' else None for d in person.split(',')]
-                cur.execute("INSERT INTO prof_owners (Prof_ID, First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH, Owner_Status) VALUES (%s, %s, %s, %s, %s, %s)"
-                            , (new_id, data[0], data[1], data[2], data[3], '1'))
+                cur.execute("INSERT INTO prof_owners (Prof_ID, First_Name_EN, Last_Name_EN, First_Name_TH, Last_Name_TH, Owner_Order, Owner_Status) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+                            , (new_id, data[0], data[1], data[2], data[3], data[4], '1'))
         url_work(cur, new_id, Name_EN, 'prof')
         conn.commit()
     except Exception as e:
