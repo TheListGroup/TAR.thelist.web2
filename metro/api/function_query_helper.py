@@ -784,7 +784,7 @@ def proj_responsibilities(proj_id: int, state: str) -> Dict[str, Any] | None:
         f"""select
             c.Name_EN as Prof_Name
             , d.Responsibility
-            , group_concat(concat_ws(' ',e.First_Name_EN, e.Last_Name_EN) ORDER BY e.First_Name_EN,e.Last_Name_EN separator ', ') as Member_Name
+            , group_concat(concat_ws(' ',e.First_Name_EN, e.Last_Name_EN) ORDER BY isnull(e.Member_Order), e.Member_Order, e.First_Name_EN,e.Last_Name_EN separator ', ') as Member_Name
             , if(a.Content is not null 
                 , concat(LPAD(b.Expertise_ID,2,'0'),'-',replace(c.Name_EN,' ','-'))
                 , null) as Anchor
