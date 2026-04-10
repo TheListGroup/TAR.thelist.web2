@@ -288,8 +288,7 @@ def create_image_group(state):
                             a.Category_Name as category,
                             c.Proj_ID,
                             ifnull(cov2.Image_URL, cov1.Image_URL) as Image_URL,
-                            b.Categories_Order as Parent_Order,
-                            a.Categories_Order as Cat_Order,
+                            c.Relationship_Order,
                             0 as img_group_priority, -- กลุ่มที่ 1: cover ทั้งหมด
                             f.Expertise_Order as expertise_order,
                             CASE WHEN d.Content IS NULL OR d.Content = '' THEN 1 ELSE 0 END as has_content,
@@ -354,8 +353,7 @@ def create_image_group(state):
                             a.Category_Name as category,
                             c.Proj_ID,
                             REPLACE(g.Image_URL, '1440', '800') as Image_URL,
-                            b.Categories_Order as Parent_Order,
-                            a.Categories_Order as Cat_Order,
+                            c.Relationship_Order,
                             1 as img_group_priority, -- กลุ่มที่ 1: Gallery ทั้งหมด (ต่อท้าย Cover)
                             f.Expertise_Order as expertise_order,
                             CASE WHEN d.Content IS NULL OR d.Content = '' THEN 1 ELSE 0 END as has_content,
@@ -411,7 +409,7 @@ def create_image_group(state):
                         SELECT *,
                             ROW_NUMBER() OVER (
                                 PARTITION BY img_group_priority, Image_URL, Proj_ID -- แยก Rank ระหว่าง Cover/Gallery
-                                ORDER BY Parent_Order, Cat_Order -- เรียง cat ไหนมาก่อน
+                                ORDER BY Relationship_Order -- เรียง cat ไหนมาก่อน
                             ) as category_rank,
                             COUNT(*) OVER (PARTITION BY Proj_ID) as photo_count_per_proj
                         FROM CombinedImages
@@ -423,8 +421,7 @@ def create_image_group(state):
                     WHERE category_rank = 1 and Image_URL is not null
                     ORDER BY 
                         img_group_priority, -- สำคัญสุด: 0 (Cover ทุกตัว) จะมาก่อน 1 (Gallery ทุกตัว)
-                        Parent_Order,       -- เรียงตามหมวดหมู่ใหญ่
-                        Cat_Order,          -- เรียงตามหมวดหมู่เล็ก
+                        Relationship_Order,
                         photo_count_per_proj DESC, -- หัวใจสำคัญ: ใครรูปเยอะสุดในหมวดหมู่ ขึ้นก่อน
                         expertise_order,    -- ลำดับเฉพาะของ Gallery
                         has_content,
