@@ -935,7 +935,7 @@ async def delete_logo_record(
 
 # ====================== SELECT BY KEY ======================
 @router.get("/logo/select/{Prof_ID}", status_code=200)
-def select_all_prof_cover(
+def select_all_prof_logo(
     Prof_ID: int,
     if_none_match: Optional[str] = Header(None, alias="If-None-Match"),
     response: Response = Response(),
