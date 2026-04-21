@@ -54,7 +54,7 @@ def prod_template_data(
     
     if prod_type != 'products':
         data["Brief_Description"] = prod_data["Brief_Description"]
-        data["Category"] = prod_data["Category_Text"].split(", ")[0].upper() if prod_data["Category_Text"] else None
+        data["Category"] = prod_data["Category_Text"].split("|")[0].upper() if prod_data["Category_Text"] else None
         data["Facebook"] = prod_data["FB_Link"]
         data["Instagram"] = prod_data["IG_Link"]
         data["Line"] = prod_data["Line_Link"]
