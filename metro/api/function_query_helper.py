@@ -7,7 +7,6 @@ import os
 from wand.image import Image as WandImage
 from io import BytesIO
 from PIL import Image, ImageOps
-import json
 import shutil
 
 #UPLOAD_DIR = "/var/www/html/metro/uploads"
@@ -388,9 +387,12 @@ def url_work(cur, new_id, Name_EN, state):
     if state == 'proj':
         table = 'projects'
         column = 'Proj_URL_Tag'
-    else:
+    elif state == 'prof':
         table = 'professionals'
         column = 'Prof_URL_Tag'
+    else:
+        table = 'product_entities'
+        column = 'Entity_URL_Tag'
     
     update_sql = f"""UPDATE {table}
                     SET {column}=%s
@@ -446,9 +448,12 @@ def _delete_cover(cur, ref_id, cover_ratio: str, state: str):
     if state == 'prof':
         table = 'prof_cover'
         id_column = 'Prof_ID'
-    else:
+    elif state == 'proj':
         table = 'proj_cover'
         id_column = 'Proj_ID'
+    else:
+        table = 'product_cover'
+        id_column = 'Entity_ID'
     
     cur.execute(f"SELECT ID,{id_column},Image_URL, Ratio_Type FROM {table} WHERE {id_column}=%s and Ratio_Type = %s and Image_Status = '1'", (ref_id, cover_ratio))
     rows = cur.fetchall()
@@ -467,9 +472,12 @@ def _delete_image(cur, cover_id: int, action: str, relationship_id, state: str):
     if state == 'prof':
         table = 'prof_gallery'
         id_column = 'Prof_ID'
-    else:
+    elif state == 'proj':
         table = 'proj_gallery'
         id_column = 'Proj_Profs_Relationship_ID'
+    else:
+        table = 'product_gallery'
+        id_column = 'Entity_ID'
     
     image_size_list = [(1440,810),(800,450),(400,225)]
     cur.execute(f"SELECT {id_column}, Image_Order FROM {table} WHERE ID=%s", (cover_id,))
@@ -490,10 +498,12 @@ def _delete_image(cur, cover_id: int, action: str, relationship_id, state: str):
             
             if state == "prof":
                 path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "gallery")
-            else:
+            elif state == "proj":
                 cur.execute(f"SELECT Proj_ID FROM proj_prof_relationship WHERE ID=%s", (relationship_id,))
                 proj_id = cur.fetchone()
                 path_folder = os.path.join(UPLOAD_DIR, "project", str(f"{proj_id[0]:04d}"), "gallery", str(f"{relationship_id:04d}"))
+            else:
+                path_folder = os.path.join(UPLOAD_DIR, "product", str(f"{ref_id:04d}"), "gallery")
             
             for image_size in image_size_list:
                 filename = f"{cover_id:06d}-H-{image_size[0]}.webp"
@@ -506,9 +516,12 @@ def _insert_cover_record(cur, ref_id: int, image_name: str, image_url: str, rati
     if state == 'prof':
         table = 'prof_cover'
         id_column = 'Prof_ID'
-    else:
+    elif state == 'proj':
         table = 'proj_cover'
         id_column = 'Proj_ID'
+    else:
+        table = 'product_cover'
+        id_column = 'Entity_ID'
     
     sql = f"""INSERT INTO {table}
                 ({id_column}, Cover_Name, Image_Url, Ratio_Type, Image_Status)
@@ -531,22 +544,31 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
     if image_type == "Cover":
         if type_name == "prof":
             path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "cover")
-        else:
+        elif type_name == "proj":
             path_folder = os.path.join(UPLOAD_DIR, "project", str(f"{ref_id:04d}"), "cover")
+        else:
+            path_folder = os.path.join(UPLOAD_DIR, "product", str(f"{ref_id:04d}"), "cover")
     elif image_type == "Logo":
-        path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "logo")
+        if type_name == "prof":
+            path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "logo")
+        else:
+            path_folder = os.path.join(UPLOAD_DIR, "product", str(f"{ref_id:04d}"), "logo")
         ratio_code = "S"
         filename = f"{ref_id:06d}-{ratio_code}-{width}.webp"
     else:
         if type_name == "prof":
             path_folder = os.path.join(UPLOAD_DIR, "professional", str(f"{ref_id:04d}"), "gallery")
-        else:
+        elif type_name == "proj":
             path_folder = os.path.join(UPLOAD_DIR, "project", str(f"{ref_id:04d}"), "gallery", str(f"{relationship_id:04d}"))
+        else:
+            path_folder = os.path.join(UPLOAD_DIR, "product", str(f"{ref_id:04d}"), "gallery")
     
     if ratio == "16:9" or ratio == "3:2":
         ratio_code = "H"
     elif ratio == "9:16":
         ratio_code = "V"
+    elif ratio == "1:1":
+        ratio_code = "S"
 
     if image_type != "Logo":
         filename = f"{image_id:06d}-{ratio_code}-{width}.webp"
@@ -580,8 +602,10 @@ def _update_cover_record(
 ) -> dict:
     if state == 'prof':
         table = 'prof_cover'
-    else:
+    elif state == 'proj':
         table = 'proj_cover'
+    else:
+        table = 'product_cover'
     
     sql = f"""
         UPDATE {table}
@@ -594,9 +618,12 @@ def _get_image_display_order(cur, ref_id: int, state: str) -> int:
     if state == 'prof':
         table = 'prof_gallery'
         id_column = 'Prof_ID'
-    else:
+    elif state == 'proj':
         table = 'proj_gallery'
         id_column = 'Proj_Profs_Relationship_ID'
+    else:
+        table = 'product_gallery'
+        id_column = 'Entity_ID'
     
     cur.execute(f"""SELECT MAX(Image_Order) as max_order FROM {table} WHERE {id_column}=%s and Image_Status = '1'""", (ref_id,))
     row = cur.fetchone()
@@ -611,9 +638,12 @@ def _insert_image_record(cur, ref_id: int, state: str, image_name, image_url, di
     if state == 'prof':
         table = 'prof_gallery'
         id_column = 'Prof_ID'
-    else:
+    elif state == 'proj':
         table = 'proj_gallery'
         id_column = 'Proj_Profs_Relationship_ID'
+    else:
+        table = 'product_gallery'
+        id_column = 'Entity_ID'
     
     cur.execute(f"""INSERT INTO {table} ({id_column}, Image_Name, Image_URL, Image_Order, Image_Status, Image_Description)
                 VALUES (%s, %s, %s, %s, %s, %s)""", (ref_id, image_name, image_url, display_order, image_status, image_description))
@@ -633,8 +663,10 @@ def _insert_image_record(cur, ref_id: int, state: str, image_name, image_url, di
 def _update_image_record(cur, image_id, image_url: str, state: str) -> dict:
     if state == 'prof':
         table = 'prof_gallery'
-    else:
+    elif state == 'proj':
         table = 'proj_gallery'
+    else:
+        table = 'product_gallery'
     
     sql = f"""
         UPDATE {table}
@@ -1378,26 +1410,558 @@ def prof_more(prof_id: int):
     conn2.close()
     return more
 
-def get_prod_parent(cur, parent_id, current_id, state):
-    if state == 'insert':
-        if not parent_id:
-            cur.execute("""update product_entities set Family_IDS = %s where ID = %s""", (current_id, current_id))
-            return
+def update_entity_parent(cur, current_id: int, new_parent_id: int | None, is_update):
+    # --- STEP 0: ด่านตรวจการสลับกิ่ง (Swap/Circular Check) ---
+    if is_update and new_parent_id:
+        cur.execute("SELECT Family_IDS FROM product_entities WHERE ID = %s", (new_parent_id,))
+        new_p_data = cur.fetchone()
         
-        cur.execute("""select Family_IDS, Buttom_Parent from product_entities where ID = %s""", (parent_id,))
-        result = cur.fetchone()
+        if new_p_data and str(current_id) in new_p_data['Family_IDS'].split(','):
+            # พบว่า "พ่อใหม่" (4) เป็นลูกหลานของ "เรา" (1)
+            # ต้องจัดการ "ปลดปล่อย" 4 ให้เป็น Root ก่อน (ตาม Step 4 ใน Excel)
+            
+            # ลบ 4 ออกจาก Buttom_Parent ของพ่อเดิมของเขา (ซึ่งก็คือเรา 1)
+            cur.execute("SELECT Buttom_Parent FROM product_entities WHERE ID = %s", (current_id,))
+            res = cur.fetchone()
+            if res and res['Buttom_Parent']:
+                kids = [k.strip() for k in res['Buttom_Parent'].split(',') if k.strip()]
+                if str(new_parent_id) in kids:
+                    kids.remove(str(new_parent_id))
+                    updated_buttom = ",".join(kids) if kids else None
+                    cur.execute("UPDATE product_entities SET Buttom_Parent = %s WHERE ID = %s", (updated_buttom, current_id))
+
+            # ตั้งให้ 4 กลายเป็น Root ชั่วคราว (Parent=NULL, Family=4)
+            cur.execute("UPDATE product_entities SET Parent_ID = NULL, Family_IDS = %s, Top_Parent = NULL WHERE ID = %s", 
+                        (str(new_parent_id), new_parent_id))
+
+    # --- STEP 1: ล้างมลทิน (ลบตัวเองออกจากพ่อเก่าทุกคน) ---
+    if is_update:
+        cur.execute("SELECT ID, Buttom_Parent FROM product_entities WHERE FIND_IN_SET(%s, Buttom_Parent) > 0", (current_id,))
+        old_parents = cur.fetchall()
+        for p in old_parents:
+            if p['ID'] != new_parent_id:
+                kids = [k.strip() for k in p['Buttom_Parent'].split(',') if k.strip()]
+                if str(current_id) in kids:
+                    kids = [k for k in kids if k != str(current_id)]
+                    new_val = ",".join(kids) if kids else None
+                    cur.execute("UPDATE product_entities SET Buttom_Parent = %s WHERE ID = %s", (new_val, p['ID']))
+
+    # --- STEP 2: จัดการสายเลือดใหม่ (คำนวณ Family_IDS ของตัวเอง) ---
+    new_family_ids = str(current_id)
+    new_top_parent = None
+    
+    if new_parent_id:
+        cur.execute("SELECT Family_IDS, Buttom_Parent FROM product_entities WHERE ID = %s", (new_parent_id,))
+        parent = cur.fetchone()
+        if parent:
+            new_family_ids = f"{parent['Family_IDS']},{current_id}"
+            new_top_parent = parent['Family_IDS']
+            # เพิ่มตัวเองใน Buttom_Parent ของพ่อใหม่ (เช่น เพิ่ม 1 เข้าไปใน 4)
+            kids = [k.strip() for k in parent['Buttom_Parent'].split(',') if k.strip()] if parent['Buttom_Parent'] else []
+            if str(current_id) not in kids:
+                kids.append(str(current_id))
+                cur.execute("UPDATE product_entities SET Buttom_Parent = %s WHERE ID = %s", (",".join(kids), new_parent_id))
+
+    # เก็บสายเลือดเก่าไว้เพื่อใช้ replace ให้ลูกหลาน
+    cur.execute("SELECT Family_IDS FROM product_entities WHERE ID = %s", (current_id,))
+    old_self_family = cur.fetchone()['Family_IDS']
+
+    # --- STEP 3: อัปเดตตัวเอง ---
+    cur.execute("UPDATE product_entities SET Family_IDS = %s, Top_Parent = %s, Parent_ID = %s WHERE ID = %s",
+                (new_family_ids, new_top_parent, new_parent_id, current_id))
+
+    # --- STEP 4: Cascade Update (พาลูกหลานย้ายตามมา) ---
+    if is_update and old_self_family:
+        cur.execute("SELECT ID, Family_IDS FROM product_entities WHERE FIND_IN_SET(%s, Family_IDS) > 0 AND ID != %s", (current_id, current_id))
+        descendants = cur.fetchall()
+        for desc in descendants:
+            new_path = desc['Family_IDS'].replace(old_self_family, new_family_ids)
+            new_desc_top = ",".join(new_path.split(',')[:-1])
+            cur.execute("UPDATE product_entities SET Family_IDS = %s, Top_Parent = %s WHERE ID = %s", (new_path, new_desc_top, desc['ID']))
+
+def _select_full_prod_item(prod_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    cur2.execute(
+        f"""SELECT
+                a.ID, a.Entity_Type, a.Parent_ID, a.Name_EN, a.Name_TH, a.Latitude, a.Longitude, a.Address, yarn.Name_EN as Yarn
+                , sub_district.Name_EN as Sub_District, district.Name_EN as District, province.Name_EN as Province, state.Name_EN as State
+                , c.Name_EN as Country, a.FB_Link, a.IG_Link, a.Line_Link, a.YT_Link, a.Website, a.Content, a.Brief_Description, a.Logo_URL
+                , a.Family_IDS, a.Top_Parent, a.Buttom_Parent, a.Entity_URL_Tag, a.Entity_Status, cate.Category_Group, cate.Category_Text
+            FROM product_entities a
+            left join place_location yarn on a.Yarn = yarn.ID and yarn.Location_Status = '1'
+            left join place_location sub_district on a.Sub_District = sub_district.ID and sub_district.Location_Status = '1'
+            left join place_location district on a.District = district.ID and district.Location_Status = '1'
+            left join place_location province on a.Province = province.ID and province.Location_Status = '1'
+            left join place_location state on a.State = state.ID and state.Location_Status = '1'
+            left join country c on a.Country = c.ID and c.Country_Status = '1'
+            left join (SELECT a.Entity_ID, JSON_ARRAYAGG(JSON_OBJECT( 'Relationship_ID', a.ID
+                                                                    , 'Category_ID', a.Category_ID
+                                                                    , 'Parent_ID', b.Parent_ID
+                                                                    , 'Code', b.Code
+                                                                    , 'Category_ENName', b.Category_ENName
+                                                                    , 'Category_THName', b.Category_THName
+                                                                    , 'Category_Order', b.Categories_Order
+                                                                    , 'Relationship_Order', a.Relationship_Order)) as Category_Group
+                            , GROUP_CONCAT(b.Category_ENName ORDER BY a.Relationship_Order ASC SEPARATOR ', ') as Category_Text
+                        FROM product_entities_categories_relationship a
+                        join product_entities_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
+                        where a.Relationship_Status = '1'
+                        group by a.Entity_ID) as cate
+            on a.ID = cate.Entity_ID
+            WHERE a.ID=%s""",
+        (prod_id,)
+    )
+    row = cur2.fetchone()
+    cur2.close()
+    conn2.close()
+    return normalize_unit_row(row)
+
+def _select_prod_cover(prod_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    cover_list = []
+    cur2.execute(
+        f"""SELECT
+                a.Image_URL
+                , a.Ratio_Type
+            from product_cover a
+            where a.Image_Status = '1'
+            and a.Entity_ID = %s""",
+        (prod_id,)
+    )
+    rows = cur2.fetchall()
+    for row in rows:
+        row['Image_URL'] = row['Image_URL']
+        cover_list.append(row)
+    
+    cur2.close()
+    conn2.close()
+    return cover_list
+
+def get_prod_resource(prod_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    file_list = []
+    cur2.execute(
+        f"""SELECT
+                a.ID
+                , a.File_Type
+                , a.File_Size
+                , a.File_Name
+                , a.File_URL
+            from product_catalogs a
+            where a.Entity_ID = %s""",
+        (prod_id,)
+    )
+    rows = cur2.fetchall()
+    for row in rows:
+        file_entry = {
+            "ID": row["ID"],
+            "Type": row["File_Type"],
+            "Size": row["File_Size"],
+            "Name": row["File_Name"],
+            "URL": row["File_URL"]
+        }
+        file_list.append(file_entry)
+    
+    cur2.close()
+    conn2.close()
+    return file_list
+
+def prod_url_gen(prod_type: str, url_tag: str):
+    if not url_tag:
+        return None
+    
+    if prod_type == 'suppliers':
+        tag_url = 'supp'
+    elif prod_type == 'products':
+        tag_url = 'prod'
+    else:
+        tag_url = 'brand'
+    result_url = tag_url + '/' + url_tag
+    return result_url
+
+def get_prod_parent(family_id: str):
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    parent_list = []
+    prod_list = []
+    cur2.execute(
+        f"""SELECT a.ID
+                , a.Entity_Type
+                , if(a.Entity_Type <> 'products'
+                    , UPPER(a.Name_EN)
+                    , a.Name_EN) as Name_EN
+                , a.Name_EN as Normal_Name
+                , a.Brief_Description
+                , a.Entity_URL_Tag
+                , a.Family_IDS
+            from product_entities a
+            where a.Top_Parent = %s
+            and a.Entity_Status = '1'""",
+        (family_id,)
+    )
+    rows = cur2.fetchall()
+    for row in rows:
+        url_tag = prod_url_gen(row["Entity_Type"], row["Entity_URL_Tag"])
+        parent_entry = {
+            "Name": row["Name_EN"],
+            "Url": url_tag
+        }
+        cover_data = _select_prod_cover(row["ID"])
+        parent_entry["Cover"] = cover_data if cover_data else None
         
-        if result and result["Family_IDS"]:
-            parent_family = result["Family_IDS"]
-            new_top_parent = parent_family
-            new_family_ids = f"{parent_family},{current_id}"
+        if row["Entity_Type"] != 'products':
+            parent_entry["Type"] = row["Entity_Type"]
+            parent_entry["Brief_Description"] = row["Brief_Description"]
+            sub_parent = get_prod_subparent(cur2, row["Family_IDS"], row["Normal_Name"])
+            parent_entry["Parent"] = sub_parent if sub_parent else None
+            parent_list.append(parent_entry)
+        else:
+            prod_list.append(parent_entry)
+    
+    cur2.close()
+    conn2.close()
+    return parent_list, prod_list
+
+def get_prod_subparent(cur, family_id: str, name: str):
+    parent_list = []
+    cur.execute(
+        f"""SELECT a.ID
+                , a.Entity_Type
+                , a.Name_EN
+                , a.Entity_URL_Tag
+            from product_entities a
+            where a.Top_Parent = %s
+            and a.Entity_Status = '1'
+            order by a.Entity_Type""",
+        (family_id,)
+    )
+    rows = cur.fetchall()
+    for row in rows:
+        url_tag = prod_url_gen(row["Entity_Type"], row["Entity_URL_Tag"])
+        parent_entry = {
+            "Type": row["Entity_Type"],
+            "Head_Name": name,
+            "Name": row["Name_EN"],
+            "Url": url_tag
+        }
+        
+        if row["Entity_Type"] != 'products':
+            cur.execute(
+            f"""SELECT count(ID) as count_prod FROM product_entities WHERE FIND_IN_SET(%s, Family_IDS) > 0 AND Entity_Type = 'products'""",
+            (row["ID"],))
+            count = cur.fetchone()
+            parent_entry["Count_Prod"] = count["count_prod"] if count else None
+        
+        cover_data = _select_prod_cover(row["ID"])
+        parent_entry["Cover"] = cover_data if cover_data else None
+        
+        parent_list.append(parent_entry)
+
+    return parent_list
+
+def get_breadcrumbs(family_ids_str: str, current_id: int):
+    if not family_ids_str:
+        return []
+    
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+
+    path_ids = family_ids_str.split(',')
+    format_strings = ','.join(['%s'] * len(path_ids))
+    query = f"""
+        SELECT ID, Entity_Type, Name_EN, Entity_URL_Tag 
+        FROM product_entities 
+        WHERE ID IN ({format_strings})
+        ORDER BY FIELD(ID, {format_strings})
+    """
+    cur2.execute(query, tuple(path_ids) + tuple(path_ids))
+    rows = cur2.fetchall()
+
+    breadcrumbs = []
+    for i, row in enumerate(rows, start=1):
+        is_current = (row["ID"] == int(current_id))
+        breadcrumbs.append({
+            "Name": row["Name_EN"],
+            # ถ้าเป็นตัวปัจจุบัน (is_current) ให้ Url เป็น None เพื่อจะได้กดไม่ได้
+            "Url": prod_url_gen(row["Entity_Type"], row["Entity_URL_Tag"]) if (row['Entity_URL_Tag'] and not is_current) else None,
+            "order": i,
+        })
+    
+    cur2.close()
+    conn2.close()
+    return breadcrumbs
+
+def get_prod_proj(prod_id: int):
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+
+    proj_list = []
+    cur2.execute(f"""
+                    SELECT a.Proj_ID, c.Name_EN as Name, cate.Display_Category as Category, c.Proj_URL_Tag as URL
+                    FROM proj_prod_relationship a
+                    JOIN projects c ON a.Proj_ID = c.ID and c.Proj_Status = '1'
+                    left join (select a.Proj_ID, group_concat(UPPER(b.Category_Name) order by a.Relationship_Order separator ' | ') as Display_Category
+                                from proj_category_relationship a
+                                join proj_categories b on a.Category_ID = b.ID AND b.Categories_Status = '1'
+                                where a.Relationship_Order <= 3
+                                group by a.Proj_ID) cate
+                    on c.ID = cate.Proj_ID
+                    WHERE a.prod_id = %s
+                    order by GREATEST(COALESCE(YEAR(c.Start_Date), 0), COALESCE(YEAR(c.Finish_Date), 0), COALESCE(YEAR(c.Renovated_Date), 0)) desc
+                """, (prod_id,))
+    rows = cur2.fetchall()
+
+    for row in rows:
+        cur2.execute(f"""SELECT Image_Url from proj_cover where Ratio_Type = '3:2' and Image_Status = '1' and Proj_ID = %s""", (row["Proj_ID"],))
+        images = cur2.fetchall()
+        row["Cover"] = images if images else None
+        proj_list.append(row)
+    
+    cur2.close()
+    conn2.close()
+    return proj_list
+
+def get_entity_context(family_ids_str: str):
+    if not family_ids_str:
+        return None, None
+    
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+
+    path_ids = family_ids_str.split(',')
+    format_strings = ','.join(['%s'] * len(path_ids))
+    
+    query = f"""
+        SELECT ID, Entity_Type, Name_EN 
+        FROM product_entities 
+        WHERE ID IN ({format_strings})
+        ORDER BY FIELD(ID, {format_strings})
+    """
+    cur2.execute(query, tuple(path_ids) + tuple(path_ids))
+    rows = cur2.fetchall()
+
+    supplier_name = None
+    brand_name = None
+
+    for row in rows:
+        if row["Entity_Type"] == 'suppliers':
+            supplier_name = row["Name_EN"]
+        
+        if row["Entity_Type"] == 'brands':
+            brand_name = row["Name_EN"]
+
+    cur2.close()
+    conn2.close()
+    return supplier_name, brand_name
+
+def recover_proj_prod_relationship(cur, ref_id: int, state: str):
+    id_list = []
+    if state == 'prod':
+        column_id = 'Proj_ID'
+        cur.execute(f"""select {column_id} from proj_prod_relationship where Prod_ID = %s""", (ref_id,))
+        rows = cur.fetchall()
+        ref_list = list(set(row[column_id] for row in rows))
+        for id_ref in ref_list:
+            proj = _select_full_proj_item(id_ref)
+            proj_status = proj['Proj_Status']
+            if proj_status == '1':
+                id_list.append(id_ref)
+    else:
+        column_id = 'Prod_ID'
+        cur.execute(f"""select {column_id} from proj_prod_relationship where Proj_ID = %s""", (ref_id,))
+        rows = cur.fetchall()
+        ref_list = list(set(row[column_id] for row in rows))
+        for id_ref in ref_list:
+            prod = _select_full_prod_item(id_ref)
+            prod_status = prod['Entity_Status']
+            if prod_status == '1':
+                id_list.append(id_ref)
+    
+    for each_id in id_list:
+        cur.execute(f"""update proj_prod_relationship set Relationship_Status = '1' where {column_id} = %s""", (each_id,))
+
+def _select_prod_category():
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    
+    cur2.execute(
+        f"""SELECT
+                a.ID,
+                a.Parent_ID,
+                a.Code,
+                a.Category_ENName,
+                a.Category_THName,
+                a.Categories_Order
+            FROM product_entities_categories a
+            left join product_entities_categories b on a.Parent_ID = b.ID and b.Categories_Status = '1'
+            left join product_entities_categories c on b.Parent_ID = c.ID and c.Categories_Status = '1'
+            WHERE a.Categories_Status = '1'
+            order by c.Categories_Order, b.Categories_Order, a.Categories_Order"""
+    )
+    
+    row = cur2.fetchall()
+    cur2.close()
+    conn2.close()
+    return normalize_unit_row(row)
+
+def insert_file(cur, prod_id, file_path, file_name, file_size, file_type):
+    cur.execute(f"""insert into product_catalogs (Entity_ID, File_URL, File_Name, File_Size, File_Type) 
+                values (%s, %s, %s, %s, %s)""", (prod_id, file_path, file_name, file_size, file_type))
+    return {"File_Name": file_name, "File_Type": file_type}
+
+def _delete_resource(cur, res_id: int):
+    cur.execute(f"select File_URL FROM product_catalogs WHERE ID=%s", (res_id,))
+    row = cur.fetchone()
+    url = row["File_URL"]
+    
+    cur.execute(f"DELETE FROM product_catalogs WHERE ID=%s", (res_id,))
+    affected = cur.rowcount
+
+    if affected > 0:
+        path_file = os.path.join(UPLOAD_DIR, "product", url)
+        if os.path.exists(path_file):
+            os.remove(path_file)
+
+def delete_entity_parent(cur, delete_id: int):
+    # 1. ดึงข้อมูลตัวเองก่อนลบ (เพื่อหาพ่อและลูก)
+    cur.execute("SELECT Parent_ID, Buttom_Parent FROM product_entities WHERE ID = %s", (delete_id,))
+    target = cur.fetchone()
+    if not target: return "Not Found"
+
+    old_parent_id = target['Parent_ID']
+    my_kids_raw = target['Buttom_Parent']
+    my_kids = [k.strip() for k in my_kids_raw.split(',') if k.strip()] if my_kids_raw else []
+
+    # 2. ปลดปล่อยลูกตรง (Direct Children) ให้กลายเป็น Root
+    # เมื่อพ่อ (เรา) ตาย ลูกๆ จะไม่มี Parent และ Family_IDS จะเหลือแค่ตัวเขาเอง
+    for kid_id in my_kids:
+        # อัปเดตลูก: Parent=NULL, Top=NULL, Family=ตัวเอง
+        cur.execute("""UPDATE product_entities SET Parent_ID = NULL, Top_Parent = NULL, Family_IDS = %s WHERE ID = %s""", (str(kid_id), kid_id))
+        
+        # --- [สำคัญ] ต้องจัดการ "ลูกหลานของลูก" (Grandchildren) ด้วย ---
+        # สายเลือดเดิมของลูกคือ '...ต้นตระกูล,เรา,ลูก' 
+        # ต้องตัด '...ต้นตระกูล,เรา,' ออก ให้เหลือแค่สายเลือดที่เริ่มจาก 'ลูก' เป็นต้นไป
+        cur.execute("SELECT Family_IDS FROM product_entities WHERE ID = %s", (kid_id,))
+        new_root_family = cur.fetchone()['Family_IDS']
+        
+        # หาหลานๆ ทุกคนที่มี 'ลูก' คนนี้อยู่ในสายเลือด
+        cur.execute("SELECT ID, Family_IDS FROM product_entities WHERE FIND_IN_SET(%s, Family_IDS) > 0 AND ID != %s", (kid_id, kid_id))
+        descendants = cur.fetchall()
+        for desc in descendants:
+            # ตัดสายเลือดส่วนเกินทิ้ง (เอาเฉพาะส่วนที่ต่อจาก ID ลูกลงไป)
+            old_path = desc['Family_IDS']
+            # หาตำแหน่งของ ID ลูกใน String แล้วตัดส่วนหน้าทิ้ง
+            start_index = old_path.find(new_root_family)
+            new_path = old_path[start_index:]
+            new_top = ",".join(new_path.split(',')[:-1]) if ',' in new_path else None
             
-            cur.execute("""update product_entities 
-                        set Top_Parent = %s, Family_IDS = %s 
-                        where ID = %s""", (new_top_parent, new_family_ids, current_id))
-            
-            if not result["Buttom_Parent"]:
-                new_bottom = str(current_id)
-            else:
-                new_bottom = f"{result['Buttom_Parent']},{current_id}"
-            cur.execute("""update product_entities set Buttom_Parent = %s where ID = %s""", (new_bottom, parent_id))
+            cur.execute("UPDATE product_entities SET Family_IDS = %s, Top_Parent = %s WHERE ID = %s", (new_path, new_top, desc['ID']))
+
+    # 3. ลบตัวเองออกจาก Buttom_Parent ของพ่อเรา
+    if old_parent_id:
+        cur.execute("SELECT Buttom_Parent FROM product_entities WHERE ID = %s", (old_parent_id,))
+        res = cur.fetchone()
+        if res and res['Buttom_Parent']:
+            p_kids = [k.strip() for k in res['Buttom_Parent'].split(',') if k.strip()]
+            if str(delete_id) in p_kids:
+                p_kids.remove(str(delete_id))
+                updated_buttom = ",".join(p_kids) if p_kids else None
+                cur.execute("UPDATE product_entities SET Buttom_Parent = %s WHERE ID = %s", (updated_buttom, old_parent_id))
+
+    # 4. ลบตัวเองทิ้ง
+    cur.execute("update product_entities set Entity_Status = '2' WHERE ID = %s", (delete_id,))
+
+def assign_category_bulk(cur, entity_id, category_ids, include_descendants):
+    target_ids = [entity_id]
+    if include_descendants:
+        cur.execute("SELECT ID FROM product_entities WHERE FIND_IN_SET(%s, Family_IDS) > 0 and Entity_Status = '1'", (entity_id,))
+        rows = cur.fetchall()
+        target_ids = list(set([entity_id] + [r['ID'] for r in rows]))
+
+    placeholders = ', '.join(['%s'] * len(target_ids))
+    sql = f"DELETE FROM product_entities_categories_relationship WHERE Entity_ID IN ({placeholders})"
+    cur.execute(sql, target_ids)
+
+    data_to_insert = []
+    category_list = [c.strip() for c in category_ids.split(";") if c.strip()]
+    for t_id in target_ids:
+        for i, category_id in enumerate(category_list, start=1):
+            data_to_insert.append((t_id, category_id, i))
+
+    sql = """INSERT INTO product_entities_categories_relationship (Entity_ID, Category_ID, Relationship_Order, Relationship_Status) 
+            VALUES (%s, %s, %s, '1') ON DUPLICATE KEY UPDATE Relationship_Order = VALUES(Relationship_Order), Relationship_Status = '1'"""
+    cur.executemany(sql, data_to_insert)
+
+def _select_full_cate_item(cate_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    cur2.execute(
+        f"""SELECT
+                a.ID, a.Parent_ID, a.Code, a.Category_ENName, a.Category_THName, a.Categories_Order
+            FROM product_entities_categories a
+            WHERE a.ID=%s""",
+        (cate_id,)
+    )
+    row = cur2.fetchone()
+    cur2.close()
+    conn2.close()
+    return row
+
+def _update_category_order(cur, category_id, display_order: int) -> dict:
+    sql = f"""
+        UPDATE product_entities_categories
+        SET Categories_Order=%s
+        WHERE ID=%s
+    """
+    cur.execute(sql, (display_order, category_id))
+    
+    return {
+        "category_id": category_id,
+        "display_order": display_order,
+    }
+
+def _select_full_attr_def_item(def_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    cur2.execute(
+        f"""SELECT
+                a.ID, a.Key_Name, a.Display_Name, a.Remark, a.Data_Type, a.Options_List, a.Display_Order, a.Attr_Status
+            FROM product_attribute_definitions a
+            WHERE a.ID=%s""",
+        (def_id,)
+    )
+    row = cur2.fetchone()
+    cur2.close()
+    conn2.close()
+    return row
+
+def _update_attr_order(cur, attr_id, display_order: int) -> dict:
+    sql = f"""
+        UPDATE product_attribute_definitions
+        SET Display_Order=%s
+        WHERE ID=%s
+    """
+    cur.execute(sql, (display_order, attr_id))
+    
+    return {
+        "attr_id": attr_id,
+        "display_order": display_order,
+    }
+
+def _select_full_attr_definition_item(cate_id: int) -> Dict[str, Any] | None:
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    cur2.execute(
+        f"""SELECT
+                a.ID, a.Key_Name , a.Display_Name, a.Remark, a.Data_Type, a.Unit, a.Options_List, a.Display_Order
+            FROM product_attribute_definitions a
+            WHERE a.ID=%s""",
+        (cate_id,)
+    )
+    row = cur2.fetchone()
+    cur2.close()
+    conn2.close()
+    return row
