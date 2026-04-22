@@ -44,10 +44,12 @@ def prod_template_data(
         data["Location"] = location_text
     
     if prod_type != 'suppliers':
-        supplier_name, brand_name = get_entity_context(prod_data["Family_IDS"])
+        supplier_name, brand_name, supplier_url, brand_url = get_entity_context(prod_data["Family_IDS"])
         data["Head_Parent"] = supplier_name
+        data["Head_Parent_Url"] = supplier_url
         if prod_type == 'products':
             data["Head_Name"] = brand_name
+            data["Head_Url"] = brand_url
     
     cover_data = _select_prod_cover(Prod_ID)
     data["Cover"] = cover_data if cover_data else None
