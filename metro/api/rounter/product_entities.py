@@ -238,7 +238,7 @@ def update_product_entities(
         
         url_work(cur, Prod_ID, Name_EN, 'prod')
         if Category_Text:
-            assign_category_bulk(cur, new_id, Category_Text, Include)
+            assign_category_bulk(cur, Prod_ID, Category_Text, Include)
         conn.commit()
     except Exception as e:
         conn.rollback()
