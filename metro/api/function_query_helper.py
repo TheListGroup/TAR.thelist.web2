@@ -1735,7 +1735,7 @@ def get_entity_context(family_ids_str: str):
     format_strings = ','.join(['%s'] * len(path_ids))
     
     query = f"""
-        SELECT ID, Entity_Type, Name_EN 
+        SELECT ID, Entity_Type, Name_EN, Entity_URL_Tag
         FROM product_entities 
         WHERE ID IN ({format_strings})
         ORDER BY FIELD(ID, {format_strings})
@@ -1749,13 +1749,15 @@ def get_entity_context(family_ids_str: str):
     for row in rows:
         if row["Entity_Type"] == 'suppliers':
             supplier_name = row["Name_EN"]
+            supplier_url = row["Entity_URL_Tag"]
         
         if row["Entity_Type"] == 'brands':
             brand_name = row["Name_EN"]
+            brand_url = row["Entity_URL_Tag"]
 
     cur2.close()
     conn2.close()
-    return supplier_name, brand_name
+    return supplier_name, brand_name, supplier_url, brand_url
 
 def recover_proj_prod_relationship(cur, ref_id: int, state: str):
     id_list = []
@@ -1956,7 +1958,7 @@ def _select_full_attr_definition_item(cate_id: int) -> Dict[str, Any] | None:
     cur2 = conn2.cursor(dictionary=True)
     cur2.execute(
         f"""SELECT
-                a.ID, a.Key_Name , a.Display_Name, a.Remark, a.Data_Type, a.Unit, a.Options_List, a.Display_Order
+                a.ID, a.Key_Name , a.Display_Name, a.Remark, a.Data_Type, a.Unit, a.Options_List, a.Display_Order, a.Attr_Status
             FROM product_attribute_definitions a
             WHERE a.ID=%s""",
         (cate_id,)
