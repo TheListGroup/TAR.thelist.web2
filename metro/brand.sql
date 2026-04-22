@@ -86,6 +86,7 @@ CREATE TABLE product_catalogs (
     File_Name VARCHAR(100),
     File_Size VARCHAR(50), -- เช่น "2.5 MB"
     File_Type VARCHAR(10), -- เช่น "pdf", "docx"
+    File_Status ENUM('0', '1', '2'),
     FOREIGN KEY (Entity_ID) REFERENCES product_entities(ID)
 );
 
