@@ -1749,11 +1749,11 @@ def get_entity_context(family_ids_str: str):
     for row in rows:
         if row["Entity_Type"] == 'suppliers':
             supplier_name = row["Name_EN"]
-            supplier_url = row["Entity_URL_Tag"]
+            supplier_url = prod_url_gen(row["Entity_Type"], row["Entity_URL_Tag"])
         
         if row["Entity_Type"] == 'brands':
             brand_name = row["Name_EN"]
-            brand_url = row["Entity_URL_Tag"]
+            brand_url = prod_url_gen(row["Entity_Type"], row["Entity_URL_Tag"])
 
     cur2.close()
     conn2.close()
