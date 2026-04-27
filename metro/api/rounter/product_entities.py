@@ -17,7 +17,8 @@ import json
 router = APIRouter()
 TABLE = "product_entities"
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".jfif"}
-UPLOAD_DIR = "/var/www/html/metro/uploads/product"
+#UPLOAD_DIR = "/var/www/html/metro/uploads/product"
+UPLOAD_DIR = "/var/www/html/uploads/product"
 
 # ----------------------------------------------------- INSERT --------------------------------------------------------------------------------------------
 @router.post("/insert", status_code=201)
