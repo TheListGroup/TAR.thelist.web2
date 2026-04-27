@@ -653,20 +653,16 @@ def create_image_group(state):
                         LEFT JOIN (SELECT 
                                         d.Entity_ID,
                                         CONCAT('[',concat_ws(',',
-                                            GROUP_CONCAT(DISTINCT '"', c.Category_UseName, '"' SEPARATOR ','), 
-                                            GROUP_CONCAT(DISTINCT '"', b.Category_UseName, '"' SEPARATOR ','), 
                                             GROUP_CONCAT(DISTINCT '"', a.Category_UseName, '"' SEPARATOR ',')),
                                         ']') as All_Category_JSON
                                     FROM product_entities_categories a
-                                    left join product_entities_categories b on a.Parent_ID = b.ID and b.Categories_Status = '1'
-                                    left join product_entities_categories c on b.Parent_ID = c.ID and c.Categories_Status = '1'
                                     JOIN product_entities_categories_relationship d ON a.ID = d.Category_ID AND d.Relationship_Status = '1'
                                     WHERE a.Categories_Status = '1'
                                     GROUP BY d.Entity_ID) category_helper
                         ON c.Entity_ID = category_helper.Entity_ID
                         LEFT JOIN (
                             select Entity_ID
-                                , GROUP_CONCAT(UPPER(Category_UseName) ORDER BY Relationship_Order SEPARATOR '|') AS Category
+                                , GROUP_CONCAT(UPPER(Category_UseName) ORDER BY Relationship_Order SEPARATOR ' | ') AS Category
                             from (
                                 SELECT
                                     a.Entity_ID,
@@ -726,20 +722,16 @@ def create_image_group(state):
                         LEFT JOIN (SELECT 
                                         d.Entity_ID,
                                         CONCAT('[',concat_ws(',',
-                                            GROUP_CONCAT(DISTINCT '"', c.Category_UseName, '"' SEPARATOR ','), 
-                                            GROUP_CONCAT(DISTINCT '"', b.Category_UseName, '"' SEPARATOR ','), 
                                             GROUP_CONCAT(DISTINCT '"', a.Category_UseName, '"' SEPARATOR ',')),
                                         ']') as All_Category_JSON
                                     FROM product_entities_categories a
-                                    left join product_entities_categories b on a.Parent_ID = b.ID and b.Categories_Status = '1'
-                                    left join product_entities_categories c on b.Parent_ID = c.ID and c.Categories_Status = '1'
                                     JOIN product_entities_categories_relationship d ON a.ID = d.Category_ID AND d.Relationship_Status = '1'
                                     WHERE a.Categories_Status = '1'
                                     GROUP BY d.Entity_ID) category_helper
                         ON c.Entity_ID = category_helper.Entity_ID
                         LEFT JOIN (
                             select Entity_ID
-                                , GROUP_CONCAT(UPPER(Category_UseName) ORDER BY Relationship_Order SEPARATOR '|') AS Category
+                                , GROUP_CONCAT(UPPER(Category_UseName) ORDER BY Relationship_Order SEPARATOR ' | ') AS Category
                             from (
                                 SELECT
                                     a.Entity_ID,
