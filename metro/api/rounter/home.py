@@ -3,6 +3,7 @@ from db import get_db
 from auth import get_current_user  # << ใช้ตัวเดิม (รองรับ ADMIN_TOKEN หรือ JWT)
 from typing import Optional, Tuple, Dict, Any, List
 import json
+from collections import defaultdict
 
 router = APIRouter()
 
@@ -48,52 +49,78 @@ def _select_active_expertise_hierarchies(cur):
     cur.execute(sql)
     return cur.fetchall()
 
+def _select_active_prod_category_hierarchies(cur):
+    sql = """
+        SELECT DISTINCT 
+            c.ID, 
+            c.Category_UseName as Category_Name, 
+            c.Parent_ID, 
+            c.Categories_Order
+        FROM home_image h
+        -- ดึงชื่อจาก JSON กิ่ง l2 หรือ l3 มาเทียบ (ตัวอย่างนี้เทียบ l2 และ l3)
+        JOIN product_entities_categories c ON (
+            c.Category_UseName = h.Category_Hierarchy->>'$.l2' OR 
+            c.Category_UseName = h.Category_Hierarchy->>'$.l3' OR 
+            c.Category_UseName = h.Category_Hierarchy->>'$.l4'
+        )
+        WHERE h.Card_Type = 'PRODUCT' 
+        AND h.Category_Hierarchy->>'$.l1' = 'PRODUCT'
+        AND c.Categories_Status = '1'
+        ORDER BY c.Parent_ID , c.Categories_Order
+    """
+    cur.execute(sql)
+    return cur.fetchall()
+
 def create_json(data, state):
-    if state == 'PROJECT':
+    if state in ['PROJECT', 'PRODUCT']:
         cate_column = 'Category_Name'
     elif state == 'PROFESSIONAL':
         cate_column = 'Responsibility'
-    
-    # 1. แยกกลุ่ม Parent เหมือนเดิม (เพื่อเอาไว้หาลูก)
-    by_parent = {}
+    else:
+        cate_column = 'Category_Name'
+
+    # 1. จัดกลุ่มลูกตาม Parent_ID
+    by_parent = defaultdict(list)
     for r in data:
         p_id = r['Parent_ID'] if r['Parent_ID'] is not None else 0
-        if p_id not in by_parent:
-            by_parent[p_id] = []
         by_parent[p_id].append(r)
 
-    # 2. สร้างโครงสร้าง Head_Cate สำหรับ PROJECT
+    # 2. ฟังก์ชัน Recursive สำหรับชั้นลูก (Level > 1)
+    def get_sub_categories(parent_id):
+        children = by_parent.get(parent_id, [])
+        if not children:
+            return None
+        
+        sub_list = []
+        # เพิ่ม ALL ในแต่ละ Sub
+        sub_list.append({"ID": 0, "Sub_Name": "ALL", "Order": 1, "Sub_Cate": None})
+        
+        for idx, child in enumerate(children, 2):
+            child_id = child['ID']
+            sub_list.append({
+                "ID": child_id,
+                "Sub_Name": child[cate_column].upper(),
+                "Order": idx,
+                "Sub_Cate": get_sub_categories(child_id) # วนลูปหาชั้นต่อไป
+            })
+        return sub_list
+
+    # 3. สร้างชั้นนอกสุด (Root Level)
     head_cate_list = []
     
-    # -- อันดับแรกสุดของ PROJECT คือ ALL PROJECTS --
-    #head_cate_list.append({"ID": 0, "Head_Name": f"ALL {state}S", "Order": 1, "Sub_Cate": None})
-    head_cate_list.append({"ID": 0, "Head_Name": f"ALL", "Order": 1, "Sub_Cate": None})
+    # อันดับแรกสุดคือ ALL
+    head_cate_list.append({"ID": 0, "Head_Name": "ALL", "Order": 1, "Sub_Cate": None})
 
-    # 3. วนลูปเฉพาะพวก Parent_ID IS NULL (จากรูปคือ ID 1-15)
-    # พวกนี้จะเป็น Head_Name
     roots = by_parent.get(0, [])
-    for idx, root in enumerate(roots, 2): # เริ่ม Order ที่ 2
+    for idx, root in enumerate(roots, 2):
         root_id = root['ID']
-        root_name = root[cate_column].upper()
-        
-        # 4. สร้าง Sub_Cate ของแต่ละ Head
-        sub_cate_list = []
-        # ต้องมี ALL ของตัวเองก่อน (เช่น ALL RESIDENTIAL PROJECTS)
-        #sub_cate_list.append({"ID": 0, "Sub_Name": f"ALL {root_name} {state}S", "Order": 1})
-        sub_cate_list.append({"ID": 0, "Sub_Name": f"ALL", "Order": 1})
-        
-        # ดึงลูกจริงๆ มาใส่ (เช่น ID 16, 17, 18 มาใส่ใต้ ID 1)
-        children = by_parent.get(root_id, [])
-        for c_idx, child in enumerate(children, 2):
-            sub_cate_list.append({"ID": child['ID'], "Sub_Name": child[cate_column].upper(), "Order": c_idx})
-            
-        # ประกอบเข้า Head_Cate
         head_cate_list.append({
             "ID": root_id,
-            "Head_Name": root_name,
+            "Head_Name": root[cate_column].upper(),
             "Order": idx,
-            "Sub_Cate": sub_cate_list
+            "Sub_Cate": get_sub_categories(root_id) # เริ่มดึงลูกชั้นแรก
         })
+        
     return head_cate_list
 
 def get_home_images(cur, start_order, amount, category_path):
@@ -122,8 +149,9 @@ def get_home_images(cur, start_order, amount, category_path):
     
     sql = f"""
         SELECT 
-            Card_Type, Category, Card_Name, Card_Sub_Name, 
-            Brief_Description, Image_URL, Card_Logo, Image_Order, Card_Url, DATE(Last_Updated_Date) as Last_Updated_Date
+            Card_Type, Card_Sub_Type, Category, Card_Name, Card_Sub_Name, 
+            Brief_Description, Image_URL, Card_Logo, Image_Order, Card_Url, Count_Prod,
+            DATE(Last_Updated_Date) as Last_Updated_Date
         FROM home_image
         WHERE {filter_sql}
         ORDER BY Image_Order ASC
@@ -177,6 +205,43 @@ def _select_active_expertise(cur):
     cur.execute(sql)
     return cur.fetchall()
 
+def _select_active_prod_category(cur):
+    sql = """
+        SELECT DISTINCT 
+            c.ID, 
+            c.Category_UseName as Category_Name, 
+            c.Parent_ID, 
+            c.Categories_Order
+        FROM home_image h
+        JOIN product_entities_categories c ON (
+            c.Category_UseName MEMBER OF (h.All_Category)
+        )
+        WHERE h.Card_Type = 'PRODUCT' 
+        AND c.Categories_Status = '1'
+        AND h.All_Category IS NOT NULL
+        ORDER BY c.Parent_ID ASC, c.Categories_Order ASC
+    """
+    cur.execute(sql)
+    return cur.fetchall()
+
+def _select_only_active_prod_category(cur):
+    sql = """
+        SELECT DISTINCT 
+            c.ID, 
+            c.Category_UseName as Category_Name, 
+            null as Parent_ID,
+            d.Categories_Order as Head_Order,
+            c.Categories_Order as Sub_Order
+        FROM product_entities_categories_relationship h
+        JOIN product_entities_categories c ON h.Category_ID = c.ID and c.Categories_Status = '1'
+        left JOIN product_entities_categories d ON c.Parent_ID = d.ID and d.Categories_Status = '1'
+        JOIN product_entities a on h.Entity_ID = a.ID and a.Entity_Status = '1' and a.Entity_Type <> 'products'
+        WHERE h.Relationship_Status = '1'
+        ORDER BY d.Categories_Order, c.Categories_Order
+    """
+    cur.execute(sql)
+    return cur.fetchall()
+
 @router.get("/home-template-tag", status_code=200)
 def home_template_tag(
     _ = Depends(get_current_user),
@@ -198,11 +263,18 @@ def home_template_tag(
     else:
         prof = None
     
+    #prod_cate_data = _select_active_prod_category_hierarchies(cur2)
+    prod_cate_data = _select_only_active_prod_category(cur2)
+    if prod_cate_data:
+        prod = create_json(prod_cate_data, 'PRODUCT')
+    else:
+        prod = None
+    
     header_response = [
         {"Tag": "ALL", "Head_Cate": None},
         {"Tag": "PROJECT", "Head_Cate": proj},
         {"Tag": "PROFESSIONAL", "Head_Cate": prof},
-        {"Tag": "PRODUCT", "Head_Cate": None}
+        {"Tag": "PRODUCT", "Head_Cate": prod}
     ]
 
     cur2.close()
@@ -228,6 +300,7 @@ def home_template_image(
     for row in rows:
         item = {
                 "Type": row['Card_Type'],
+                "Sub_Type": row['Card_Sub_Type'],
                 "Tag": row['Category'],
                 "Name": row['Card_Name'],
                 "Sub_Name": row['Card_Sub_Name'],
@@ -235,7 +308,8 @@ def home_template_image(
                 "Image": row['Image_URL'],
                 "Order": row['Image_Order'],
                 "Logo": row['Card_Logo'],
-                "Url": row['Card_Url']
+                "Url": row['Card_Url'],
+                "Count_Prod": row['Count_Prod']
             }
         output_images.append(item)
     
