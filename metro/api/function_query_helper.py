@@ -1799,6 +1799,8 @@ def get_entity_context(family_ids_str: str):
 
     supplier_name = None
     brand_name = None
+    supplier_url = None
+    brand_url = None
 
     for row in rows:
         if row["Entity_Type"] == 'suppliers':
