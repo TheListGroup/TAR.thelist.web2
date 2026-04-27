@@ -1500,10 +1500,11 @@ def _select_full_prod_item(prod_id: int) -> Dict[str, Any] | None:
                                                                     , 'Parent_ID', b.Parent_ID
                                                                     , 'Code', b.Code
                                                                     , 'Category_ENName', b.Category_ENName
+                                                                    , 'Category_UseName', b.Category_UseName
                                                                     , 'Category_THName', b.Category_THName
                                                                     , 'Category_Order', b.Categories_Order
                                                                     , 'Relationship_Order', a.Relationship_Order)) as Category_Group
-                            , GROUP_CONCAT(b.Category_ENName ORDER BY a.Relationship_Order ASC SEPARATOR '|') as Category_Text
+                            , GROUP_CONCAT(b.Category_UseName ORDER BY a.Relationship_Order ASC SEPARATOR '|') as Category_Text
                         FROM product_entities_categories_relationship a
                         join product_entities_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
                         where a.Relationship_Status = '1'
@@ -1694,6 +1695,42 @@ def get_breadcrumbs(family_ids_str: str, current_id: int):
     conn2.close()
     return breadcrumbs
 
+def get_supplier(supp_id: int):
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    
+    cur2.execute(f"""
+                    SELECT a.ID, a.Name_EN as Name, a.Logo_URL as Logo, a.Entity_URL_Tag as Url
+                        , c.Image_URL as Cover, count_help.count_prod as Count, cate.Category_Text as Category
+                    from product_entities a
+                    join prod_url b on a.ID = b.ID and b.Url_Status = 1
+                    left join product_cover c on a.ID = c.Entity_ID and c.Image_Status = '1' and c.Ratio_Type = '1:1'
+                    left join (SELECT 
+                                    parent.ID as parent_id, 
+                                    COUNT(child.ID) as count_prod
+                                FROM product_entities parent
+                                LEFT JOIN product_entities child ON FIND_IN_SET(parent.ID, child.Family_IDS) > 0
+                                    AND child.Entity_Type = 'products' -- นับเฉพาะตัวที่เป็นสินค้า
+                                    AND child.Entity_Status = '1'
+                                WHERE parent.Entity_Status = '1'
+                                GROUP BY parent.ID) count_help
+                    on a.ID = count_help.parent_id
+                    left join (SELECT a.Entity_ID
+                                    , GROUP_CONCAT(upper(b.Category_UseName) ORDER BY a.Relationship_Order ASC SEPARATOR '|') as Category_Text
+                                FROM product_entities_categories_relationship a
+                                join product_entities_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
+                                where a.Relationship_Status = '1'
+                                and a.Relationship_Order <= 2
+                                group by a.Entity_ID) as cate
+                    on a.ID = cate.Entity_ID
+                    where a.ID = %s
+                    and a.Entity_Status = '1'
+                """, (supp_id,))
+    row = cur2.fetchone()
+    cur2.close()
+    conn2.close()
+    return row if row else None
+
 def get_prod_proj(prod_id: int):
     conn2 = get_db()
     cur2 = conn2.cursor(dictionary=True)
@@ -1795,6 +1832,7 @@ def _select_prod_category():
                 a.Parent_ID,
                 a.Code,
                 a.Category_ENName,
+                a.Category_UseName,
                 a.Category_THName,
                 a.Categories_Order
             FROM product_entities_categories a
@@ -1902,7 +1940,7 @@ def _select_full_cate_item(cate_id: int) -> Dict[str, Any] | None:
     cur2 = conn2.cursor(dictionary=True)
     cur2.execute(
         f"""SELECT
-                a.ID, a.Parent_ID, a.Code, a.Category_ENName, a.Category_THName, a.Categories_Order
+                a.ID, a.Parent_ID, a.Code, a.Category_ENName, a.Category_UseName, a.Category_THName, a.Categories_Order, a.Categories_Status
             FROM product_entities_categories a
             WHERE a.ID=%s""",
         (cate_id,)
@@ -1967,3 +2005,39 @@ def _select_full_attr_definition_item(cate_id: int) -> Dict[str, Any] | None:
     cur2.close()
     conn2.close()
     return row
+
+def get_prod_specification(ref_id: int, state: str):
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+
+    if state == "prod":
+        query = "and a.Entity_ID = %s"
+    else:
+        query = "and a.ID = %s"
+    
+    cur2.execute(f"""
+                    SELECT a.ID, b.Key_Name, b.Display_Name, b.Unit, b.Data_Type, a.Attr_Value, a.Relationship_Status, a.Attr_Def_ID
+                    FROM product_attribute_values a
+                    join product_attribute_definitions b on a.Attr_Def_ID = b.ID and b.Attr_Status = '1'
+                    where a.Relationship_Status <> '2'
+                    {query}
+                    order by a.ID
+                """, (ref_id,))
+    rows = cur2.fetchall()
+    
+    cur2.close()
+    conn2.close()
+    return rows if rows else None
+
+def _update_prod_spec_order(cur, spec_id, display_order: int) -> dict:
+    sql = f"""
+        UPDATE product_attribute_values
+        SET Display_Order=%s
+        WHERE ID=%s
+    """
+    cur.execute(sql, (display_order, spec_id))
+    
+    return {
+        "spec_id": spec_id,
+        "display_order": display_order,
+    }
