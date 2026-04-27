@@ -130,10 +130,12 @@ CREATE TABLE product_entities_categories (
     Parent_ID INT UNSIGNED, -- Self-reference สำหรับหมวดหมู่ใหญ่/ย่อย
     Code VARCHAR(10) NOT NULL,
     Category_ENName VARCHAR(255) NOT NULL,
+    Category_UseName VARCHAR(255),
     Category_THName VARCHAR(255),
     Categories_Order INT UNSIGNED NOT NULL,
     Categories_Status ENUM('0','1','2') NOT NULL,
     INDEX (Category_ENName),
+    INDEX (Category_UseName),
     INDEX (Category_THName),
     INDEX (Categories_Order)
 );
