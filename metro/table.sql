@@ -300,6 +300,7 @@ CREATE TABLE prof_gallery (
 CREATE TABLE home_image (
     ID INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     Card_Type VARCHAR(30),
+    Card_Sub_Type VARCHAR(30),
     Category VARCHAR(100),
     Category_Hierarchy json,
     Card_Name VARCHAR(255),
@@ -309,6 +310,7 @@ CREATE TABLE home_image (
     Image_URL TEXT NOT NULL,
     Image_Order INT NOT NULL,
     Card_Url TEXT,
+    Count_Prod INT,
     Last_Updated_Date timestamp NOT NULL,
     All_Category TEXT
 ) ENGINE=InnoDB;
