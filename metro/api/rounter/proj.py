@@ -4,7 +4,7 @@ from auth import get_current_user  # << ใช้ตัวเดิม (รอ�
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists, normalize_row
 from function_query_helper import check_location, check_country, _select_full_proj_item, _select_prof_expertise, url_work, _select_all_location, _select_country \
     , _select_category, _delete_cover, delete_expertise_process, recover_proj_prof_relationship, _insert_cover_record, _save_image_file, _update_cover_record \
-    , _get_image_display_order, _insert_image_record, _update_image_record, _update_image_order, _delete_image
+    , _get_image_display_order, _insert_image_record, _update_image_record, _update_image_order, _delete_image, recover_proj_prod_relationship
 from typing import Optional, Tuple, Dict, Any, List
 from datetime import datetime
 import os
@@ -279,6 +279,7 @@ def update_projects(
             cur.execute(f"UPDATE proj_cover SET Image_Status='1' WHERE Proj_ID = %s and Image_Status = '2'", (Proj_ID,))
             cur.execute(f"UPDATE proj_category_relationship SET Relationship_Status = '1' WHERE Proj_ID=%s and Relationship_Status = '2'", (Proj_ID,))
             recover_proj_prof_relationship(cur, Proj_ID, 'proj')
+            recover_proj_prod_relationship(cur, Proj_ID, 'proj')
         
         location_id_list = [None, None, None, None, None]
         location_type_list = ['Yarn', 'Subdistrict', 'District', 'Province', 'State']
@@ -362,6 +363,9 @@ def delete_project(
     rel_ids = [r['ID'] for r in rel_rows]
     if rel_ids:
         delete_expertise_process(cur, rel_ids, 'delete_proj', 'proj')
+    
+    # prod relationship management
+    cur.execute(f"UPDATE proj_prod_relationship SET Relationship_Status='2' WHERE Proj_ID=%s", (Proj_ID,))
     
     conn.commit()
     cur.close()
@@ -832,6 +836,73 @@ def select_content(
         row = cur.fetchone()
         
         return row
+    finally:
+        cur.close()
+        conn.close()
+
+@router.post("/insert-proj-relationship", status_code=201)
+def insert_prod_proj_relationship(
+    Prod_ID: int = Form(...),
+    Proj_ID: int = Form(...),
+    Anchor: str = Form(None),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        Anchor = None if not Anchor else Anchor
+        cur.execute("INSERT INTO proj_prod_relationship (Proj_ID, Prod_ID, Anchor, Relationship_Status) VALUES (%s, %s, %s, %s)"
+                    , (Proj_ID, Prod_ID, Anchor, '1'))
+        conn.commit()
+        return {"insert id": cur.lastrowid, "proj_id": Proj_ID, "prod_id": Prod_ID, "anchor": Anchor}
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Insert Project Prod Relationship failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+@router.post("/delete-proj-relationship", status_code=204)  # รองรับ form
+def delete_prod_proj_relationship(
+    relationship_id: int = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    
+    try:
+        cur.execute(f"delete from proj_prod_relationship WHERE ID=%s", (relationship_id,))
+        conn.commit()
+        return "Delete Complete"
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Delete Project Prod Relationship failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+@router.get("/select-prod/{Proj_ID}", status_code=200)
+def select_prod(
+    Proj_ID: int,
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        base_sql = """SELECT
+                        a.ID
+                        , d.Name_EN as Product_Name
+                        , a.Anchor
+                    from proj_prod_relationship a
+                    join projects b on a.Proj_ID = b.ID and b.Proj_Status <> '2'
+                    join product_entities d on a.Prod_ID = d.ID and d.Entity_Status <> '2'
+                    where a.Proj_ID = %s
+                    and a.Relationship_Status = '1'"""
+        
+        cur.execute(base_sql, (Proj_ID,))
+        rows = cur.fetchall()
+
+        return rows
     finally:
         cur.close()
         conn.close()
