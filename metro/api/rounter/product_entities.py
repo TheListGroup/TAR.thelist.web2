@@ -5,7 +5,8 @@ from function_utility import to_problem, apply_etag_and_return, etag_of, require
 from function_query_helper import update_entity_parent, check_location, check_country, url_work, _select_full_prod_item, recover_proj_prod_relationship, _select_all_location \
     , _select_country, _select_prod_category, _insert_cover_record, _save_image_file, _update_cover_record, _delete_cover, _get_image_display_order, _insert_image_record \
     , _update_image_record, _update_image_order, _delete_image, insert_file, _delete_resource, delete_entity_parent, get_prod_resource, assign_category_bulk \
-    , _select_full_cate_item, _update_category_order, _select_full_attr_def_item, _update_attr_order, _select_full_attr_definition_item
+    , _select_full_cate_item, _update_category_order, _select_full_attr_def_item, _update_attr_order, _select_full_attr_definition_item \
+    , get_prod_specification, _update_prod_spec_order
 from typing import Optional, Tuple, Dict, Any, List
 import os
 from datetime import datetime
@@ -880,12 +881,21 @@ def select_prod_categories(
         cur.close()
         conn.close()
 
+@router.get("/select-category/{Cate_ID}", status_code=200)
+def select_category(
+    Cate_ID: int,
+    _ = Depends(get_current_user),
+):
+    category = _select_full_cate_item(Cate_ID)
+    return category if category else None
+
 @router.post("/insert-category", status_code=201)
 def insert_category(
     response: Response,
     Parent_ID: str = Form(None),
     Code: str = Form(...),
     Name_EN: str = Form(...),
+    Name_Use: str = Form(None),
     Name_TH: str = Form(None),
     Categories_Status: str = Form('1'),
     _ = Depends(get_current_user),
@@ -893,6 +903,7 @@ def insert_category(
     try:
         Parent_ID = None if not Parent_ID else int(Parent_ID)
         Code = None if not Code else Code
+        Name_Use = None if not Name_Use else Name_Use
         Name_TH = None if not Name_TH else Name_TH
     except ValueError:
         return to_problem(422, "Validation Error", "Invalid column format for some field.")
@@ -906,9 +917,9 @@ def insert_category(
             cur.execute("select max(Categories_Order) as max_order from product_entities_categories where Parent_ID is null")
         order = cur.fetchone()
         
-        sql = f"""INSERT INTO product_entities_categories (Parent_ID, Code, Category_ENName, Category_THName, Categories_Order, Categories_Status)
-                VALUES (%s, %s, %s, %s, %s, %s)"""
-        cur.execute(sql, (Parent_ID, Code, Name_EN, Name_TH, order[0]+1 if order[0] else 1, Categories_Status))
+        sql = f"""INSERT INTO product_entities_categories (Parent_ID, Code, Category_ENName, Category_UseName, Category_THName, Categories_Order, Categories_Status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)"""
+        cur.execute(sql, (Parent_ID, Code, Name_EN, Name_Use, Name_TH, order[0]+1 if order[0] else 1, Categories_Status))
         new_id = cur.lastrowid
         conn.commit()
     except Exception as e:
@@ -930,6 +941,7 @@ def update_category(
     Parent_ID: str = Form(None),
     Code: str = Form(...),
     Name_EN: str = Form(...),
+    Name_Use: str = Form(None),
     Name_TH: str = Form(None),
     Categories_Status: str = Form('1'),
     if_match: Optional[str] = Header(None, alias="If-Match"),
@@ -938,6 +950,7 @@ def update_category(
     try:
         Parent_ID = None if not Parent_ID else int(Parent_ID)
         Code = None if not Code else Code
+        Name_Use = None if not Name_Use else Name_Use
         Name_TH = None if not Name_TH else Name_TH
     except ValueError:
         return to_problem(422, "Validation Error", "Invalid number format for a numeric field.")
@@ -959,11 +972,12 @@ def update_category(
             SET Parent_ID=%s,
                 Code=%s,
                 Category_ENName=%s,
+                Category_UseName=%s,
                 Category_THName=%s,
                 Categories_Status=%s
             WHERE ID=%s
         """
-        cur.execute(sql, (Parent_ID, Code, Name_EN, Name_TH, Categories_Status, Cate_ID))
+        cur.execute(sql, (Parent_ID, Code, Name_EN, Name_Use, Name_TH, Categories_Status, Cate_ID))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -1102,6 +1116,12 @@ def update_spec_definition(
             raise HTTPException(status_code=status.HTTP_412_PRECONDITION_FAILED,
                             detail="ETag mismatch. Please GET latest and retry with If-Match.")
         
+        if Options_List:
+            actual_list = [item.strip() for item in Options_List.split(';') if item.strip()]
+            json_to_db = json.dumps(actual_list)
+        else:
+            json_to_db = None
+        
         sql = f"""
             UPDATE product_attribute_definitions
             SET Display_Name=%s,
@@ -1113,7 +1133,7 @@ def update_spec_definition(
                 Attr_Status=%s
             WHERE ID=%s
         """
-        cur.execute(sql, (Display_Name, Key_Name, Remark, Data_Type, Unit, Options_List, Attr_Status, Spec_ID))
+        cur.execute(sql, (Display_Name, Key_Name, Remark, Data_Type, Unit, json_to_db, Attr_Status, Spec_ID))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -1180,7 +1200,7 @@ def select_all_attr(
             SELECT
             *
             FROM product_attribute_definitions 
-            WHERE Attr_Status <> '2'
+            WHERE Attr_Status = '1'
             ORDER BY Display_Order
         """
 
@@ -1245,3 +1265,95 @@ def insert_prod_attribute(
     finally:
         cur.close()
         conn.close()
+
+@router.get("/select-prod-attribute/all/{Prod_ID}", status_code=200)
+def select_all_prod_attribute(
+    Prod_ID: int,
+    _ = Depends(get_current_user),
+):
+    spec = get_prod_specification(Prod_ID, "prod")
+    return spec
+
+@router.get("/select-prod-attribute/{Relationship_ID}", status_code=200)
+def select_prod_attribute(
+    Relationship_ID: int,
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        row = get_prod_specification(Relationship_ID, "rel")
+        return row
+    
+    finally:
+        cur.close()
+        conn.close()
+
+@router.post("/update-prod-attribute-order", status_code=200)
+def update_prod_attribute_order(
+    Display_Order: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        order_list = Display_Order.split(",")
+        results = []
+        for i, order in enumerate(order_list):
+            meta = _update_prod_spec_order(cur = cur, spec_id=int(order), display_order=i+1)
+            results.append({"data": meta})
+        conn.commit()
+
+        return {"items": results}
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Update Product Specification Order failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
+@router.post("/update-prod-attribute", status_code=200)
+def update_prod_attribute(
+    response: Response,
+    Spec_ID: int = Form(...),
+    Attr_Value: str = Form(...),
+    Relationship_Status: str = Form('1'),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        sql = f"""
+            UPDATE product_attribute_values
+            SET Attr_Value=%s,
+                Relationship_Status=%s
+            WHERE ID=%s
+        """
+        cur.execute(sql, (Attr_Value, Relationship_Status, Spec_ID))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Update Product Specification failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+    
+    row = get_prod_specification(Spec_ID,"rel")
+    return apply_etag_and_return(response, row)
+
+@router.post("/delete-prod-attribute", status_code=204)  # รองรับ form
+def delete_prod_attribute(
+    Relationship_ID: int = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    cur.execute(f"Delete from product_attribute_values WHERE ID=%s", (Relationship_ID,))
+    affected = cur.rowcount
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    if affected == 0:
+        return to_problem(404, "Not Found", f"Product Specification' {Relationship_ID}' was not found.")
