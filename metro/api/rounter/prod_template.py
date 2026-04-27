@@ -3,7 +3,7 @@ from db import get_db
 from auth import get_current_user  # << ใช้ตัวเดิม (รองรับ ADMIN_TOKEN หรือ JWT)
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
 from function_query_helper import _select_full_prod_item, _select_prod_cover, get_gallery, get_prod_resource, get_prod_parent, prod_url_gen \
-    , get_breadcrumbs, get_prod_proj, get_entity_context, get_supplier, get_prod_specification
+    , get_breadcrumbs, get_prod_proj, get_entity_context, get_supplier, get_prod_all_specification
 from typing import Optional, Tuple, Dict, Any, List
 
 router = APIRouter()
@@ -20,7 +20,11 @@ def prod_template_data(
     
     prod_type = prod_data["Entity_Type"]
     if prod_type != 'suppliers':
-        data["Breadcrumb"] = get_breadcrumbs(prod_data["Family_IDS"], Prod_ID)
+        family_data = get_breadcrumbs(prod_data["Family_IDS"], Prod_ID)
+        data["Breadcrumb"] = family_data if family_data else None
+        if prod_type == 'series':
+            data["Brand_Name"] = family_data[-2]["Name"].upper()
+            data["Brand_URL"] = family_data[-2]["Url"].upper()
     
     data["Type"] = prod_type
     data["Prod_ID"] = Prod_ID
@@ -66,7 +70,7 @@ def prod_template_data(
     data["Content"] = {"Topic": f"ABOUT THIS {prod_type[:-1].upper()}", "Content": prod_data["Content"]} if prod_data["Content"] else None
     
     if prod_type == 'products':
-        data["spec"] = get_prod_specification(Prod_ID, 'prod')
+        data["spec"] = get_prod_all_specification(Prod_ID)
     
     gallery = get_gallery(Prod_ID, 'prod')
     data["Gallery"] = gallery
