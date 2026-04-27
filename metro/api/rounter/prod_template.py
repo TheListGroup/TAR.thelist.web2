@@ -3,7 +3,7 @@ from db import get_db
 from auth import get_current_user  # << ใช้ตัวเดิม (รองรับ ADMIN_TOKEN หรือ JWT)
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
 from function_query_helper import _select_full_prod_item, _select_prod_cover, get_gallery, get_prod_resource, get_prod_parent, prod_url_gen \
-    , get_breadcrumbs, get_prod_proj, get_entity_context
+    , get_breadcrumbs, get_prod_proj, get_entity_context, get_supplier, get_prod_specification
 from typing import Optional, Tuple, Dict, Any, List
 
 router = APIRouter()
@@ -60,13 +60,13 @@ def prod_template_data(
         data["Facebook"] = prod_data["FB_Link"]
         data["Instagram"] = prod_data["IG_Link"]
         data["Line"] = prod_data["Line_Link"]
-        data["Website"] = prod_data["YT_Link"]
-        data["Youtube"] = prod_data["Website"]
+        data["Website"] = prod_data["Website"]
+        data["Youtube"] = prod_data["YT_Link"]
         data["Url"] = prod_url_gen(prod_type, prod_data["Entity_URL_Tag"])
     data["Content"] = {"Topic": f"ABOUT THIS {prod_type[:-1].upper()}", "Content": prod_data["Content"]} if prod_data["Content"] else None
     
     if prod_type == 'products':
-        data["spec"] = None
+        data["spec"] = get_prod_specification(Prod_ID, 'prod')
     
     gallery = get_gallery(Prod_ID, 'prod')
     data["Gallery"] = gallery
@@ -89,6 +89,10 @@ def prod_template_data(
             product_list.append({"Title": f"PRODUCTS FROM {prod_data['Name_EN'].upper()}"
                                 , "Product": product_data})
         data["Product"] = product_list if product_list else None
+    
+    if prod_type != 'suppliers':
+        supp_id = prod_data["Family_IDS"].split(",")[0]
+        data["Supplier"] = get_supplier(supp_id)
     
     return data
 
