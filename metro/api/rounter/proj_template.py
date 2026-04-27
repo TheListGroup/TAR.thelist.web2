@@ -3,7 +3,7 @@ from db import get_db
 from auth import get_current_user  # << ใช้ตัวเดิม (รองรับ ADMIN_TOKEN หรือ JWT)
 from function_utility import to_problem, apply_etag_and_return, etag_of, require_row_exists
 from function_query_helper import _select_full_proj_item, _select_proj_cate, _select_proj_cover, proj_lastest_date \
-                                , proj_responsibilities, proj_content, proj_gallery, get_similar_proj, proj_more
+                                , proj_responsibilities, proj_content, proj_gallery, get_similar_proj, proj_more, get_prod_subparent
 from typing import Optional, Tuple, Dict, Any, List
 
 router = APIRouter()
@@ -477,6 +477,13 @@ def proj_template_data(
     
     gallery = proj_gallery(Proj_ID)
     data["Gallery"] = gallery
+    
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    prod = get_prod_subparent(cur2, Proj_ID, None, None)
+    data["Product"] = prod
+    cur2.close()
+    conn2.close()
     
     similar_proj = get_similar_proj(profs, Proj_ID) if profs else None
     data["Similar_Proj"] = similar_proj
