@@ -1504,7 +1504,7 @@ def _select_full_prod_item(prod_id: int) -> Dict[str, Any] | None:
                                                                     , 'Category_THName', b.Category_THName
                                                                     , 'Category_Order', b.Categories_Order
                                                                     , 'Relationship_Order', a.Relationship_Order)) as Category_Group
-                            , GROUP_CONCAT(b.Category_UseName ORDER BY a.Relationship_Order ASC SEPARATOR '|') as Category_Text
+                            , GROUP_CONCAT(b.Category_UseName ORDER BY a.Relationship_Order ASC SEPARATOR ' | ') as Category_Text
                         FROM product_entities_categories_relationship a
                         join product_entities_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
                         where a.Relationship_Status = '1'
@@ -1733,7 +1733,7 @@ def get_supplier(supp_id: int):
                                 GROUP BY parent.ID) count_help
                     on a.ID = count_help.parent_id
                     left join (SELECT a.Entity_ID
-                                    , GROUP_CONCAT(upper(b.Category_UseName) ORDER BY a.Relationship_Order ASC SEPARATOR '|') as Category_Text
+                                    , GROUP_CONCAT(upper(b.Category_UseName) ORDER BY a.Relationship_Order ASC SEPARATOR ' | ') as Category_Text
                                 FROM product_entities_categories_relationship a
                                 join product_entities_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
                                 where a.Relationship_Status = '1'
