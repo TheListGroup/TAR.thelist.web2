@@ -1244,22 +1244,15 @@ def insert_prod_attribute(
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""select Entity_ID, Attr_Def_ID from product_attribute_values 
-                    where Entity_ID = %s and Attr_Def_ID = %s and Relationship_Status = '1'"""
-                    , (Prod_ID, Attr_ID))
-        check = cur.fetchall()
-        if not check:
-            cur.execute("select max(Display_Order) as max_order from product_attribute_values where Entity_ID = %s and Relationship_Status = '1'", (Prod_ID,))
-            order = cur.fetchone()
-            
-            cur.execute("INSERT INTO product_attribute_values (Entity_ID, Attr_Def_ID, Attr_Value, Display_Order, Relationship_Status) VALUES (%s, %s, %s, %s, %s)"
-                        , (Prod_ID, Attr_ID, Attr_Value, order[0]+1 if order[0] else 1, Relationship_Status))
-            new_id = cur.lastrowid
-            conn.commit()
+        cur.execute("select max(Display_Order) as max_order from product_attribute_values where Entity_ID = %s and Relationship_Status = '1'", (Prod_ID,))
+        order = cur.fetchone()
         
-            return {"insert id": new_id}
-        else:
-            return {"Message": "Already Have This Relationship"}
+        cur.execute("INSERT INTO product_attribute_values (Entity_ID, Attr_Def_ID, Attr_Value, Display_Order, Relationship_Status) VALUES (%s, %s, %s, %s, %s)"
+                    , (Prod_ID, Attr_ID, Attr_Value, order[0]+1 if order[0] else 1, Relationship_Status))
+        new_id = cur.lastrowid
+        conn.commit()
+    
+        return {"insert id": new_id}
     except Exception as e:
         conn.rollback()
         return to_problem(409, "Conflict", f"Insert Product Attribute Relationship failed: {e}")
