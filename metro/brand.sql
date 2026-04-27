@@ -109,7 +109,8 @@ CREATE TABLE product_attribute_values (
     Entity_ID INT UNSIGNED NOT NULL,
     Attr_Def_ID INT UNSIGNED NOT NULL,
     Attr_Value Text NOT NULL,              -- เก็บค่าจริง (String, Number หรือ Array)
-    Display_Order INT NOT NULL,           -- ลำดับการแสดงผลในหน้า Product สามารถเปลี่ยนเองได้
+    Sub_Display_Order INT NOT NULL,
+    Display_Order INT,           -- ลำดับการแสดงผลในหน้า Product สามารถเปลี่ยนเองได้
     Relationship_Status ENUM('0','1','2') NOT NULL,
     FOREIGN KEY (Entity_ID) REFERENCES product_entities(ID),
     FOREIGN KEY (Attr_Def_ID) REFERENCES product_attribute_definitions(ID)
