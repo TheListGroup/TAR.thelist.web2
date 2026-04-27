@@ -1616,7 +1616,7 @@ def get_prod_parent(family_id: str):
         if row["Entity_Type"] != 'products':
             parent_entry["Type"] = row["Entity_Type"]
             parent_entry["Brief_Description"] = row["Brief_Description"]
-            sub_parent = get_prod_subparent(cur2, row["Family_IDS"], row["Normal_Name"])
+            sub_parent = get_prod_subparent(cur2, row["Family_IDS"], row["Normal_Name"], 'prod')
             parent_entry["Parent"] = sub_parent if sub_parent else None
             parent_list.append(parent_entry)
         else:
@@ -1626,25 +1626,42 @@ def get_prod_parent(family_id: str):
     conn2.close()
     return parent_list, prod_list
 
-def get_prod_subparent(cur, family_id: str, name: str):
+def get_prod_subparent(cur, ref_id: str, name: str, state: str):
     parent_list = []
-    cur.execute(
-        f"""SELECT a.ID
-                , a.Entity_Type
-                , a.Name_EN
-                , a.Entity_URL_Tag
-            from product_entities a
-            where a.Top_Parent = %s
-            and a.Entity_Status = '1'
-            order by a.Entity_Type""",
-        (family_id,)
-    )
+    if state == 'prod':
+        cur.execute(
+            f"""SELECT a.ID
+                    , a.Entity_Type
+                    , a.Name_EN
+                    , a.Entity_URL_Tag
+                from product_entities a
+                where a.Top_Parent = %s
+                and a.Entity_Status = '1'
+                order by a.Entity_Type""",
+            (ref_id,)
+        )
+    else:
+        cur.execute(
+            f"""SELECT a.ID
+                    , a.Entity_Type
+                    , c.Name_EN as Head_Name
+                    , a.Name_EN
+                    , a.Entity_URL_Tag
+                from product_entities a
+                join proj_prod_relationship b on a.ID = b.Prod_ID and b.Relationship_Status = '1'
+                left join product_entities c on a.Parent_ID = c.ID and c.Entity_Status = '1' and c.Entity_Type <> 'suppliers'
+                where b.Proj_ID = %s
+                and a.Entity_Status = '1'
+                order by a.Entity_Type""",
+            (ref_id,)
+        )
+    
     rows = cur.fetchall()
     for row in rows:
         url_tag = prod_url_gen(row["Entity_Type"], row["Entity_URL_Tag"])
         parent_entry = {
             "Type": row["Entity_Type"],
-            "Head_Name": name,
+            "Head_Name": name if state else row["Head_Name"],
             "Name": row["Name_EN"],
             "Url": url_tag
         }
@@ -2016,12 +2033,35 @@ def get_prod_specification(ref_id: int, state: str):
         query = "and a.ID = %s"
     
     cur2.execute(f"""
-                    SELECT a.ID, b.Key_Name, b.Display_Name, b.Unit, b.Data_Type, a.Attr_Value, a.Relationship_Status, a.Attr_Def_ID
+                    SELECT a.ID, b.Key_Name, b.Display_Name, b.Unit, b.Data_Type, a.Attr_Value, a.Relationship_Status, a.Attr_Def_ID, a.Sub_Display_Order, a.Display_Order
                     FROM product_attribute_values a
                     join product_attribute_definitions b on a.Attr_Def_ID = b.ID and b.Attr_Status = '1'
                     where a.Relationship_Status <> '2'
                     {query}
-                    order by a.ID
+                    order by a.Display_Order, a.Sub_Display_Order
+                """, (ref_id,))
+    rows = cur2.fetchall()
+    
+    cur2.close()
+    conn2.close()
+    return rows if rows else None
+
+def get_prod_all_specification(ref_id: int):
+    conn2 = get_db()
+    cur2 = conn2.cursor(dictionary=True)
+    
+    cur2.execute("""
+                    select b.Display_Name as Display
+                        , b.Key_Name
+                        , group_concat(a.Attr_Value order by a.Display_Order, a.Sub_Display_Order separator ';') as Value
+                        , b.Unit
+                        , b.Display_Order as 'Order'
+                        , b.Data_Type
+                    FROM product_attribute_values a
+                    join product_attribute_definitions b on a.Attr_Def_ID = b.ID and b.Attr_Status = '1'
+                    where a.Relationship_Status = '1'
+                    and a.Entity_ID = %s
+                    group by b.Display_Name, b.Key_Name
                 """, (ref_id,))
     rows = cur2.fetchall()
     
@@ -2032,12 +2072,26 @@ def get_prod_specification(ref_id: int, state: str):
 def _update_prod_spec_order(cur, spec_id, display_order: int) -> dict:
     sql = f"""
         UPDATE product_attribute_values
-        SET Display_Order=%s
+        SET Sub_Display_Order=%s
         WHERE ID=%s
     """
     cur.execute(sql, (display_order, spec_id))
     
     return {
         "spec_id": spec_id,
+        "sub_display_order": display_order,
+    }
+
+def _update_prod_spec_group_order(cur, entity_id, attr_id, display_order: int) -> dict:
+    sql = f"""
+        UPDATE product_attribute_values
+        SET Display_Order=%s
+        WHERE Entity_ID=%s and Attr_Def_ID=%s
+    """
+    cur.execute(sql, (display_order, entity_id, attr_id))
+    
+    return {
+        "entity_id": entity_id,
+        "attr_id": attr_id,
         "display_order": display_order,
     }
