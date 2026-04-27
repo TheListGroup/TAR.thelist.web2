@@ -179,6 +179,7 @@ def build_master_queue(items: List[Dict[str, Any]], item_type: str) -> List[Dict
                 if photo_index < len(photos):
                     master_queue.append({
                         "type": item_type,
+                        "sub_type": current_item.get("sub_type"),
                         "category": current_item.get("category"),
                         "category_hierarchy": current_item.get("full_path"),
                         "item_title": current_item.get("title"),
@@ -187,6 +188,7 @@ def build_master_queue(items: List[Dict[str, Any]], item_type: str) -> List[Dict
                         "brief": current_item["brief"],
                         "logo": current_item["logo"],
                         "link": current_item["url"],
+                        "count_prod": current_item["count_prod"],
                         "all_cate": current_item["head_cate"],
                         "photo_data": photos[photo_index],
                         "photo_rank": photo_index 
@@ -416,7 +418,7 @@ def create_image_group(state):
                     )
                     -- [4] จัดเรียงแบบยกแผง
                     SELECT Full_Path, category, Proj_ID, Image_URL, img_group_priority, Proj_Name, prof_name, Brief_Description, Logo, Link
-                        , All_Category
+                        , All_Category, null as sub_type, null as count_prod
                     FROM RankedData
                     WHERE category_rank = 1 and Image_URL is not null
                     ORDER BY 
@@ -569,7 +571,7 @@ def create_image_group(state):
                     )
                     -- [4] จัดเรียงแบบยกแผง
                     SELECT Full_Path, expertise, Prof_ID, Image_URL, img_group_priority, prof_name, experience_category, Brief_Description, Logo, Link
-                        , All_Category
+                        , All_Category, null as sub_type, null as count_prod
                     FROM RankedData
                     WHERE category_rank = 1 and Image_URL is not null
                     ORDER BY 
@@ -579,7 +581,201 @@ def create_image_group(state):
                         prof_name,
                         internal_img_order"""
     elif state == "prod":
-        pass
+        id_key = "Entity_ID"
+        cat_key = "category"
+        name_key = "prod_name"
+        sub_name_key = 'sub_name'
+        query = f"""WITH RECURSIVE CategoryHierarchy AS (
+                        -- จุดเริ่มต้น: หาหมวดหมู่ที่สูงที่สุด (Parent_ID IS NULL)
+                        SELECT 
+                            ID, 
+                            Category_UseName, 
+                            Parent_ID, 
+                            CONCAT('PRODUCT > ', upper(Category_UseName)) as Full_Path,
+                            1 as Depth
+                        FROM product_entities_categories
+                        WHERE Parent_ID IS NULL
+                        and Categories_Status = '1'
+                        UNION ALL
+                        -- วิ่งไล่ลงไปหาลูกหลาน
+                        SELECT 
+                            child.ID, 
+                            child.Category_UseName, 
+                            child.Parent_ID, 
+                            CONCAT(parent.Full_Path, ' > ', upper(child.Category_UseName)),
+                            parent.Depth + 1
+                        FROM product_entities_categories child
+                        JOIN CategoryHierarchy parent ON child.Parent_ID = parent.ID
+                    ), 
+                    CombinedImages AS (
+                        -- [1] ก้อน Cover
+                        SELECT
+                            ch.Full_Path,
+                            a.Category_UseName as category,
+                            c.Entity_ID,
+                            ifnull(cov2.Image_URL, cov1.Image_URL) as Image_URL,
+                            c.Relationship_Order,
+                            0 as img_group_priority, -- กลุ่มที่ 0: Cover ทั้งหมด
+                            h.Name_EN as prod_name,
+                            if(h.Entity_Type = 'suppliers'
+                                , cate.Category
+                                , if(parent.Entity_Type = 'suppliers'
+                                    , NULL
+                                    , parent.Name_EN)) as sub_name,
+                            0 as internal_img_order,
+                            null as Brief_Description,
+                            if(h.Entity_Type = 'suppliers', h.Logo_URL, null) as Logo,
+                            CASE WHEN h.Entity_Type = 'suppliers' THEN concat('supp','/',h.Entity_URL_Tag)
+                                WHEN h.Entity_Type = 'products' THEN concat('prod','/',h.Entity_URL_Tag)
+                                ELSE concat('brand','/',h.Entity_URL_Tag)
+                            END AS Link,
+                            category_helper.All_Category_JSON as All_Category,
+                            h.Entity_Type as sub_type,
+                            count_help.count_prod
+                        FROM CategoryHierarchy ch
+                        JOIN product_entities_categories a on ch.ID = a.ID
+                        JOIN product_entities_categories_relationship c ON a.ID = c.Category_ID AND c.Relationship_Status = '1'
+                        left JOIN product_cover cov1 ON c.Entity_ID = cov1.Entity_ID AND cov1.Image_Status = '1' and cov1.Ratio_Type = '16:9' and cov1.Image_URL like '%{1920}%'
+                        left JOIN product_cover cov2 ON c.Entity_ID = cov2.Entity_ID AND cov2.Image_Status = '1' and cov2.Ratio_Type = '9:16'
+                        JOIN product_entities h ON c.Entity_ID = h.ID AND h.Entity_Status = '1' and h.Entity_Type not in ('products','series')
+                        left JOIN product_entities parent ON h.Parent_ID = parent.ID AND parent.Entity_Status = '1'
+                        join prod_url pd_url on h.ID = pd_url.ID and pd_url.Url_Status = 1
+                        left join (SELECT 
+                                        parent.ID as parent_id, 
+                                        COUNT(child.ID) as count_prod
+                                    FROM product_entities parent
+                                    LEFT JOIN product_entities child ON FIND_IN_SET(parent.ID, child.Family_IDS) > 0
+                                        AND child.Entity_Type = 'products' -- นับเฉพาะตัวที่เป็นสินค้า
+                                        AND child.Entity_Status = '1'
+                                    WHERE parent.Entity_Status = '1'
+                                    GROUP BY parent.ID) count_help
+                        on c.Entity_ID = count_help.parent_id
+                        LEFT JOIN (SELECT 
+                                        d.Entity_ID,
+                                        CONCAT('[',concat_ws(',',
+                                            GROUP_CONCAT(DISTINCT '"', c.Category_UseName, '"' SEPARATOR ','), 
+                                            GROUP_CONCAT(DISTINCT '"', b.Category_UseName, '"' SEPARATOR ','), 
+                                            GROUP_CONCAT(DISTINCT '"', a.Category_UseName, '"' SEPARATOR ',')),
+                                        ']') as All_Category_JSON
+                                    FROM product_entities_categories a
+                                    left join product_entities_categories b on a.Parent_ID = b.ID and b.Categories_Status = '1'
+                                    left join product_entities_categories c on b.Parent_ID = c.ID and c.Categories_Status = '1'
+                                    JOIN product_entities_categories_relationship d ON a.ID = d.Category_ID AND d.Relationship_Status = '1'
+                                    WHERE a.Categories_Status = '1'
+                                    GROUP BY d.Entity_ID) category_helper
+                        ON c.Entity_ID = category_helper.Entity_ID
+                        LEFT JOIN (
+                            select Entity_ID
+                                , GROUP_CONCAT(UPPER(Category_UseName) ORDER BY Relationship_Order SEPARATOR '|') AS Category
+                            from (
+                                SELECT
+                                    a.Entity_ID,
+                                    a.Category_ID,
+                                    b.Category_UseName,
+                                    a.Relationship_Order,
+                                    ROW_NUMBER() OVER (PARTITION BY a.Entity_ID ORDER BY a.Relationship_Order) as row_num 
+                                FROM product_entities_categories_relationship a
+                                join product_entities_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
+                                WHERE a.Relationship_Status = '1') aaa
+                            WHERE row_num <= 3
+                            group by Entity_ID) cate
+                        ON c.Entity_ID = cate.Entity_ID
+                        WHERE a.Categories_Status = '1'
+                        UNION ALL
+                        -- [2] ก้อน Gallery
+                        SELECT
+                            ch.Full_Path,
+                            a.Category_UseName as category,
+                            c.Entity_ID,
+                            REPLACE(gal.Image_URL, '1440', '800') as Image_URL,
+                            c.Relationship_Order,
+                            1 as img_group_priority, -- กลุ่มที่ 1: Gallery ทั้งหมด (ต่อท้าย Cover)
+                            h.Name_EN as prod_name,
+                            if(h.Entity_Type = 'suppliers'
+                                , cate.Category
+                                , if(parent.Entity_Type = 'suppliers'
+                                    , NULL
+                                    , parent.Name_EN)) as sub_name,
+                            gal.Image_Order as internal_img_order,
+                            null as Brief_Description,
+                            if(h.Entity_Type = 'suppliers', h.Logo_URL, null) as Logo,
+                            CASE WHEN h.Entity_Type = 'suppliers' THEN concat('supp','/',h.Entity_URL_Tag)
+                                WHEN h.Entity_Type = 'products' THEN concat('prod','/',h.Entity_URL_Tag)
+                                ELSE concat('brand','/',h.Entity_URL_Tag)
+                            END AS Link,
+                            category_helper.All_Category_JSON as All_Category,
+                            h.Entity_Type as sub_type,
+                            count_help.count_prod
+                        FROM CategoryHierarchy ch
+                        JOIN product_entities_categories a on ch.ID = a.ID
+                        JOIN product_entities_categories_relationship c ON a.ID = c.Category_ID AND c.Relationship_Status = '1'
+                        left JOIN product_gallery gal ON c.Entity_ID = gal.Entity_ID AND gal.Image_Status = '1'
+                        JOIN product_entities h ON c.Entity_ID = h.ID AND h.Entity_Status = '1' and h.Entity_Type not in ('products','series')
+                        left JOIN product_entities parent ON h.Parent_ID = parent.ID AND parent.Entity_Status = '1'
+                        join prod_url pd_url on h.ID = pd_url.ID and pd_url.Url_Status = 1
+                        left join (SELECT 
+                                        parent.ID as parent_id, 
+                                        COUNT(child.ID) as count_prod
+                                    FROM product_entities parent
+                                    LEFT JOIN product_entities child ON FIND_IN_SET(parent.ID, child.Family_IDS) > 0
+                                        AND child.Entity_Type = 'products' -- นับเฉพาะตัวที่เป็นสินค้า
+                                        AND child.Entity_Status = '1'
+                                    WHERE parent.Entity_Status = '1'
+                                    GROUP BY parent.ID) count_help
+                        on c.Entity_ID = count_help.parent_id
+                        LEFT JOIN (SELECT 
+                                        d.Entity_ID,
+                                        CONCAT('[',concat_ws(',',
+                                            GROUP_CONCAT(DISTINCT '"', c.Category_UseName, '"' SEPARATOR ','), 
+                                            GROUP_CONCAT(DISTINCT '"', b.Category_UseName, '"' SEPARATOR ','), 
+                                            GROUP_CONCAT(DISTINCT '"', a.Category_UseName, '"' SEPARATOR ',')),
+                                        ']') as All_Category_JSON
+                                    FROM product_entities_categories a
+                                    left join product_entities_categories b on a.Parent_ID = b.ID and b.Categories_Status = '1'
+                                    left join product_entities_categories c on b.Parent_ID = c.ID and c.Categories_Status = '1'
+                                    JOIN product_entities_categories_relationship d ON a.ID = d.Category_ID AND d.Relationship_Status = '1'
+                                    WHERE a.Categories_Status = '1'
+                                    GROUP BY d.Entity_ID) category_helper
+                        ON c.Entity_ID = category_helper.Entity_ID
+                        LEFT JOIN (
+                            select Entity_ID
+                                , GROUP_CONCAT(UPPER(Category_UseName) ORDER BY Relationship_Order SEPARATOR '|') AS Category
+                            from (
+                                SELECT
+                                    a.Entity_ID,
+                                    a.Category_ID,
+                                    b.Category_UseName,
+                                    a.Relationship_Order,
+                                    ROW_NUMBER() OVER (PARTITION BY a.Entity_ID ORDER BY a.Relationship_Order) as row_num 
+                                FROM product_entities_categories_relationship a
+                                join product_entities_categories b on a.Category_ID = b.ID and b.Categories_Status = '1'
+                                WHERE a.Relationship_Status = '1') aaa
+                            WHERE row_num <= 3
+                            group by Entity_ID) cate
+                        ON c.Entity_ID = cate.Entity_ID
+                        WHERE a.Categories_Status = '1'
+                    ),
+                    RankedData AS (
+                        -- [3] คัดหมวดหมู่ที่ซ้ำออก (เลือกหมวดหมู่ลำดับดีที่สุดสำหรับรูปนั้นๆ)
+                        SELECT *,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY img_group_priority, Image_URL, Entity_ID -- แยก Rank ระหว่าง Cover/Gallery
+                                ORDER BY Relationship_Order
+                            ) as category_rank,
+                            COUNT(*) OVER (PARTITION BY Entity_ID) as photo_count_per_prod
+                        FROM CombinedImages
+                    )
+                    -- [4] จัดเรียงแบบยกแผง
+                    SELECT Full_Path, category, Entity_ID, Image_URL, img_group_priority, prod_name, sub_name, Brief_Description, Logo, Link
+                        , All_Category, sub_type, count_prod
+                    FROM RankedData
+                    WHERE category_rank = 1 and Image_URL is not null
+                    ORDER BY 
+                        img_group_priority, -- สำคัญสุด: 0 (Cover ทุกตัว) จะมาก่อน 1 (Gallery ทุกตัว)
+                        Relationship_Order,       -- เรียงตามหมวดหมู่ใหญ่
+                        photo_count_per_prod DESC, -- หัวใจสำคัญ: ใครรูปเยอะสุดในหมวดหมู่ ขึ้นก่อน
+                        prod_name,
+                        internal_img_order"""
     
     cur.execute(query)
     rows = cur.fetchall()
@@ -609,11 +805,13 @@ def create_image_group(state):
             
             project_obj = {
                 "category": cat,
+                "sub_type": row["sub_type"],
                 "title": f"{cat.upper()} {cat_counters[cat]}",
                 "name": name,
                 "brief": row["Brief_Description"],
                 "logo": row["Logo"],
                 "url": row["Link"],
+                "count_prod": row["count_prod"],
                 "full_path": hierarchy_json_str,
                 "head_cate": row["All_Category"],
                 "contributors": []
@@ -667,12 +865,12 @@ if __name__ == "__main__":
     
     projects, proj_cat = create_image_group("proj")
     profs, prof_cat = create_image_group("prof")
-    products, prod_cat = [], []
+    products, prod_cat = create_image_group("prod")
     
     CATEGORY_ORDER = {
         'project': proj_cat,
         'professional': prof_cat,
-        'product': []
+        'product': prod_cat
     }
 
     print(f"Data generated. Projects: {len(projects)}, Profs: {len(profs)}, Products: {len(products)}")
@@ -692,6 +890,7 @@ if __name__ == "__main__":
     data_list = []
     for i, image in enumerate(master_feed):
         image_type = image["type"].upper()
+        image_subtype = image["sub_type"]
         image_category = image["category"].upper()
         image_category_path = image["category_hierarchy"]
         image_name = image["name"]
@@ -700,17 +899,18 @@ if __name__ == "__main__":
         image_brief = image["brief"]
         image_path = image["photo_data"]
         url = image["link"]
+        count_prod = image["count_prod"]
         all_cate = image["all_cate"]
         image_order = i + 1
-        data_list.append((image_type, image_category, image_category_path, image_name, image_sub_name, image_logo
-                        , image_brief, image_path, image_order, url, all_cate))
+        data_list.append((image_type, image_subtype, image_category, image_category_path, image_name, image_sub_name, image_logo
+                        , image_brief, image_path, image_order, url, count_prod, all_cate))
     
     try:
         cur.execute("truncate home_image")
-        cur.executemany(f"""insert into home_image (Card_Type, Category, Category_Hierarchy, Card_Name, Card_Sub_Name
+        cur.executemany(f"""insert into home_image (Card_Type, Card_Sub_Type, Category, Category_Hierarchy, Card_Name, Card_Sub_Name
                         , Card_Logo, Brief_Description, Image_URL, Image_Order, Card_Url, Last_Updated_Date
-                        , All_Category)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s)""", data_list)
+                        , Count_Prod, All_Category)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP, %s, %s)""", data_list)
         conn.commit()
     except Exception as e:
         print(f"Error inserting data: {e}")
