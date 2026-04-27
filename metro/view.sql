@@ -9,3 +9,8 @@ left join (select Prof_ID
                         group by Prof_ID) d
 on c.ID = d.Prof_ID
 group by b.Prof_ID;
+
+create or replace view prod_url as
+SELECT DISTINCT a.ID, if(a.Content is not null, 1, 0) as Content, if(b.Entity_ID is not null, 1, 0) as cover, if(a.Content is not null and b.Entity_ID is not null, 1, 0) as Url_Status
+from product_entities a
+left join product_cover b on a.ID = b.Entity_ID and b.Image_Status = '1';
