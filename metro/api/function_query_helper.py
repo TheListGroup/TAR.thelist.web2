@@ -1578,8 +1578,10 @@ def prod_url_gen(prod_type: str, url_tag: str):
         tag_url = 'supp'
     elif prod_type == 'products':
         tag_url = 'prod'
-    else:
+    elif prod_type == 'brands':
         tag_url = 'brand'
+    else:
+        tag_url = 'series'
     result_url = tag_url + '/' + url_tag
     return result_url
 
@@ -2063,6 +2065,7 @@ def get_prod_all_specification(ref_id: int):
                     join product_attribute_definitions b on a.Attr_Def_ID = b.ID and b.Attr_Status = '1'
                     where a.Relationship_Status = '1'
                     and a.Entity_ID = %s
+                    and a.Attr_Value is not null
                     group by b.Display_Name, b.Key_Name
                 """, (ref_id,))
     rows = cur2.fetchall()
@@ -2096,4 +2099,20 @@ def _update_prod_spec_group_order(cur, entity_id, attr_id, display_order: int) -
         "entity_id": entity_id,
         "attr_id": attr_id,
         "display_order": display_order,
+    }
+
+def transfer_attribute(cur, attr_id: str, current_id: int, sub_order: int):
+    cur.execute("""
+                insert into product_attribute_values 
+                (Entity_ID, Attr_Def_ID, Display_Order, Sub_Display_Order, Relationship_Status)
+                values 
+                (%s, %s, %s, %s, %s)
+                """, (current_id, attr_id, sub_order
+                    , None , '1')) #max_order["Max_Sub_Display_Order"]+order if max_order["Max_Sub_Display_Order"] else 1
+
+    return {
+        "entity_id": current_id,
+        "attr_id": attr_id,
+        "display_order": sub_order,
+        "sub_display_order": None,
     }
