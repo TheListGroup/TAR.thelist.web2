@@ -108,7 +108,7 @@ CREATE TABLE product_attribute_values (
     ID INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     Entity_ID INT UNSIGNED NOT NULL,
     Attr_Def_ID INT UNSIGNED NOT NULL,
-    Attr_Value Text NOT NULL,              -- เก็บค่าจริง (String, Number หรือ Array)
+    Attr_Value Text NULL,              -- เก็บค่าจริง (String, Number หรือ Array)
     Sub_Display_Order INT NOT NULL,
     Display_Order INT,           -- ลำดับการแสดงผลในหน้า Product สามารถเปลี่ยนเองได้
     Relationship_Status ENUM('0','1','2') NOT NULL,
