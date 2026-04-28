@@ -6,7 +6,7 @@ from function_query_helper import update_entity_parent, check_location, check_co
     , _select_country, _select_prod_category, _insert_cover_record, _save_image_file, _update_cover_record, _delete_cover, _get_image_display_order, _insert_image_record \
     , _update_image_record, _update_image_order, _delete_image, insert_file, _delete_resource, delete_entity_parent, get_prod_resource, assign_category_bulk \
     , _select_full_cate_item, _update_category_order, _select_full_attr_def_item, _update_attr_order, _select_full_attr_definition_item \
-    , get_prod_specification, _update_prod_spec_order
+    , get_prod_specification, _update_prod_spec_order, _update_prod_spec_group_order, transfer_attribute
 from typing import Optional, Tuple, Dict, Any, List
 import os
 from datetime import datetime
@@ -1244,10 +1244,11 @@ def insert_prod_attribute(
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("select max(Display_Order) as max_order from product_attribute_values where Entity_ID = %s and Relationship_Status = '1'", (Prod_ID,))
+        cur.execute("""select max(Sub_Display_Order) as max_order from product_attribute_values 
+                    where Entity_ID = %s and Relationship_Status = '1' and Attr_Def_ID = %s""", (Prod_ID, Attr_ID))
         order = cur.fetchone()
         
-        cur.execute("INSERT INTO product_attribute_values (Entity_ID, Attr_Def_ID, Attr_Value, Display_Order, Relationship_Status) VALUES (%s, %s, %s, %s, %s)"
+        cur.execute("INSERT INTO product_attribute_values (Entity_ID, Attr_Def_ID, Attr_Value, Sub_Display_Order, Relationship_Status) VALUES (%s, %s, %s, %s, %s)"
                     , (Prod_ID, Attr_ID, Attr_Value, order[0]+1 if order[0] else 1, Relationship_Status))
         new_id = cur.lastrowid
         conn.commit()
@@ -1306,6 +1307,29 @@ def update_prod_attribute_order(
         cur.close()
         conn.close()
 
+@router.post("/update-prod-attribute-group-order", status_code=200)
+def update_prod_attribute_group_order(
+    Display_Order: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    try:
+        order_list = Display_Order.split(";")
+        results = []
+        for i, order in enumerate(order_list[1:]):
+            meta = _update_prod_spec_group_order(cur = cur, entity_id=order_list[0], attr_id=int(order), display_order=i+1)
+            results.append({"data": meta})
+        conn.commit()
+
+        return {"items": results}
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Update Product Specification Group Order failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
+
 @router.post("/update-prod-attribute", status_code=200)
 def update_prod_attribute(
     response: Response,
@@ -1351,3 +1375,40 @@ def delete_prod_attribute(
 
     if affected == 0:
         return to_problem(404, "Not Found", f"Product Specification' {Relationship_ID}' was not found.")
+
+@router.post("/transfer-prod-attribute", status_code=200)
+def transfer_prod_attribute(
+    Prod_ID: int = Form(...),
+    Values: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    
+    try:
+        prod_data = _select_full_prod_item(Prod_ID)
+        top_parent = prod_data["Top_Parent"]
+        cur.execute(f"Select ID from product_entities WHERE Top_Parent=%s and ID <> %s", (top_parent, Prod_ID))
+        other_entities = cur.fetchall()
+        
+        value_list = Values.split(";")
+        results = []
+        for prod in other_entities:
+            cur.execute(f"""Select max(Display_Order) as Max_Display_Order, max(Sub_Display_Order) as Max_Sub_Display_Order 
+                        from product_attribute_values WHERE Entity_ID=%s""", (prod["ID"],))
+            max_order = cur.fetchone()
+            for i, value in enumerate(value_list, 1):
+                if max_order["Max_Display_Order"]:
+                    meta = transfer_attribute(cur = cur, attr_id=value, current_id=prod["ID"], sub_order=max_order["Max_Display_Order"]+i if max_order["Max_Display_Order"] else 1)
+                else:
+                    meta = transfer_attribute(cur = cur, attr_id=value, current_id=prod["ID"], sub_order=i)
+                results.append({"data": meta})
+        conn.commit()
+
+        return results
+    except Exception as e:
+        conn.rollback()
+        return to_problem(409, "Conflict", f"Transfer Product Specification failed: {e}")
+    finally:
+        cur.close()
+        conn.close()
