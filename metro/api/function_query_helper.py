@@ -2101,18 +2101,17 @@ def _update_prod_spec_group_order(cur, entity_id, attr_id, display_order: int) -
         "display_order": display_order,
     }
 
-def transfer_attribute(cur, attr_id: str, current_id: int, sub_order: int):
+def transfer_attribute(cur, attr_id: str, current_id: int, display_order: int, sub_order: int):
     cur.execute("""
                 insert into product_attribute_values 
                 (Entity_ID, Attr_Def_ID, Display_Order, Sub_Display_Order, Relationship_Status)
                 values 
                 (%s, %s, %s, %s, %s)
-                """, (current_id, attr_id, sub_order
-                    , None , '1')) #max_order["Max_Sub_Display_Order"]+order if max_order["Max_Sub_Display_Order"] else 1
-
+                """, (current_id, attr_id, display_order, sub_order, '1'))
+    
     return {
         "entity_id": current_id,
         "attr_id": attr_id,
-        "display_order": sub_order,
-        "sub_display_order": None,
+        "display_order": display_order,
+        "sub_display_order": sub_order,
     }
