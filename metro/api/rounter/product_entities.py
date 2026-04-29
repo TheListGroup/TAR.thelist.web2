@@ -1398,10 +1398,9 @@ def transfer_prod_attribute(
                         from product_attribute_values WHERE Entity_ID=%s""", (prod["ID"],))
             max_order = cur.fetchone()
             for i, value in enumerate(value_list, 1):
-                if max_order["Max_Display_Order"]:
-                    meta = transfer_attribute(cur = cur, attr_id=value, current_id=prod["ID"], sub_order=max_order["Max_Display_Order"]+i if max_order["Max_Display_Order"] else 1)
-                else:
-                    meta = transfer_attribute(cur = cur, attr_id=value, current_id=prod["ID"], sub_order=i)
+                meta = transfer_attribute(cur = cur, attr_id=value, current_id=prod["ID"]
+                                        , display_order=max_order["Max_Display_Order"]+i if max_order["Max_Display_Order"] else 1
+                                        , sub_order=max_order["Max_Sub_Display_Order"]+i if max_order["Max_Sub_Display_Order"] else 1)
                 results.append({"data": meta})
         conn.commit()
 
