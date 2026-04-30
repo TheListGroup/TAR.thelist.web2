@@ -9,7 +9,7 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import shutil
 
-#UPLOAD_DIR = "/var/www/html/metro/uploads"
+#PLOAD_DIR = "/var/www/html/metro/uploads"
 UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
@@ -1644,17 +1644,51 @@ def get_prod_subparent(cur, ref_id: str, name: str, state: str):
         )
     else:
         cur.execute(
-            f"""SELECT a.ID
-                    , a.Entity_Type
-                    , c.Name_EN as Head_Name
-                    , a.Name_EN
-                    , a.Entity_URL_Tag
-                from product_entities a
-                join proj_prod_relationship b on a.ID = b.Prod_ID and b.Relationship_Status = '1'
-                left join product_entities c on a.Parent_ID = c.ID and c.Entity_Status = '1' and c.Entity_Type <> 'suppliers'
-                where b.Proj_ID = %s
-                and a.Entity_Status = '1'
-                order by a.Entity_Type""",
+            f"""WITH RECURSIVE EntityHierarchy AS (
+                SELECT 
+                    a.id AS Original_ID,
+                    p.parent_id,
+                    p.id AS Current_ID,
+                    p.entity_type AS Current_Type,
+                    p.name_en AS Current_Name,
+                    1 AS Depth
+                FROM product_entities a
+                JOIN product_entities p ON a.parent_id = p.id
+                WHERE a.entity_status = '1'
+                UNION ALL
+                SELECT 
+                    eh.Original_ID,
+                    p.parent_id,
+                    p.id,
+                    p.entity_type,
+                    p.name_en,
+                    eh.Depth + 1
+                FROM EntityHierarchy eh
+                JOIN product_entities p ON eh.parent_id = p.id
+                WHERE eh.Current_Type = 'series'
+                AND p.entity_status = '1'
+            )
+            SELECT 
+                a.ID,
+                a.Entity_Type,
+                h.Head_Name,
+                a.Name_EN,
+                a.Entity_URL_Tag
+            FROM product_entities a
+            JOIN proj_prod_relationship b ON a.ID = b.Prod_ID AND b.Relationship_Status = '1'
+            LEFT JOIN (
+                SELECT Original_ID, Current_Name AS Head_Name
+                FROM (
+                    SELECT *, 
+                        ROW_NUMBER() OVER(PARTITION BY Original_ID ORDER BY Depth DESC) as rn
+                    FROM EntityHierarchy
+                    WHERE Current_Type <> 'series'
+                ) tmp
+                WHERE rn = 1
+            ) h ON a.ID = h.Original_ID
+            WHERE b.Proj_ID = %s
+            AND a.Entity_Status = '1'
+            ORDER BY a.Entity_Type""",
             (ref_id,)
         )
     
