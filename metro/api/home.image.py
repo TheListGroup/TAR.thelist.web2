@@ -3,9 +3,27 @@ import random
 from typing import List, Dict, Any
 import json
 from db import get_db
+#import mysql.connector
 
 conn = get_db()
 cur = conn.cursor(dictionary=True)
+
+#host = '159.223.76.99'
+#user = 'real-research2'
+#password = 'DQkuX/vgBL(@zRRa'
+
+#try:
+#    conn = mysql.connector.connect(
+#        host = host,
+#        user = user,
+#        password = password,
+#        database = 'metro'
+#    )
+#    if conn.is_connected():
+#        print('Connected to MySQL server')
+#        cur = conn.cursor(dictionary=True)
+#except Exception as e:
+#    print(f'Error: {e}')
 
 # =====================================================================
 # CORE ALGORITHM FUNCTIONS
@@ -301,7 +319,8 @@ def create_image_group(state):
                                 JOIN professionals h2 ON e2.Prof_ID = h2.ID and h2.Prof_Status = '1'
                                 WHERE d2.Proj_ID = c.Proj_ID 
                                 AND d2.Relationship_Status = '1'
-                                ORDER BY f2.Expertise_Order ASC, isnull(d2.Content), h2.Name_EN
+                                and d2.Content is not null
+                                ORDER BY f2.Expertise_Order ASC
                                 LIMIT 1) as prof_name,
                             0 as internal_img_order,
                             proj.Name_EN as Proj_Name,
@@ -608,7 +627,39 @@ def create_image_group(state):
                             parent.Depth + 1
                         FROM product_entities_categories child
                         JOIN CategoryHierarchy parent ON child.Parent_ID = parent.ID
-                    ), 
+                    ),
+                    HeadNameHierarchy AS (
+                        SELECT 
+                            a.id AS Original_ID,
+                            p.parent_id,
+                            p.id AS Current_ID,
+                            p.entity_type AS Current_Type,
+                            p.name_en AS Current_Name,
+                            1 AS Depth
+                        FROM product_entities a
+                        JOIN product_entities p ON a.parent_id = p.id
+                        WHERE a.entity_status = '1'
+                        UNION ALL
+                        SELECT 
+                            eh.Original_ID,
+                            p.parent_id,
+                            p.id,
+                            p.entity_type,
+                            p.name_en,
+                            eh.Depth + 1
+                        FROM HeadNameHierarchy eh
+                        JOIN product_entities p ON eh.parent_id = p.id
+                        WHERE eh.Current_Type = 'series' AND p.entity_status = '1'
+                    ),
+                    FinalHeadNames AS (
+                        SELECT Original_ID, Current_Name as Head_Name
+                        FROM (
+                            SELECT *, ROW_NUMBER() OVER (PARTITION BY Original_ID ORDER BY Depth DESC) as rn
+                            FROM HeadNameHierarchy
+                            WHERE Current_Type <> 'series'
+                        ) tmp
+                        WHERE rn = 1
+                    ),
                     CombinedImages AS (
                         -- [1] ก้อน Cover
                         SELECT
@@ -619,11 +670,10 @@ def create_image_group(state):
                             c.Relationship_Order,
                             0 as img_group_priority, -- กลุ่มที่ 0: Cover ทั้งหมด
                             h.Name_EN as prod_name,
-                            if(h.Entity_Type = 'suppliers'
-                                , cate.Category
-                                , if(parent.Entity_Type = 'suppliers'
-                                    , NULL
-                                    , parent.Name_EN)) as sub_name,
+                            CASE 
+                                WHEN h.Entity_Type = 'suppliers' THEN cate.Category
+                                ELSE fhn.Head_Name
+                            END as sub_name,
                             0 as internal_img_order,
                             null as Brief_Description,
                             if(h.Entity_Type = 'suppliers', h.Logo_URL, null) as Logo,
@@ -640,7 +690,7 @@ def create_image_group(state):
                         left JOIN product_cover cov1 ON c.Entity_ID = cov1.Entity_ID AND cov1.Image_Status = '1' and cov1.Ratio_Type = '16:9' and cov1.Image_URL like '%{1920}%'
                         left JOIN product_cover cov2 ON c.Entity_ID = cov2.Entity_ID AND cov2.Image_Status = '1' and cov2.Ratio_Type = '9:16'
                         JOIN product_entities h ON c.Entity_ID = h.ID AND h.Entity_Status = '1' and h.Entity_Type not in ('products','series')
-                        left JOIN product_entities parent ON h.Parent_ID = parent.ID AND parent.Entity_Status = '1'
+                        LEFT JOIN FinalHeadNames fhn ON h.ID = fhn.Original_ID
                         join prod_url pd_url on h.ID = pd_url.ID and pd_url.Url_Status = 1
                         left join (SELECT 
                                         parent.ID as parent_id, 
@@ -689,11 +739,10 @@ def create_image_group(state):
                             c.Relationship_Order,
                             1 as img_group_priority, -- กลุ่มที่ 1: Gallery ทั้งหมด (ต่อท้าย Cover)
                             h.Name_EN as prod_name,
-                            if(h.Entity_Type = 'suppliers'
-                                , cate.Category
-                                , if(parent.Entity_Type = 'suppliers'
-                                    , NULL
-                                    , parent.Name_EN)) as sub_name,
+                            CASE 
+                                WHEN h.Entity_Type = 'suppliers' THEN cate.Category
+                                ELSE fhn.Head_Name
+                            END as sub_name,
                             gal.Image_Order as internal_img_order,
                             null as Brief_Description,
                             if(h.Entity_Type = 'suppliers', h.Logo_URL, null) as Logo,
@@ -709,7 +758,7 @@ def create_image_group(state):
                         JOIN product_entities_categories_relationship c ON a.ID = c.Category_ID AND c.Relationship_Status = '1'
                         left JOIN product_gallery gal ON c.Entity_ID = gal.Entity_ID AND gal.Image_Status = '1'
                         JOIN product_entities h ON c.Entity_ID = h.ID AND h.Entity_Status = '1' and h.Entity_Type not in ('products','series')
-                        left JOIN product_entities parent ON h.Parent_ID = parent.ID AND parent.Entity_Status = '1'
+                        LEFT JOIN FinalHeadNames fhn ON h.ID = fhn.Original_ID
                         join prod_url pd_url on h.ID = pd_url.ID and pd_url.Url_Status = 1
                         left join (SELECT 
                                         parent.ID as parent_id, 
