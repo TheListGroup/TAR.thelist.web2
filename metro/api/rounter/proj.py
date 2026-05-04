@@ -745,7 +745,7 @@ async def delete_image_record(
 
 # ====================== SELECT BY KEY ======================
 @router.get("/images/select/{Relationship_ID}", status_code=200)
-def select_all_prof_images(
+def select_all_proj_images(
     Relationship_ID: int,
     _ = Depends(get_current_user),
 ):
