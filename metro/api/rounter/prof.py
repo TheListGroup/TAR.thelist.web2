@@ -857,7 +857,7 @@ def update_prof_member(
 
 # ============ Delete Member ============
 @router.post("/delete-member", status_code=204)
-async def delete_image_record(
+async def delete_member(
     Mem_ID: int = Form(...),
     _ = Depends(get_current_user),
 ):
