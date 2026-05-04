@@ -17,7 +17,7 @@ import json
 router = APIRouter()
 TABLE = "product_entities"
 ALLOWED_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".jfif"}
-#UPLOAD_DIR = "/var/www/html/metro/uploads/product"
+#UPLOAD_DIR = "/var/www/html/metropolis/uploads/product"
 UPLOAD_DIR = "/var/www/html/uploads/product"
 
 # ----------------------------------------------------- INSERT --------------------------------------------------------------------------------------------
