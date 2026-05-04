@@ -9,7 +9,7 @@ from io import BytesIO
 from PIL import Image, ImageOps
 import shutil
 
-#PLOAD_DIR = "/var/www/html/metro/uploads"
+#UPLOAD_DIR = "/var/www/html/metropolis/uploads"
 UPLOAD_DIR = "/var/www/html/uploads"
 
 def check_location(cur, location, location_type):
@@ -1051,7 +1051,7 @@ def get_similar_proj(prof_ids: list, proj_id: int) -> Dict[str, Any] | None:
                 , c.Logo_URL as Image
                 , prof_ext.Expertise as Res
                 , prof_exp.Categories as Experience
-                , if(f.Url_Status = 1, concat('metro/prof/', c.Prof_URL_Tag), null) as Prof_Url
+                , if(f.Url_Status = 1, concat('metropolis/prof/', c.Prof_URL_Tag), null) as Prof_Url
             from proj_prof_relationship a
             join prof_expertise_relationship b on a.Prof_Expertise_Relationship_ID = b.ID
             join professionals c on b.Prof_ID = c.ID
