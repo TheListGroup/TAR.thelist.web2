@@ -76,7 +76,7 @@ if len(not_match_list) > 0:
 if log:
     query = """INSERT INTO realist_log (Type, SQL_State, Message, Location)
             VALUES (%s, %s, %s, %s)"""
-    val = (0, '00000', f'Insert_Match {m} Rows and Insert_Not_Match {n} Rows', 'Plus_Insert_Project_After_Manual')
+    val = (0, '00000', f'Insert_Match {m} Rows and Insert_Not_Match {n} Rows', 'Bangkok_Residence_Insert_Project_After_Manual')
     try:
         cursor.execute(query,val)
         connection.commit()
