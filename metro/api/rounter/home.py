@@ -4,6 +4,7 @@ from auth import get_current_user  # << ใช้ตัวเดิม (รอ�
 from typing import Optional, Tuple, Dict, Any, List
 import json
 from collections import defaultdict
+from function_query_helper import _select_full_proj_item, _select_proj_cate, _select_full_prof_item, _select_full_prod_item
 
 router = APIRouter()
 
@@ -317,3 +318,67 @@ def home_template_image(
     conn.close()
     
     return {"Total": total, "Last_Updated_Date": rows[0]["Last_Updated_Date"] if rows else None, "Images": output_images}
+
+@router.post("/title-description", status_code=201)
+def title_description(
+    Ref_ID: int = Form(...),
+    Ref_Type: str = Form(...),
+    _ = Depends(get_current_user),
+):
+    conn = get_db()
+    cur = conn.cursor(dictionary=True)
+    
+    if Ref_Type == 'proj':
+        data = _select_full_proj_item(Ref_ID)
+        name = data.get("Name_EN")
+        
+        category_data = _select_proj_cate(Ref_ID, 'header')
+        sub = category_data.get("Category_Header", None).capitalize() if category_data else None
+        
+        brief = data.get("Brief_Description", None)
+        cur.execute("""SELECT Proj_ID, Prof_ID, Content
+                        FROM (
+                            SELECT 
+                                a.Proj_ID,
+                                b.Prof_ID,
+                                a.Content,
+                                ROW_NUMBER() OVER (PARTITION BY a.Proj_ID ORDER BY c.Expertise_Order) as rank_num
+                            FROM proj_prof_relationship a
+                            JOIN prof_expertise_relationship b ON a.Prof_Expertise_Relationship_ID = b.ID AND b.Relationship_Status = '1'
+                            JOIN prof_expertise c ON b.Expertise_ID = c.ID AND c.Expertise_Status = '1'
+                            WHERE a.Content IS NOT NULL
+                        ) ranked_content
+                        WHERE rank_num = 1
+                        and Proj_ID = %s""", (Ref_ID,))
+        row = cur.fetchone()
+        content = row["Content"] if row else None
+    elif Ref_Type == 'prof':
+        data = _select_full_prof_item(Ref_ID)
+        name = data.get("Name_EN")
+        
+        sub = data.get("Expertise_Text", None).split(", ")[0].capitalize() if data.get("Expertise_Text", None) else None
+        
+        brief = data.get("Brief_Description", None)
+        content = data.get("Content", None)
+    else:
+        data = _select_full_prod_item(Ref_ID)
+        name = data.get("Name_EN")
+        
+        sub = data.get("Entity_Type").capitalize()
+        sub = sub[:-1]
+        
+        brief = data.get("Brief_Description", None)
+        content = data.get("Content", None)
+    
+    merger_list = [name, sub, 'METROPOLIS']
+    clean_list = [str(item) for item in merger_list if item]
+    template_title = " | ".join(clean_list)
+    
+    if brief:
+        des = brief
+    else:
+        des = content
+    return {
+        "Title": template_title,
+        "Description": des
+    }
