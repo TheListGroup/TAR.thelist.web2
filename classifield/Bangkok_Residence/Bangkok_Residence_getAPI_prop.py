@@ -5,14 +5,14 @@ import json
 #property_file_path = r'/home/gitdev/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_PROPERTY.json'
 property_file_path = r'/home/gitprod/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_PROPERTY.json'
 
-api_url = "https://www.thebkkresidence.com/api/property-list"
+api_url = "https://marketplace.thebkkresidence.com/api/partner/realdata/latest"
 
 data_list = []
 response = requests.get(api_url)
 if response.status_code == 200:
     data = response.json()
     for item in data:
-        if item['Active_Status'] == '1':
+        if item['Active_Status'] == True:
             project_info = {
             'Ref_ID': item['Ref_ID'],
             'Project_ID': item['Project_ID'],

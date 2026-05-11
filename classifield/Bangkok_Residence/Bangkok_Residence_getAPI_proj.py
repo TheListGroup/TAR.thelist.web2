@@ -5,11 +5,11 @@ import json
 #project_file_path = r"/home/gitdev/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_PROJECT.json"
 project_file_path = r"/home/gitprod/ta_python/classifield/Bangkok_Residence/Bangkok_Residence_PROJECT.json"
 
-api_url = 'https://www.thebkkresidence.com/api/project-list'
+api_url = 'https://marketplace.thebkkresidence.com/api/partner/realdata_project/latest'
 response = requests.get(api_url)
 if response.status_code == 200:
     data = response.json()
-    project_list = data.get('data', [])
+    project_list = data #data.get('data', [])
     with open(project_file_path, 'w', encoding='utf-8') as json_file:
         json.dump(project_list, json_file, ensure_ascii=False, indent=4)
 else:
