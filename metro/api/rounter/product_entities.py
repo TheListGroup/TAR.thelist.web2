@@ -1244,12 +1244,24 @@ def insert_prod_attribute(
     conn = get_db()
     cur = conn.cursor()
     try:
-        cur.execute("""select max(Sub_Display_Order) as max_order from product_attribute_values 
+        cur.execute("""select COALESCE(MAX(Sub_Display_Order), 0) as max_order from product_attribute_values 
                     where Entity_ID = %s and Relationship_Status = '1' and Attr_Def_ID = %s""", (Prod_ID, Attr_ID))
-        order = cur.fetchone()
+        row = cur.fetchone()
+        sub_order = row[0]
         
-        cur.execute("INSERT INTO product_attribute_values (Entity_ID, Attr_Def_ID, Attr_Value, Sub_Display_Order, Relationship_Status) VALUES (%s, %s, %s, %s, %s)"
-                    , (Prod_ID, Attr_ID, Attr_Value, order[0]+1 if order[0] else 1, Relationship_Status))
+        cur.execute("""select COALESCE(MAX(Display_Order), 0) as max_order from product_attribute_values 
+                    where Entity_ID = %s and Relationship_Status = '1'""", (Prod_ID,))
+        row = cur.fetchone()
+        max_order = row[0]
+        
+        cur.execute("""select COALESCE(MAX(Display_Order), 0) as max_order from product_attribute_values 
+                    where Entity_ID = %s and Relationship_Status = '1' and Attr_Def_ID = %s""", (Prod_ID, Attr_ID))
+        row = cur.fetchone()
+        order = row[0] if row[0] >= 1 else max_order + 1
+        
+        cur.execute("""INSERT INTO product_attribute_values (Entity_ID, Attr_Def_ID, Attr_Value, Sub_Display_Order, Display_Order, Relationship_Status) 
+                    VALUES (%s, %s, %s, %s, %s, %s)"""
+                    , (Prod_ID, Attr_ID, Attr_Value, sub_order+1, order, Relationship_Status))
         new_id = cur.lastrowid
         conn.commit()
     
