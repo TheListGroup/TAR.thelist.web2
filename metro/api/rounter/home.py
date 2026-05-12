@@ -365,7 +365,6 @@ def title_description(
         name = data.get("Name_EN")
         
         sub = data.get("Entity_Type").capitalize()
-        sub = sub[:-1]
         
         brief = data.get("Brief_Description", None)
         content = data.get("Content", None)
