@@ -5,7 +5,7 @@ from typing import Optional, Tuple, Dict, Any, List
 import json
 from collections import defaultdict
 from function_query_helper import _select_full_proj_item, _select_proj_cate, _select_full_prof_item, _select_full_prod_item, _select_proj_cover \
-    , _select_prof_cover
+    , _select_prof_cover, _select_prod_cover
 
 router = APIRouter()
 
@@ -385,5 +385,5 @@ def title_description(
     return {
         "Title": template_title,
         "Description": des,
-        "og image": cover_data
+        "og-image": cover_data
     }
