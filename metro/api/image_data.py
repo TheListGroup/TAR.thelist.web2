@@ -50,7 +50,6 @@ def scan_folders(base_path, category_name):
 
     # Loop ผ่านโฟลเดอร์ ID
     for id_folder in base.iterdir():
-        allow = False
         if id_folder.is_dir():
             main_id = id_folder.name
             if category_name == 'project':
@@ -66,13 +65,13 @@ def scan_folders(base_path, category_name):
                 if not sub_path.exists():
                     continue
                 
-                if category_name in ['project', 'product'] and sub == 'cover':
-                    allow = True
-                
                 # ค้นหารูปภาพ (รวมถึงในโฟลเดอร์ซ้อนของ proj/gallery ด้วย)
                 # rglob('*') จะช่วยหาไฟล์ลึกกี่ชั้นก็ได้
                 for file in sub_path.rglob('*'):
-                    if sub == 'gallery' and "-H-1440" in str(file.absolute()):
+                    allow = False
+                    if category_name in ['project', 'product'] and sub == 'cover':
+                        allow = True
+                    elif sub == 'gallery' and "-H-1440" in str(file.absolute()):
                         allow = True
                     elif category_name == 'professional' and sub == 'cover' and "-H-420" not in str(file.absolute()):
                         allow = True
