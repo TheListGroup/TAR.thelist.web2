@@ -34,12 +34,35 @@ cur.execute(f"""select "{BASE_URL}" as path, CURRENT_DATE as lastmod, 'daily' as
                 union select "{BASE_URL}/proj" as path, CURRENT_DATE as lastmod, 'daily' as changefreq, 1.0 as priority
                 union select "{BASE_URL}/prof" as path, CURRENT_DATE as lastmod, 'daily' as changefreq, 1.0 as priority
                 union select "{BASE_URL}/prod" as path, CURRENT_DATE as lastmod, 'daily' as changefreq, 1.0 as priority
-                union select concat("{BASE_URL}/proj/", Proj_URL_Tag) as path, date(Last_Updated_Date) as lastmod
-                        , 'weekly' as changefreq, 0.8 as priority from projects where Proj_Status = '1'
-                union select concat("{BASE_URL}/prod/", Entity_URL_Tag) as path, date(Last_Updated_Date) as lastmod
-                        , 'weekly' as changefreq, 0.6 as priority from product_entities where Entity_Status = '1'
-                union select concat("{BASE_URL}/prof/", Prof_URL_Tag) as path, date(Last_Updated_Date) as lastmod
-                        , 'weekly' as changefreq, 0.4 as priority from professionals where Prof_Status = '1';
+                union 
+                    select concat("{BASE_URL}/proj/", a.Proj_URL_Tag) as path
+                        , date(a.Last_Updated_Date) as lastmod
+                        , 'weekly' as changefreq, 0.8 as priority 
+                    from projects a
+                    JOIN (  SELECT Proj_ID, Prof_ID, Content
+                            FROM (
+                                SELECT 
+                                    a.Proj_ID,
+                                    b.Prof_ID,
+                                    a.Content,
+                                    ROW_NUMBER() OVER (PARTITION BY a.Proj_ID ORDER BY c.Expertise_Order) as rank_num
+                                FROM proj_prof_relationship a
+                                JOIN prof_expertise_relationship b ON a.Prof_Expertise_Relationship_ID = b.ID AND b.Relationship_Status = '1'
+                                JOIN prof_expertise c ON b.Expertise_ID = c.ID AND c.Expertise_Status = '1'
+                                WHERE a.Content IS NOT NULL) ranked_content
+                            WHERE rank_num = 1) content_helper
+                    ON a.ID = content_helper.Proj_ID
+                    where a.Proj_Status = '1'
+                union select concat("{BASE_URL}/prod/", a.Entity_URL_Tag) as path, date(a.Last_Updated_Date) as lastmod
+                        , 'weekly' as changefreq, 0.6 as priority 
+                        from product_entities a
+                        join prod_url pd_url on a.ID = pd_url.ID and pd_url.Url_Status = 1 
+                        where a.Entity_Status = '1'
+                union select concat("{BASE_URL}/prof/", a.Prof_URL_Tag) as path, date(a.Last_Updated_Date) as lastmod
+                        , 'weekly' as changefreq, 0.4 as priority 
+                        from professionals a
+                        join prof_url pf_url on a.ID = pf_url.Prof_ID and pf_url.Url_Status = 1 
+                        where a.Prof_Status = '1'
             """)
 rows = cur.fetchall()
 for row in rows:
