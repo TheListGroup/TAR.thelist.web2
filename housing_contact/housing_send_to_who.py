@@ -63,23 +63,23 @@ if sql:
             for row_housing in result_housing:
                 send_to_who_list.append((row_housing['Housing_Code'], row['Dev_Agent_Contact_ID'], 32, 32))
     
-    list_dev_1 = [{"Dev_Agent_Contact_ID": 1, "Housing_Code": "HP1497"}, {"Dev_Agent_Contact_ID": 1, "Housing_Code": "HP0072"}]
+    #list_dev_1 = [{"Dev_Agent_Contact_ID": 1, "Housing_Code": "HP1497"}, {"Dev_Agent_Contact_ID": 1, "Housing_Code": "HP0072"}]
     
-    list_dev_2 = [{"Dev_Agent_Contact_ID": 2, "Housing_Code": "HP1691"}]
+    #list_dev_2 = [{"Dev_Agent_Contact_ID": 2, "Housing_Code": "HP1691"}]
     
-    list_dev_3 = [{"Dev_Agent_Contact_ID": 3, "Housing_Code": "HP2718"}, {"Dev_Agent_Contact_ID": 3, "Housing_Code": "HP2354"}]
+    #list_dev_3 = [{"Dev_Agent_Contact_ID": 3, "Housing_Code": "HP2718"}, {"Dev_Agent_Contact_ID": 3, "Housing_Code": "HP2354"}]
     
-    list_dev_4 = [{"Dev_Agent_Contact_ID": 4, "Housing_Code": "HP6521"}, {"Dev_Agent_Contact_ID": 4, "Housing_Code": "HP0385"}]
+    #list_dev_4 = [{"Dev_Agent_Contact_ID": 4, "Housing_Code": "HP6521"}, {"Dev_Agent_Contact_ID": 4, "Housing_Code": "HP0385"}]
     
-    list_dev_5 = [{"Dev_Agent_Contact_ID": 5, "Housing_Code": "HP6514"}, {"Dev_Agent_Contact_ID": 5, "Housing_Code": "HP6515"}]
+    #list_dev_5 = [{"Dev_Agent_Contact_ID": 5, "Housing_Code": "HP6514"}, {"Dev_Agent_Contact_ID": 5, "Housing_Code": "HP6515"}]
     
-    list_dev_6 = [{"Dev_Agent_Contact_ID": 6, "Housing_Code": "HP1108"}, {"Dev_Agent_Contact_ID": 6, "Housing_Code": "HP6240"}]
+    #list_dev_6 = [{"Dev_Agent_Contact_ID": 6, "Housing_Code": "HP1108"}, {"Dev_Agent_Contact_ID": 6, "Housing_Code": "HP6240"}]
     
-    list_dev_7 = [{"Dev_Agent_Contact_ID": 7, "Housing_Code": "HP1013"}, {"Dev_Agent_Contact_ID": 7, "Housing_Code": "HP0234"}, {"Dev_Agent_Contact_ID": 7, "Housing_Code": "HP0431"}]
+    #list_dev_7 = [{"Dev_Agent_Contact_ID": 7, "Housing_Code": "HP1013"}, {"Dev_Agent_Contact_ID": 7, "Housing_Code": "HP0234"}, {"Dev_Agent_Contact_ID": 7, "Housing_Code": "HP0431"}]
     
-    list_dev_8 = [{"Dev_Agent_Contact_ID": 8, "Housing_Code": "HP6520"}]
+    #list_dev_8 = [{"Dev_Agent_Contact_ID": 8, "Housing_Code": "HP6520"}]
     
-    list_dev_9 = [{"Dev_Agent_Contact_ID": 9, "Housing_Code": "HP0001"}]
+    #list_dev_9 = [{"Dev_Agent_Contact_ID": 9, "Housing_Code": "HP0001"}]
     
     #list_dev_10 = [{"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP1132"}, {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP1630"}, {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP1419"}
     #            , {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP1298"}, {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP1204"}, {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP6513"}
@@ -88,10 +88,10 @@ if sql:
     #            , {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP0087"}, {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP0151"}, {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP0236"}
     #            , {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP6517"}, {"Dev_Agent_Contact_ID": 10, "Housing_Code": "HP6518"}]
     
-    dev_fix_list = [list_dev_1, list_dev_2, list_dev_3, list_dev_4, list_dev_5, list_dev_6, list_dev_7, list_dev_8, list_dev_9]
-    for dev_fix in dev_fix_list:
-        for row in dev_fix:
-            send_to_who_list.append((row['Housing_Code'], row['Dev_Agent_Contact_ID'], 32, 32))
+    #dev_fix_list = [list_dev_1, list_dev_2, list_dev_3, list_dev_4, list_dev_5, list_dev_6, list_dev_7, list_dev_8, list_dev_9]
+    #for dev_fix in dev_fix_list:
+    #    for row in dev_fix:
+    #        send_to_who_list.append((row['Housing_Code'], row['Dev_Agent_Contact_ID'], 32, 32))
             
     #------------------------------------ AGENT SECTION ---------------------------------------
     """
