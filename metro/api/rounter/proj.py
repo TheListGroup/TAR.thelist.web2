@@ -507,6 +507,7 @@ async def upload_and_record_cover(
         file_bytes = await file.read()
         if ext not in ALLOWED_EXT:
             raise HTTPException(status_code=400, detail=f"File type not allowed: {ext}")
+        _delete_cover(cur, Proj_ID, cover_size_list[0]["ratio"], "proj")
         for cover_size in cover_size_list:
             size = cover_size["size"]
             ratio = cover_size["ratio"]
@@ -542,7 +543,7 @@ async def delete_cover_record(
     _ = Depends(get_current_user),
 ):
     conn = get_db()
-    cur = conn.cursor()
+    cur = conn.cursor(dictionary=True)
     try:
         _delete_cover(cur, Proj_ID, Cover_Ratio, "proj")
         conn.commit()
