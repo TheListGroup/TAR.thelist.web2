@@ -461,11 +461,11 @@ def _delete_cover(cur, ref_id, cover_ratio: str, state: str):
         return
     
     for each_cover in rows:
-        cur.execute(f"DELETE FROM {table} WHERE ID=%s", (each_cover[0],))
+        cur.execute(f"DELETE FROM {table} WHERE ID=%s", (each_cover["ID"],))
         affected = cur.rowcount
 
         if affected > 0:
-            dest_path = os.path.join('/var/www/html', each_cover[2].lstrip('/'))
+            dest_path = os.path.join('/var/www/html', each_cover["Image_URL"].lstrip('/'))
             os.remove(dest_path)
 
 def _delete_image(cur, cover_id: int, action: str, relationship_id, state: str):
