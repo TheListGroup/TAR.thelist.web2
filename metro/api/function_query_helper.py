@@ -574,20 +574,23 @@ def _save_image_file(f: bytes, image_id: int, ref_id: int, image_type: str, type
         filename = f"{image_id:06d}-{ratio_code}-{width}.webp"
     
     os.makedirs(path_folder, exist_ok=True)  # create if not exists
+    os.chmod(path_folder, 0o775)
     dest_path = os.path.join(path_folder, filename)
     
     if image_type == "Cover" or image_type == "Logo":
         image = Image.open(BytesIO(f)).convert("RGB")
         image = ImageOps.fit(image, image_size, Image.Resampling.LANCZOS)
-        image.save(dest_path, "WEBP", quality=65)
+        image.save(dest_path, "WEBP", quality=75)
+        os.chmod(dest_path, 0o664)
     else:
         image = WandImage(file=BytesIO(f))
         original_width, original_height = image.width, image.height
         if original_width > width or original_height > height:
             image.transform(resize=f"{width}x{height}")
         image.format = 'webp'
-        image.compression_quality = 65
+        image.compression_quality = 75
         image.save(filename=dest_path)
+        os.chmod(dest_path, 0o664)
     
     image_url = re.sub(r'^/var/www/html', '', dest_path)
 
