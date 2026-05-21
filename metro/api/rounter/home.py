@@ -238,6 +238,7 @@ def _select_only_active_prod_category(cur):
         JOIN product_entities_categories c ON h.Category_ID = c.ID and c.Categories_Status = '1'
         left JOIN product_entities_categories d ON c.Parent_ID = d.ID and d.Categories_Status = '1'
         JOIN product_entities a on h.Entity_ID = a.ID and a.Entity_Status = '1' and a.Entity_Type not in ('products', 'series')
+        join prod_url url on h.Entity_ID = url.ID and url.Url_Status = 1
         WHERE h.Relationship_Status = '1'
         ORDER BY d.Categories_Order, c.Categories_Order
     """
